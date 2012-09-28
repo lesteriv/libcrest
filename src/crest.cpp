@@ -5,9 +5,6 @@
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
-// STD
-#include <unistd.h>
-
 // MONGOOSE
 #include "../third/mongoose/mongoose.h"
 
@@ -152,7 +149,7 @@ struct sl_connection : public connection
 					snprintf( buf, 32, "%zu.log", index );				
 					nfile = rfile + buf;
 					
-					if( !file_exists( nfile ) )
+					if( !file_exists( nfile.c_str() ) )
 						break;
 				}
 
@@ -160,7 +157,7 @@ struct sl_connection : public connection
 				rename( g_log_file_path.c_str(), nfile.c_str() );
 
 				g_log_file = fopen( g_log_file_path.c_str(), "at" );
-				g_log_size = file_size( g_log_file_path );				
+				g_log_size = file_size( g_log_file_path.c_str() );				
 			}
 		}
 
@@ -350,11 +347,12 @@ bool crest_start(
 	g_log_file_path = log_file;
 	if( log_file.length() )
 	{
-		if( right( log_file, 4 ) != ".log" )
+		size_t len = log_file.length();
+		if( len < 4 || strcmp( log_file.c_str() + len - 4, ".log" ) )
 			g_log_file_path += ".log";
 		
 		g_log_file = fopen( g_log_file_path.c_str(), "at" );
-		g_log_size = file_size( g_log_file_path );
+		g_log_size = file_size( g_log_file_path.c_str() );
 	}
 	
 	char ports[ 64 ];
@@ -380,7 +378,7 @@ bool crest_start(
 		g_time_start = time( NULL );
 		
 		while( !g_shutdown )
-			sleep( 1 );
+			mg_sleep( 1000 );
 		
 		g_time_start = 0;
 		mg_stop( ctx );

@@ -26,17 +26,17 @@ CREST_NAMESPACE_START
 
 
 /**********************************************************************************************/
-static const char* const RESPONCE_PREFIX[ HTTP_INTERNAL_ERROR + 1 ] =
+static const string RESPONCE_PREFIX[ HTTP_STATUS_COUNT ] =
 {
-	"200 OK",
-	"201 Created",
-	"202 Accepted",
-	"400 Bad Request",
-	"401 Unauthorized",
-	"404 Not Found",
-	"405 Method Not Allowed",
-	"411 Length Required",
-	"500 Internal Server Error"
+	"HTTP/1.1 200 OK\r\nContent-Length: ",
+	"HTTP/1.1 201 Created\r\nContent-Length: ",
+	"HTTP/1.1 202 Accepted\r\nContent-Length: ",
+	"HTTP/1.1 400 Bad Request\r\nContent-Length: ",
+	"HTTP/1.1 401 Unauthorized\r\nContent-Length: ",
+	"HTTP/1.1 404 Not Found\r\nContent-Length: ",
+	"HTTP/1.1 405 Method Not Allowed\r\nContent-Length: ",
+	"HTTP/1.1 411 Length Required\r\nContent-Length: ",
+	"HTTP/1.1 500 Internal Server Error\r\nContent-Length: "
 };
 
 
@@ -46,18 +46,18 @@ static const char* const RESPONCE_PREFIX[ HTTP_INTERNAL_ERROR + 1 ] =
 
 
 /**********************************************************************************************/
-bool file_exists( const string& path )
+bool file_exists( const char* path )
 {
 	struct stat st;
-	return stat( path.c_str(), &st ) == 0 && ( st.st_mode & S_IFREG );
+	return stat( path, &st ) == 0 && ( st.st_mode & S_IFREG );
 }
 
 /**********************************************************************************************/
-int64_t file_size( const string& path )
+int64_t file_size( const char* path )
 {
 	int64_t size = 0;
 	
-	FILE* f = fopen( path.c_str(), "rb" );
+	FILE* f = fopen( path, "rb" );
 	if( f )
 	{
 		fseek( f, 0, SEEK_END );
@@ -73,11 +73,11 @@ string responce(
 	http_status		status,
 	const string&	str )
 {
-	char buf[ 48 ];
-	snprintf( buf, 48, "\r\nContent-Length: %zu\r\n\r\n", str.length() );
+	char buf[ 24 ];
+	to_string( str.length(), buf );
 	
 	return
-		string( "HTTP/1.1 " ) + RESPONCE_PREFIX[ status ] +	buf + str;			
+		RESPONCE_PREFIX[ status ] +	buf + "\r\n\r\n" + str;			
 }
 
 

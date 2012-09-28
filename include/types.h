@@ -31,7 +31,8 @@ enum http_status
 	HTTP_NOT_FOUND,
 	HTTP_NOT_ALLOWED,
 	HTTP_LENGTH_REQUIRED,
-	HTTP_INTERNAL_ERROR
+	HTTP_INTERNAL_ERROR,
+	HTTP_STATUS_COUNT
 };
 
 /**********************************************************************************************/

@@ -10,6 +10,7 @@
 // STD
 #include <cstdio>
 #include <cstring>
+#include <limits>
 #include <list>
 #include <map>
 #include <stdint.h>
