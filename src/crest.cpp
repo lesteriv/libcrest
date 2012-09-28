@@ -94,17 +94,17 @@ struct sl_connection : public connection
 		
 		char stime[ 32 ];
 		tm* lt = localtime( &t );
-		strftime( stime, 32, "%y-%m-%d %H:%M:%S", lt );
+		strftime( stime, 32, "%y-%m-%d %H:%M:%S ", lt );
 
 		char host[ 64 ];
-		snprintf( host, 64, "%d.%d.%d.%d:%d",
+		snprintf( host, 64, " from %d.%d.%d.%d:%d",
 			int( request->remote_ip >> 24 ),
 			int( ( request->remote_ip >> 16 ) & 0xFF ),
 			int( ( request->remote_ip >> 8  ) & 0xFF ),
 			int( request->remote_ip & 0xFF ),
 			int( request->remote_port ) );
 
-		string log = string( stime ) + " " + request->request_method;
+		string log = string( stime ) + request->request_method;
 
 		int count = 6 - strlen( request->request_method );
 		for( int i = 0 ; i < count ; ++i )
@@ -116,7 +116,6 @@ struct sl_connection : public connection
 		if( log.length() < 63 )
 			log.append( 63 - log.length(), ' ' );
 
-		log += " from ";
 		log += host;
 
 /*		if( request->remote_user )
