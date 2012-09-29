@@ -12,19 +12,19 @@
 
 
 /**********************************************************************************************/
-#define DELETE( name )			CREST_CPP_API( METHOD_DELETE	, false, false, #name )
-#define GET( name )				CREST_CPP_API( METHOD_GET		, false, false, #name )
-#define POST( name )			CREST_CPP_API( METHOD_POST		, false, false, #name )
-#define PUT( name )				CREST_CPP_API( METHOD_PUT		, false, false, #name )
+#define DELETE( name )			CREST_CPP_API( CREST_METHOD_DELETE	, false, false, #name )
+#define GET( name )				CREST_CPP_API( CREST_METHOD_GET		, false, false, #name )
+#define POST( name )			CREST_CPP_API( CREST_METHOD_POST		, false, false, #name )
+#define PUT( name )				CREST_CPP_API( CREST_METHOD_PUT		, false, false, #name )
 
 /**********************************************************************************************/
-#define DELETE_ADMIN( name )	CREST_CPP_API( METHOD_DELETE	, true, false, #name )
-#define GET_ADMIN( name )		CREST_CPP_API( METHOD_GET		, true, false, #name )
-#define POST_ADMIN( name )		CREST_CPP_API( METHOD_POST		, true, false, #name )
-#define PUT_ADMIN( name )		CREST_CPP_API( METHOD_PUT		, true, false, #name )
+#define DELETE_ADMIN( name )	CREST_CPP_API( CREST_METHOD_DELETE	, true, false, #name )
+#define GET_ADMIN( name )		CREST_CPP_API( CREST_METHOD_GET		, true, false, #name )
+#define POST_ADMIN( name )		CREST_CPP_API( CREST_METHOD_POST		, true, false, #name )
+#define PUT_ADMIN( name )		CREST_CPP_API( CREST_METHOD_PUT		, true, false, #name )
 
 /**********************************************************************************************/
-#define GET_READONLY( name )	CREST_CPP_API( METHOD_GET		, false, true, #name )
+#define GET_READONLY( name )	CREST_CPP_API( CREST_METHOD_GET		, false, true, #name )
 
 
 				/** Returns error description if crest unable to start,

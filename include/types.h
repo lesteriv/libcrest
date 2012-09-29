@@ -11,31 +11,31 @@
 /**********************************************************************************************/
 enum crest_http_method
 {
-	METHOD_DELETE,
-	METHOD_GET,
-	METHOD_POST,
-	METHOD_PUT,
-	METHOD_COUNT
+	CREST_METHOD_DELETE,
+	CREST_METHOD_GET,
+	CREST_METHOD_POST,
+	CREST_METHOD_PUT,
+	CREST_METHOD_COUNT
 };
 
 /**********************************************************************************************/
 enum crest_http_status
 {
-	HTTP_OK,
-	HTTP_CREATED,
-	HTTP_ACCEPTED,
-	HTTP_BAD_REQUEST,
-	HTTP_NON_AUTH,
-	HTTP_NOT_FOUND,
-	HTTP_NOT_ALLOWED,
-	HTTP_LENGTH_REQUIRED,
-	HTTP_INTERNAL_ERROR,
-	HTTP_STATUS_COUNT
+	CREST_HTTP_OK,
+	CREST_HTTP_CREATED,
+	CREST_HTTP_ACCEPTED,
+	CREST_HTTP_BAD_REQUEST,
+	CREST_HTTP_NON_AUTH,
+	CREST_HTTP_NOT_FOUND,
+	CREST_HTTP_NOT_ALLOWED,
+	CREST_HTTP_LENGTH_REQUIRED,
+	CREST_HTTP_INTERNAL_ERROR,
+	CREST_HTTP_STATUS_COUNT
 };
 
 /**********************************************************************************************/
 enum crest_user_flags
 {
-	USER_ADMIN		= 1,
-	USER_READONLY	= 2
+	CREST_USER_ADMIN	= 1,
+	CREST_USER_READONLY	= 2
 };

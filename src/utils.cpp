@@ -23,7 +23,7 @@
 
 
 /**********************************************************************************************/
-static const string RESPONCE_PREFIX[ HTTP_STATUS_COUNT ] =
+static const string RESPONCE_PREFIX[ CREST_HTTP_STATUS_COUNT ] =
 {
 	"HTTP/1.1 200 OK\r\nContent-Length: ",
 	"HTTP/1.1 201 Created\r\nContent-Length: ",

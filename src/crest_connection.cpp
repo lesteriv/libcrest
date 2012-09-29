@@ -89,7 +89,7 @@ void crest_connection::send_file( const string& path )
 	FILE* f = fopen( path.c_str(), "rb" );
 	if( !f )
 	{
-		respond( HTTP_INTERNAL_ERROR, "Unable to open file: " + path );
+		respond( CREST_HTTP_INTERNAL_ERROR, "Unable to open file: " + path );
 		return;
 	}
 

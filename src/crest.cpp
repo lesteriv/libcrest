@@ -219,7 +219,7 @@ static vector<string> parse_resource_name( const char* url )
 /**********************************************************************************************/
 static map<resource_key,resource_handler>& resources( crest_http_method method )
 {
-	static map<resource_key,resource_handler> r[ METHOD_COUNT ];
+	static map<resource_key,resource_handler> r[ CREST_METHOD_COUNT ];
 	return r[ method ];
 }
 
@@ -259,13 +259,13 @@ static void event_handler( mg_connection* conn )
 
 	crest_http_method method;
 
-	if( !strcmp( method_name, "DELETE" ) ) method = METHOD_DELETE;
-	else if( !strcmp( method_name, "GET" ) ) method = METHOD_GET;
-	else if( !strcmp( method_name, "POST" ) ) method = METHOD_POST;
-	else if( !strcmp( method_name, "PUT" ) ) method = METHOD_PUT;
+	if( !strcmp( method_name, "DELETE" ) ) method = CREST_METHOD_DELETE;
+	else if( !strcmp( method_name, "GET" ) ) method = CREST_METHOD_GET;
+	else if( !strcmp( method_name, "POST" ) ) method = CREST_METHOD_POST;
+	else if( !strcmp( method_name, "PUT" ) ) method = CREST_METHOD_PUT;
 	else
 	{
-		string str = responce( HTTP_BAD_REQUEST, "Non-supported method" );
+		string str = responce( CREST_HTTP_BAD_REQUEST, "Non-supported method" );
 		mg_write( conn, str.c_str(), str.length() );
 		return;
 	}
@@ -295,7 +295,7 @@ static void event_handler( mg_connection* conn )
 	}
 	else
 	{
-		string data = responce( HTTP_NOT_FOUND, "" );
+		string data = responce( CREST_HTTP_NOT_FOUND, "" );
 		mg_write( conn, data.c_str(), data.length() );
 	}
 }

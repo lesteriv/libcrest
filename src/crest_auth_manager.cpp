@@ -96,8 +96,8 @@ bool crest_auth_manager::add_user(
 	mg_md5( buf, password.c_str(), 0 );	
 
 	int flags = 0;
-	if( admin ) flags |= USER_ADMIN;
-	if( ro    ) flags |= USER_READONLY;
+	if( admin ) flags |= CREST_USER_ADMIN;
+	if( ro    ) flags |= CREST_USER_READONLY;
 	
 	mg_mutex_lock( g_auth_mutex ); // -----------------------------
 	
@@ -138,7 +138,7 @@ bool crest_auth_manager::delete_user(
 	map<string,user>::iterator it = users_.begin();
 	for( ; it != users_.end() ; ++it )
 	{
-		if( it->first != name && ( it->second.flags_ & USER_ADMIN ) )
+		if( it->first != name && ( it->second.flags_ & CREST_USER_ADMIN ) )
 		{
 			adminable = true;
 			break;
@@ -344,7 +344,7 @@ void crest_auth_manager_internal::load( void )
 		mg_mutex_lock( g_auth_mutex ); // -----------------------------
 		
 		user& user = users_[ "root" ];
-		user.flags_ = USER_ADMIN;
+		user.flags_ = CREST_USER_ADMIN;
 		memcpy( user.password_, buf, 16 );
 		
 		mg_mutex_unlock( g_auth_mutex ); // -----------------------------
