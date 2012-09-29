@@ -33,8 +33,8 @@ class auth_manager_internal
 		
 		struct user
 		{
-			int		flags_;
-			string	password_;
+			int				flags_;
+			char			password_[ 16 ];
 		};
 		
 		string				file_;

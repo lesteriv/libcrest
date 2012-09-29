@@ -95,7 +95,7 @@ bool auth_manager::add_user(
 	
 	// Add user
 	
-	char buf[ 33 ];
+	char buf[ 16 ];
 	mg_md5( buf, password.c_str(), 0 );	
 
 	int flags = 0;
@@ -108,7 +108,7 @@ bool auth_manager::add_user(
 	if( !exists )
 	{
 		user& user = users_[ name ];
-		user.password_ = buf;
+		memcpy( user.password_, buf, 16 );
 		user.flags_ = flags;
 	}
 	
@@ -220,7 +220,7 @@ bool auth_manager::update_user_password(
 	
 	// Update password
 	
-	char buf[ 33 ];
+	char buf[ 16 ];
 	mg_md5( buf, password.c_str(), 0 );	
 	
 	bool updated = false;
@@ -230,7 +230,7 @@ bool auth_manager::update_user_password(
 	map<string,user>::iterator it = users_.find( name );
 	if( it != users_.end() )
 	{
-		it->second.password_ = buf;
+		memcpy( it->second.password_, buf, 16 );
 		updated = true;
 	}
 	
@@ -267,11 +267,19 @@ void auth_manager_internal::flush( void )
 		char flags = '0' + it->second.flags_;
 		
 		fwrite( it->first.c_str(), it->first.length(), 1, f );
-		fwrite( " ", 1, 1, f );
-		fwrite( &flags, 1, 1, f );
-		fwrite( " ", 1, 1, f );
-		fwrite( it->second.password_.c_str(), it->second.password_.length(), 1, f );
-		fwrite( "\n", 1, 1, f );
+		fputc( ' ', f );
+		fputc( flags, f );
+		fputc( ' ', f );
+		
+		const unsigned char* bt = (const unsigned char*) it->second.password_;
+		for( size_t i = 0 ; i < 16 ; ++i )
+		{
+			fputc( "0123456789abcdef"[ *bt / 16 ], f );
+			fputc( "0123456789abcdef"[ *bt % 16 ], f );
+			++bt;
+		}
+
+		fputc( '\n', f );
 	}
 	
 	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
@@ -286,47 +294,61 @@ void auth_manager_internal::load( void )
 		return;
 
 	FILE* f = fopen( file_.c_str(), "rt" );
-	if( !f )
-		return;
-	
-	char buf[ 512 ];
-		
-	mg_mutex_lock( g_auth_mutex ); // -----------------------------
-	
-    while( !feof( f ) )
-    {
-		(void) fgets( buf, 512, f );
-		
-		char* name = buf;
-		
-		char* flags = strchr( buf, ' ' );
-		if( !flags ) continue;
-		*flags++ = 0;
-		
-		char* passwd = strchr( flags, ' ' );
-		if( !passwd ) continue;
-		*passwd++ = 0;
+	if( f )
+	{	
+		char bt[ 3 ] = "00";
+		char buf[ 512 ];
 
-		user& user = users_[ name ];
-		user.flags_ = *flags - '0';
-		user.password_ = passwd;
-	}	
-	
-	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
-	
-	fclose( f );
+		mg_mutex_lock( g_auth_mutex ); // -----------------------------
+
+		while( !feof( f ) )
+		{
+			(void) fgets( buf, 512, f );
+
+			char* name = buf;
+
+			char* flags = strchr( buf, ' ' );
+			if( !flags ) continue;
+			*flags++ = 0;
+
+			char* passwd = strchr( flags, ' ' );
+			if( !passwd ) continue;
+			*passwd++ = 0;
+
+			// Invalid password length - 32 bytes + \n
+			if( strlen( passwd ) < 32 )
+				continue;
+
+			passwd[ 32 ] = 0;
+			
+			user& user = users_[ name ];
+			user.flags_ = *flags - '0';
+
+			char* dpass = user.password_;
+			while( *passwd && *(passwd + 1) )
+			{
+				bt[ 0 ] = *passwd++;
+				bt[ 1 ] = *passwd++;
+
+				*dpass++ = strtol( bt, NULL, 16 );
+			}
+		}	
+
+		mg_mutex_unlock( g_auth_mutex ); // -----------------------------
+		fclose( f );
+	}
 	
 	// Add default 'root' user if need
 	if( users_.empty() )
 	{
-		char buf[ 33 ];
+		char buf[ 16 ];
 		mg_md5( buf, "", 0 );		
 
 		mg_mutex_lock( g_auth_mutex ); // -----------------------------
 		
 		user& user = users_[ "root" ];
 		user.flags_ = USER_ADMIN;
-		user.password_ = buf;
+		memcpy( user.password_, buf, 16 );
 		
 		mg_mutex_unlock( g_auth_mutex ); // -----------------------------
 		
