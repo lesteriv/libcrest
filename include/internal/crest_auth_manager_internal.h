@@ -7,17 +7,14 @@
 
 #pragma once
 
-/**********************************************************************************************/
-CREST_NAMESPACE_START
-
 
 /**********************************************************************************************/
 // Internal members for auth_manager
 //
-class auth_manager_internal
+class crest_auth_manager_internal
 {
 	friend class crest;
-	
+
 	protected://////////////////////////////////////////////////////////////////////////
 		
 	// ---------------------
@@ -40,7 +37,3 @@ class auth_manager_internal
 		string				file_;
 		map<string,user>	users_;
 };
-
-
-/**********************************************************************************************/
-CREST_NAMESPACE_END

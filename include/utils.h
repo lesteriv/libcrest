@@ -7,9 +7,6 @@
 
 #pragma once
 
-/**********************************************************************************************/
-CREST_NAMESPACE_START
-
 	
 				/** Returns TRUE if this file exists. */
 bool			file_exists( const char* path );
@@ -19,7 +16,7 @@ int64_t			file_size( const char* path );
 
 				/** Returns string with status code, 'Content-Length' header and body. */
 string			responce(
-					http_status		status,
+					crest_http_status		status,
 					const string&	content );
 
 				/** Converts integer value to string. */
@@ -52,7 +49,3 @@ void			to_string( T value, char* buf )
 						*ptr2++	= ch;
 					}
 				}
-						
-
-/**********************************************************************************************/
-CREST_NAMESPACE_END

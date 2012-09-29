@@ -39,6 +39,14 @@ void			crest_set_auth_enabled( bool value );
 bool			crest_get_log_enabled( void );
 void			crest_set_log_enabled( bool value );
 
+				/** Register handler for resource + method. */
+void			crest_register_handler(
+					crest_http_method	 method,
+					const char*			 resource,
+					crest_api_callback_t func,
+					bool				 for_admin_only	= false,
+					bool			 	 read_only		= false );
+	
 				/** Returns total count of processed requests. */
 size_t			crest_request_count( void );
 
@@ -56,7 +64,3 @@ void			crest_stop( void );
 
 				/** Returns version of library. */
 const char*		crest_version( void );
-
-
-/**********************************************************************************************/
-using namespace crest;

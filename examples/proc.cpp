@@ -14,7 +14,7 @@
 
 /**********************************************************************************************/
 static void send_output(
-	connection&	conn,
+	crest_connection&	conn,
 	string		cmd )
 {
 	char file[ 64 ];
@@ -27,37 +27,37 @@ static void send_output(
 
 
 /**********************************************************************************************/
-GET( proc )( connection& conn )
+GET( proc )( crest_connection& conn )
 {
 	send_output( conn, "ps -A ww" );
 }
 
 /**********************************************************************************************/
-POST( proc )( connection& conn )
+POST( proc )( crest_connection& conn )
 {
 	send_output( conn, conn.get_query_parameter( "cmd" ) + " &" );
 }
 
 /**********************************************************************************************/
-GET( proc/{pid} )( connection& conn )
+GET( proc/{pid} )( crest_connection& conn )
 {
 	send_output( conn, "cat /proc/" + conn.get_path_parameter( 1 ) + "/status" );
 }
 
 /**********************************************************************************************/
-DELETE( proc/{pid} )( connection& conn )
+DELETE( proc/{pid} )( crest_connection& conn )
 {
 	send_output( conn, "kill " + conn.get_path_parameter( 1 ) );
 }
 
 /**********************************************************************************************/
-GET( proc/{pid}/cmdline )( connection& conn )
+GET( proc/{pid}/cmdline )( crest_connection& conn )
 {
 	send_output( conn, "cat /proc/" + conn.get_path_parameter( 1 ) + "/cmdline" );
 }
 
 /**********************************************************************************************/
-GET( proc/{pid}/limits )( connection& conn )
+GET( proc/{pid}/limits )( crest_connection& conn )
 {
 	send_output( conn, "cat /proc/" + conn.get_path_parameter( 1 ) + "/limits" );
 }

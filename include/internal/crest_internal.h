@@ -32,34 +32,27 @@ struct mg_connection;
 // CREST
 #include "../macroses.h"
 #include "../types.h"
-#include "../auth_manager.h"
-#include "../connection.h"
+#include "../crest_auth_manager.h"
+#include "../crest_connection.h"
 #include "../utils.h"
 
+
 /**********************************************************************************************/
-CREST_NAMESPACE_START
-	
-	
-/**********************************************************************************************/
-typedef	void(*crest_api_callback_t)( connection& );
+typedef	void(*crest_api_callback_t)( crest_connection& );
 
 /**********************************************************************************************/
 struct crest_register_api
 {
 	crest_register_api(
-		http_method			 method,
+		crest_http_method	 method,
+		const char*			 resource,
+		crest_api_callback_t func,
 		bool				 admin,
-		bool			 	 readonly,
-		const char*			 res,
-		crest_api_callback_t func );
+		bool			 	 readonly );
 };
 
 /**********************************************************************************************/
 #define CREST_CPP_API( method, admin, ro, name ) \
-	static void JOIN( f, __LINE__ )( connection& ); \
-	static crest_register_api JOIN( r, __LINE__ )( method, admin, ro, name, JOIN( f, __LINE__ ) ); \
+	static void JOIN( f, __LINE__ )( crest_connection& ); \
+	static crest_register_api JOIN( r, __LINE__ )( method, name, JOIN( f, __LINE__ ), admin, ro ); \
 	static void JOIN( f, __LINE__ )
-
-
-/**********************************************************************************************/
-CREST_NAMESPACE_END

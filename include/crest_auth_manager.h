@@ -8,16 +8,13 @@
 #pragma once
 
 // CREST
-#include "internal/auth_manager_internal.h"
-
-/**********************************************************************************************/
-CREST_NAMESPACE_START
+#include "internal/crest_auth_manager_internal.h"
 
 
 /**********************************************************************************************/
 // Class to manage users and it's passwords
 //
-class auth_manager : public auth_manager_internal
+class crest_auth_manager : public crest_auth_manager_internal
 {
 	public://////////////////////////////////////////////////////////////////////////
 
@@ -52,7 +49,7 @@ class auth_manager : public auth_manager_internal
 								string*			err = NULL );
 		
 							/** Returns singleton. */
-static	auth_manager&		instance( void );
+static	crest_auth_manager&		instance( void );
 		
 							/** Changes user's flags. */
 		bool				update_user_flags(
@@ -66,7 +63,3 @@ static	auth_manager&		instance( void );
 								const string&	password,
 								string*			err = NULL );
 };
-
-
-/**********************************************************************************************/
-CREST_NAMESPACE_END

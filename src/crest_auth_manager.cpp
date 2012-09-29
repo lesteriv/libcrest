@@ -15,9 +15,6 @@
 #define ERROR( x ) \
 	{ if( err ) *err = x; return false; }
 
-/**********************************************************************************************/
-CREST_NAMESPACE_START
-
 
 //////////////////////////////////////////////////////////////////////////
 // global data
@@ -34,7 +31,7 @@ static mg_mutex g_auth_mutex = mg_mutex_create();
 
 
 /**********************************************************************************************/
-int auth_manager::get_user_flags( const string& name ) const
+int crest_auth_manager::get_user_flags( const string& name ) const
 {
 	int res = 0;
 	
@@ -50,7 +47,7 @@ int auth_manager::get_user_flags( const string& name ) const
 }
 
 /**********************************************************************************************/
-vector<string> auth_manager::get_users( void ) const
+vector<string> crest_auth_manager::get_users( void ) const
 {
 	vector<string> res;
 
@@ -72,7 +69,7 @@ vector<string> auth_manager::get_users( void ) const
 
 
 /**********************************************************************************************/
-bool auth_manager::add_user(
+bool crest_auth_manager::add_user(
 	const string&	name,
 	const string&	password,
 	bool			admin,
@@ -122,7 +119,7 @@ bool auth_manager::add_user(
 }
 
 /**********************************************************************************************/
-bool auth_manager::delete_user(
+bool crest_auth_manager::delete_user(
 	const string&	name,
 	string*			err )
 {
@@ -168,14 +165,14 @@ bool auth_manager::delete_user(
 }
 
 /**********************************************************************************************/
-auth_manager& auth_manager::instance( void )
+crest_auth_manager& crest_auth_manager::instance( void )
 {
-	static auth_manager res;
+	static crest_auth_manager res;
 	return res;
 }
 
 /**********************************************************************************************/
-bool auth_manager::update_user_flags(
+bool crest_auth_manager::update_user_flags(
 	const string&	name,
 	int				flags,
 	string*			err )
@@ -208,7 +205,7 @@ bool auth_manager::update_user_flags(
 }
 
 /**********************************************************************************************/
-bool auth_manager::update_user_password(
+bool crest_auth_manager::update_user_password(
 	const string&	name,
 	const string&	password,
 	string*			err )
@@ -250,7 +247,7 @@ bool auth_manager::update_user_password(
 
 
 /**********************************************************************************************/
-void auth_manager_internal::flush( void )
+void crest_auth_manager_internal::flush( void )
 {
 	if( file_.empty() )
 		return;
@@ -288,7 +285,7 @@ void auth_manager_internal::flush( void )
 }
 
 /**********************************************************************************************/
-void auth_manager_internal::load( void )
+void crest_auth_manager_internal::load( void )
 {
 	if( file_.empty() )
 		return;
@@ -355,7 +352,3 @@ void auth_manager_internal::load( void )
 		flush();
 	}
 }
-
-
-/**********************************************************************************************/
-CREST_NAMESPACE_END

@@ -19,7 +19,7 @@
 
 /**********************************************************************************************/
 static bool					g_auth_enabled		= false;
-static list<connection*>	g_conns;
+static list<crest_connection*>	g_conns;
 static mg_mutex				g_conns_mutex		= mg_mutex_create();
 static string				g_error;
 static bool					g_log_enabled		= false;
@@ -74,7 +74,7 @@ struct resource_key
 };
 
 /**********************************************************************************************/
-struct sl_connection : public connection
+struct sl_connection : public crest_connection
 {
 	sl_connection( 
 		mg_connection*	conn,
@@ -169,24 +169,21 @@ struct sl_connection : public connection
 
 
 /**********************************************************************************************/
-namespace crest
+class crest
 {
-	class crest
+	public://////////////////////////////////////////////////////////////////////////
+
+// This class API:		
+
+	// ---------------------
+	// Methods
+
+	static void set_auth_file( const char* path )
 	{
-		public://////////////////////////////////////////////////////////////////////////
-
-	// This class API:		
-
-		// ---------------------
-		// Methods
-
-		static void set_auth_file( const char* path )
-		{
-			auth_manager::instance().file_ = path ? path : "";
-			auth_manager::instance().load();
-		}
-	};
-}
+		crest_auth_manager::instance().file_ = path ? path : "";
+		crest_auth_manager::instance().load();
+	}
+};
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -220,7 +217,7 @@ static vector<string> parse_resource_name( const char* url )
 }
 
 /**********************************************************************************************/
-static map<resource_key,resource_handler>& resources( http_method method )
+static map<resource_key,resource_handler>& resources( crest_http_method method )
 {
 	static map<resource_key,resource_handler> r[ METHOD_COUNT ];
 	return r[ method ];
@@ -228,14 +225,14 @@ static map<resource_key,resource_handler>& resources( http_method method )
 
 /**********************************************************************************************/
 crest_register_api::crest_register_api(
-	http_method				method,
-	bool					admin,
-	bool					ro,
-	const char*				name,
-	crest_api_callback_t	func )
+	crest_http_method	 method,
+	const char*			 resource,
+	crest_api_callback_t func,
+	bool				 for_admin_only,
+	bool			 	 read_only )
 {
 	resource_key key;
-	key.keys_ = parse_resource_name( name );
+	key.keys_ = parse_resource_name( resource );
 	
 	size_t count = key.keys_.size();
 	for( size_t i = 0 ; i < count ; ++i )
@@ -245,9 +242,9 @@ crest_register_api::crest_register_api(
 	}
 	
 	resource_handler& hnd  = resources( method )[ key ];
-	hnd.admin_ = admin;
+	hnd.admin_ = for_admin_only;
 	hnd.func_  = func;
-	hnd.ro_    = ro;
+	hnd.ro_    = read_only;
 }
 
 /**********************************************************************************************/
@@ -260,7 +257,7 @@ static void event_handler( mg_connection* conn )
 
 	// Get method
 
-	http_method method;
+	crest_http_method method;
 
 	if( !strcmp( method_name, "DELETE" ) ) method = METHOD_DELETE;
 	else if( !strcmp( method_name, "GET" ) ) method = METHOD_GET;

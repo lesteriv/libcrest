@@ -11,9 +11,6 @@
 // CREST
 #include "../include/crest.h"
 
-/**********************************************************************************************/
-CREST_NAMESPACE_START
-
 
 //////////////////////////////////////////////////////////////////////////
 // static data
@@ -30,19 +27,19 @@ static const string EMPTY_STRING;
 
 
 /**********************************************************************************************/
-time_t connection::get_birth_time( void ) const
+time_t crest_connection::get_birth_time( void ) const
 {
 	return mg_get_birth_time( conn_ );
 }
 
 /**********************************************************************************************/
-const char* connection::get_http_header( const char* name )
+const char* crest_connection::get_http_header( const char* name )
 {
 	return mg_get_header( conn_, name );
 }
 
 /**********************************************************************************************/
-const string& connection::get_path_parameter( size_t index )
+const string& crest_connection::get_path_parameter( size_t index )
 {
 	return path_params_.size() > index ?
 		path_params_[ index ] :
@@ -50,7 +47,7 @@ const string& connection::get_path_parameter( size_t index )
 }
 
 /**********************************************************************************************/
-string connection::get_query_parameter( const char* name )
+string crest_connection::get_query_parameter( const char* name )
 {
 	string res;
 	
@@ -73,21 +70,21 @@ string connection::get_query_parameter( const char* name )
 
 
 /**********************************************************************************************/
-size_t connection::read( char* buf, size_t len )
+size_t crest_connection::read( char* buf, size_t len )
 {
 	return mg_read( conn_, buf, len );
 }
 
 /**********************************************************************************************/
-void connection::respond(
-	http_status		rc,
+void crest_connection::respond(
+	crest_http_status		rc,
 	const string&	msg )
 {
 	write( responce( rc, msg ) );
 }
 
 /**********************************************************************************************/
-void connection::send_file( const string& path )
+void crest_connection::send_file( const string& path )
 {
 	FILE* f = fopen( path.c_str(), "rb" );
 	if( !f )
@@ -123,11 +120,7 @@ void connection::send_file( const string& path )
 }
 
 /**********************************************************************************************/
-int connection::write( const string& str )
+int crest_connection::write( const string& str )
 {
 	return mg_write( conn_, str.c_str(), str.length() );
 }
-
-
-/**********************************************************************************************/
-CREST_NAMESPACE_END

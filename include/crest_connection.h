@@ -8,16 +8,13 @@
 #pragma once
 
 // CREST
-#include "internal/connection_internal.h"
-
-/**********************************************************************************************/
-CREST_NAMESPACE_START
+#include "internal/crest_connection_internal.h"
 
 
 /**********************************************************************************************/
 // Represents connection for request
 //
-class connection : public connection_internal
+class crest_connection : public crest_connection_internal
 {
 	public://////////////////////////////////////////////////////////////////////////
 
@@ -51,7 +48,7 @@ class connection : public connection_internal
 								/** Generates and sends HTTP server responce with 
 								 *  status code, data-length header and data. */
 		void					respond(
-									http_status		rc,
+									crest_http_status		rc,
 									const string&	data );
 
 								/** Sends content of file, or respond HTTP_BAD_REQUEST if
@@ -64,7 +61,3 @@ class connection : public connection_internal
 								 *  or number of bytes written on success. */
 		int						write( const string& str );
 };
-
-
-/**********************************************************************************************/
-CREST_NAMESPACE_END
