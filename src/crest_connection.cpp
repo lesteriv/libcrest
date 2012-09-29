@@ -78,10 +78,16 @@ size_t crest_connection::read( char* buf, size_t len )
 
 /**********************************************************************************************/
 void crest_connection::respond(
-	crest_http_status		rc,
-	const string&	msg )
+	crest_http_status	rc,
+	const char*			msg,
+	size_t				msg_len )
 {
-	write( responce( rc, msg ) );
+	char* str;
+	size_t len;
+	create_responce( str, len, rc, msg, msg_len );
+	
+	write( str, len );
+	free( str );
 }
 
 /**********************************************************************************************/
@@ -90,7 +96,7 @@ void crest_connection::send_file( const string& path )
 	FILE* f = fopen( path.c_str(), "rb" );
 	if( !f )
 	{
-		respond( CREST_HTTP_INTERNAL_ERROR, "Unable to open file: " + path );
+		respond( CREST_HTTP_INTERNAL_ERROR, "Unable to open file", 19 );
 		return;
 	}
 
@@ -121,7 +127,7 @@ void crest_connection::send_file( const string& path )
 }
 
 /**********************************************************************************************/
-int crest_connection::write( const string& str )
+int crest_connection::write( const char* buf, size_t len )
 {
-	return mg_write( conn_, str.c_str(), str.length() );
+	return mg_write( conn_, buf, len );
 }

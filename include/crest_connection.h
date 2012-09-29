@@ -48,8 +48,9 @@ class crest_connection : public crest_connection_internal
 								/** Generates and sends HTTP server responce with 
 								 *  status code, data-length header and data. */
 		void					respond(
-									crest_http_status		rc,
-									const string&	data );
+									crest_http_status	rc,
+									const char*			msg,
+									size_t				msg_len );
 
 								/** Sends content of file, or respond HTTP_BAD_REQUEST if
 								 *  file doesn't exist or not readable. */
@@ -59,5 +60,5 @@ class crest_connection : public crest_connection_internal
 								 *  0 when the connection has been closed,
 								 *  -1 on error,
 								 *  or number of bytes written on success. */
-		int						write( const string& str );
+		int						write( const char* buf, size_t len );
 };

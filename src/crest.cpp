@@ -195,8 +195,8 @@ class crest
 	{
 		crest_auth_manager& mgr = crest_auth_manager::instance();
 		
-		free( mgr.file_ );
-		mgr.file_ = crest_strdup( path );
+		free( mgr.auth_file_ );
+		mgr.auth_file_ = crest_strdup( path );
 		
 		mgr.load();
 	}
@@ -282,8 +282,12 @@ static void event_handler( mg_connection* conn )
 	else if( !strcmp( method_name, "PUT" ) ) method = CREST_METHOD_PUT;
 	else
 	{
-		string str = responce( CREST_HTTP_BAD_REQUEST, "Non-supported method" );
-		mg_write( conn, str.c_str(), str.length() );
+		char* buf;
+		size_t len;
+		create_responce( buf, len, CREST_HTTP_BAD_REQUEST, "Non-supported method", 20 );
+		mg_write( conn, buf, len );
+		
+		free( buf );
 		return;
 	}
 
@@ -312,8 +316,12 @@ static void event_handler( mg_connection* conn )
 	}
 	else
 	{
-		string data = responce( CREST_HTTP_NOT_FOUND, "" );
-		mg_write( conn, data.c_str(), data.length() );
+		char* buf;
+		size_t len;		
+		create_responce( buf, len, CREST_HTTP_NOT_FOUND, "", 0 );
+		mg_write( conn, buf, len );
+		
+		free( buf );
 	}
 }
 
