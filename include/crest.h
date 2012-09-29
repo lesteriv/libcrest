@@ -39,8 +39,7 @@ size_t crest_request_count( void );
 
 /**********************************************************************************************/
 bool crest_start(
-	size_t			port,
-	size_t			port_ssl	= 0,
+	const char*		ports		= "8080",
 	const string&	auth_file	= "",
 	const string&	log_file	= "",
 	const string&	pem_file	= "" );

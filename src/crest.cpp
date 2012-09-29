@@ -320,8 +320,7 @@ size_t crest_request_count( void )
 
 /**********************************************************************************************/
 bool crest_start(
-	size_t			port,
-	size_t			port_ssl,
+	const char*		ports,
 	const string&	auth_file,
 	const string&	log_file,
 	const string&	pem_file )
@@ -346,23 +345,8 @@ bool crest_start(
 		g_log_size = file_size( g_log_file_path.c_str() );
 	}
 	
-	char ports[ 64 ];
-	port_ssl ?
-		snprintf( ports, 64, "%zu,%zus", port, port_ssl ) :
-		snprintf( ports, 64, "%zu", port );
-	
-	const char* options[] =
-	{
-		"listening_ports", ports,
-		"ssl_certificate", pem_file.c_str(),
-		NULL
-	};
-	
-	if( pem_file.empty() )
-		options[ 2 ] = 0;
-	
 	// Start server
-	mg_context* ctx = mg_start( &event_handler, options );
+	mg_context* ctx = mg_start( &event_handler, ports, pem_file.c_str() );
 	if( ctx )
 	{	
 		g_time_start = time( NULL );
