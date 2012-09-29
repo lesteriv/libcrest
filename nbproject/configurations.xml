@@ -11,20 +11,19 @@
         <logicalFolder name="f1" displayName="internal" projectFiles="true">
           <itemPath>include/internal/crest_auth_manager_internal.h</itemPath>
           <itemPath>include/internal/crest_connection_internal.h</itemPath>
-          <itemPath>include/internal/crest_internal.h</itemPath>
+          <itemPath>include/internal/crest_handler_register.h</itemPath>
         </logicalFolder>
         <itemPath>include/crest.h</itemPath>
         <itemPath>include/crest_auth_manager.h</itemPath>
         <itemPath>include/crest_connection.h</itemPath>
-        <itemPath>include/macroses.h</itemPath>
-        <itemPath>include/types.h</itemPath>
-        <itemPath>include/utils.h</itemPath>
+        <itemPath>include/crest_types.h</itemPath>
       </logicalFolder>
       <logicalFolder name="src" displayName="src" projectFiles="true">
         <itemPath>src/crest.cpp</itemPath>
         <itemPath>src/crest_auth_manager.cpp</itemPath>
         <itemPath>src/crest_connection.cpp</itemPath>
         <itemPath>src/utils.cpp</itemPath>
+        <itemPath>src/utils.h</itemPath>
       </logicalFolder>
       <logicalFolder name="third" displayName="third" projectFiles="true">
         <logicalFolder name="mongoose" displayName="mongoose" projectFiles="true">

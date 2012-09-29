@@ -7,12 +7,18 @@
 
 #pragma once
 
+// STD
+#include <limits>
+
+
+/**********************************************************************************************/
+// Functions
 	
 				/** Returns TRUE if this file exists. */
 bool			file_exists( const char* path );
 
 				/** Returns file's size. */
-int64_t			file_size( const char* path );
+size_t			file_size( const char* path );
 
 				/** Returns string with status code, 'Content-Length' header and body. */
 string			responce(

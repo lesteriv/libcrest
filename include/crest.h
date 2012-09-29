@@ -7,25 +7,33 @@
 
 #pragma once
 
+// STD
+#include <cstring>
+
 // CREST
-#include "internal/crest_internal.h"
+#include "internal/crest_handler_register.h"
+#include "crest_auth_manager.h"
+#include "crest_connection.h"
 
 
 /**********************************************************************************************/
-#define DELETE( name )			CREST_CPP_API( CREST_METHOD_DELETE	, false, false, #name )
-#define GET( name )				CREST_CPP_API( CREST_METHOD_GET		, false, false, #name )
-#define POST( name )			CREST_CPP_API( CREST_METHOD_POST		, false, false, #name )
-#define PUT( name )				CREST_CPP_API( CREST_METHOD_PUT		, false, false, #name )
+// Macroses
+
+#define DELETE( name )			CREST_CPP_HANDLER( CREST_METHOD_DELETE	, false, false, #name )
+#define GET( name )				CREST_CPP_HANDLER( CREST_METHOD_GET		, false, false, #name )
+#define POST( name )			CREST_CPP_HANDLER( CREST_METHOD_POST	, false, false, #name )
+#define PUT( name )				CREST_CPP_HANDLER( CREST_METHOD_PUT		, false, false, #name )
+
+#define DELETE_ADMIN( name )	CREST_CPP_HANDLER( CREST_METHOD_DELETE	, true, false, #name )
+#define GET_ADMIN( name )		CREST_CPP_HANDLER( CREST_METHOD_GET		, true, false, #name )
+#define POST_ADMIN( name )		CREST_CPP_HANDLER( CREST_METHOD_POST	, true, false, #name )
+#define PUT_ADMIN( name )		CREST_CPP_HANDLER( CREST_METHOD_PUT		, true, false, #name )
+
+#define GET_READONLY( name )	CREST_CPP_HANDLER( CREST_METHOD_GET		, false, true, #name )
+
 
 /**********************************************************************************************/
-#define DELETE_ADMIN( name )	CREST_CPP_API( CREST_METHOD_DELETE	, true, false, #name )
-#define GET_ADMIN( name )		CREST_CPP_API( CREST_METHOD_GET		, true, false, #name )
-#define POST_ADMIN( name )		CREST_CPP_API( CREST_METHOD_POST		, true, false, #name )
-#define PUT_ADMIN( name )		CREST_CPP_API( CREST_METHOD_PUT		, true, false, #name )
-
-/**********************************************************************************************/
-#define GET_READONLY( name )	CREST_CPP_API( CREST_METHOD_GET		, false, true, #name )
-
+// Functions
 
 				/** Returns error description if crest unable to start,
 				 *  empty string otherwise. */
@@ -38,14 +46,6 @@ void			crest_set_auth_enabled( bool value );
 				/** Returns TRUE if all requests are logging into file. */
 bool			crest_get_log_enabled( void );
 void			crest_set_log_enabled( bool value );
-
-				/** Register handler for resource + method. */
-void			crest_register_handler(
-					crest_http_method	 method,
-					const char*			 resource,
-					crest_api_callback_t func,
-					bool				 for_admin_only	= false,
-					bool			 	 read_only		= false );
 	
 				/** Returns total count of processed requests. */
 size_t			crest_request_count( void );

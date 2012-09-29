@@ -6,16 +6,21 @@
 /**********************************************************************************************/
 
 // STD
+#include <cstdio>
 #include <cstdlib>
+#include <string>
 
 // CREST
 #include "../include/crest.h"
+
+/**********************************************************************************************/
+using std::string;
 
 
 /**********************************************************************************************/
 static void send_output(
 	crest_connection&	conn,
-	string		cmd )
+	string				cmd )
 {
 	char file[ 64 ];
 	snprintf( file, 64, "/tmp/proc_out_%ld", (long) &conn );

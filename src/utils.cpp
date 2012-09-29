@@ -7,9 +7,11 @@
 
 // STD
 #include <sys/stat.h>
+#include <cstdio>
 
 // CREST
 #include "../include/crest.h"
+#include "utils.h"
 
 /**********************************************************************************************/
 #ifdef _WIN32
@@ -50,9 +52,9 @@ bool file_exists( const char* path )
 }
 
 /**********************************************************************************************/
-int64_t file_size( const char* path )
+size_t file_size( const char* path )
 {
-	int64_t size = 0;
+	size_t size = 0;
 	
 	FILE* f = fopen( path, "rb" );
 	if( f )

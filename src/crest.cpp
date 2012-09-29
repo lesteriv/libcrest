@@ -5,11 +5,18 @@
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
+// STD
+#include <list>
+
 // MONGOOSE
 #include "../third/mongoose/mongoose.h"
 
 // CREST
 #include "../include/crest.h"
+#include "utils.h"
+
+/**********************************************************************************************/
+using std::list;
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -18,18 +25,18 @@
 
 
 /**********************************************************************************************/
-static bool					g_auth_enabled		= false;
+static bool						g_auth_enabled		= false;
 static list<crest_connection*>	g_conns;
-static mg_mutex				g_conns_mutex		= mg_mutex_create();
-static string				g_error;
-static bool					g_log_enabled		= false;
-static FILE*				g_log_file			= 0;
-static string				g_log_file_path;
-static mg_mutex				g_log_mutex			= mg_mutex_create();
-static size_t				g_log_size			= 0;
-static size_t				g_request_count		= 0;
-static bool					g_shutdown			= false;
-static time_t				g_time_start		= 0;
+static mg_mutex					g_conns_mutex		= mg_mutex_create();
+static string					g_error;
+static bool						g_log_enabled		= false;
+static FILE*					g_log_file			= 0;
+static string					g_log_file_path;
+static mg_mutex					g_log_mutex			= mg_mutex_create();
+static size_t					g_log_size			= 0;
+static size_t					g_request_count		= 0;
+static bool						g_shutdown			= false;
+static time_t					g_time_start		= 0;
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -224,7 +231,7 @@ static map<resource_key,resource_handler>& resources( crest_http_method method )
 }
 
 /**********************************************************************************************/
-crest_register_api::crest_register_api(
+crest_handler_register::crest_handler_register(
 	crest_http_method	 method,
 	const char*			 resource,
 	crest_api_callback_t func,

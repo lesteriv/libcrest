@@ -5,6 +5,9 @@
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
+// STD
+#include <cstdlib>
+
 // MONGOOSE
 #include "../third/mongoose/mongoose.h"
 

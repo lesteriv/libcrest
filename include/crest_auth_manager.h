@@ -7,8 +7,16 @@
 
 #pragma once
 
+// STD
+#include <string>
+#include <vector>
+
 // CREST
 #include "internal/crest_auth_manager_internal.h"
+
+/**********************************************************************************************/
+using std::string;
+using std::vector;
 
 
 /**********************************************************************************************/
