@@ -57,7 +57,7 @@ class crest_auth_manager : public crest_auth_manager_internal
 								string*			err = NULL );
 		
 							/** Returns singleton. */
-static	crest_auth_manager&		instance( void );
+static	crest_auth_manager&	instance( void );
 		
 							/** Changes user's flags. */
 		bool				update_user_flags(

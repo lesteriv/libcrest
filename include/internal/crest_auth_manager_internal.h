@@ -9,6 +9,7 @@
 
 // STD
 #include <map>
+#include <stdlib.h>
 #include <string>
 
 /**********************************************************************************************/
@@ -23,6 +24,18 @@ class crest_auth_manager_internal
 {
 	friend class crest;
 
+	protected://////////////////////////////////////////////////////////////////////////
+	
+		crest_auth_manager_internal( void )
+		{
+			file_ = 0;
+		}
+		
+		~crest_auth_manager_internal( void )
+		{
+			free( file_ );
+		}
+	
 	protected://////////////////////////////////////////////////////////////////////////
 		
 	// ---------------------
@@ -42,6 +55,6 @@ class crest_auth_manager_internal
 			char			password_[ 16 ];
 		};
 		
-		string				file_;
+		char*				file_;
 		map<string,user>	users_;
 };

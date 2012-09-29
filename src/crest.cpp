@@ -174,7 +174,6 @@ struct sl_connection : public crest_connection
 	}
 };
 
-
 /**********************************************************************************************/
 class crest
 {
@@ -187,8 +186,13 @@ class crest
 
 	static void set_auth_file( const char* path )
 	{
-		crest_auth_manager::instance().file_ = path ? path : "";
-		crest_auth_manager::instance().load();
+		crest_auth_manager& mgr = crest_auth_manager::instance();
+		
+		free( mgr.file_ );
+		mgr.file_ = (char*) malloc( strlen( path ) + 1 );
+		strcpy( mgr.file_, path );
+		
+		mgr.load();
 	}
 };
 

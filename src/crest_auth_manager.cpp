@@ -252,10 +252,10 @@ bool crest_auth_manager::update_user_password(
 /**********************************************************************************************/
 void crest_auth_manager_internal::flush( void )
 {
-	if( file_.empty() )
+	if( !file_ )
 		return;
 	
-	FILE* f = fopen( file_.c_str(), "wt" );
+	FILE* f = fopen( file_, "wt" );
 	if( !f )
 		return;
 	
@@ -290,10 +290,10 @@ void crest_auth_manager_internal::flush( void )
 /**********************************************************************************************/
 void crest_auth_manager_internal::load( void )
 {
-	if( file_.empty() )
+	if( !file_ )
 		return;
 
-	FILE* f = fopen( file_.c_str(), "rt" );
+	FILE* f = fopen( file_, "rt" );
 	if( f )
 	{	
 		char bt[ 3 ] = "00";
