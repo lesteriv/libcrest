@@ -5,18 +5,12 @@
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
-// STD
-#include <cstdlib>
-
 // MONGOOSE
 #include "../third/mongoose/mongoose.h"
 
 // CREST
 #include "../include/crest.h"
-
-/**********************************************************************************************/
-#define ERROR( x ) \
-	{ if( err ) *err = x; return false; }
+#include "utils.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -34,15 +28,21 @@ static mg_mutex g_auth_mutex = mg_mutex_create();
 
 
 /**********************************************************************************************/
-int crest_auth_manager::get_user_flags( const string& name ) const
+size_t crest_auth_manager::get_user_count( void ) const
+{
+	return user_count_;
+}
+
+/**********************************************************************************************/
+int crest_auth_manager::get_user_flags( const char* name ) const
 {
 	int res = 0;
 	
 	mg_mutex_lock( g_auth_mutex ); // -----------------------------
 	
-	map<string,user>::const_iterator it = users_.find( name );
-	if( it != users_.end() )
-		res = it->second.flags_;
+	crest_user* user = find_user( name );
+	if( user )
+		res = user->flags_;
 	
 	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
 	
@@ -50,19 +50,19 @@ int crest_auth_manager::get_user_flags( const string& name ) const
 }
 
 /**********************************************************************************************/
-vector<string> crest_auth_manager::get_users( void ) const
+void crest_auth_manager::get_users( 
+	size_t&		count,
+	char**&		names ) const
 {
-	vector<string> res;
-
 	mg_mutex_lock( g_auth_mutex ); // -----------------------------
-	
-	map<string,user>::const_iterator it = users_.begin();
-	for( ; it != users_.end() ; ++it )
-		res.push_back( it->first );
-	
+
+	count = user_count_;
+	names = (char**) malloc( count * sizeof * names );
+
+	for( size_t i = 0 ; i < count ; ++i )
+		names[ i ] = crest_strdup( users_[ i ].password_ );
+
 	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
-	
-	return res;
 }
 
 
@@ -72,31 +72,34 @@ vector<string> crest_auth_manager::get_users( void ) const
 
 
 /**********************************************************************************************/
-bool crest_auth_manager::add_user(
-	const string&	name,
-	const string&	password,
-	bool			admin,
-	bool			ro,
-	string*			err )
+const char* crest_auth_manager::add_user(
+	const char*	name,
+	const char*	pass,
+	bool		admin,
+	bool		ro )
 {
 	// Check parameters
 
-	if( name.empty()			) ERROR( "Empty user name" );
-	if( name.length() > 32		) ERROR( "Name too long" );
-	if( !isalpha( name[ 0 ] )	) ERROR( "Invalid name" );
-	if( password.length() > 32	) ERROR( "Password too long" );
+	if( !name || !*name )
+		return "Empty user name";
 	
-	size_t len = name.length();
-	for( size_t i = 0 ; i < len ; ++i )
+	size_t name_len = strlen( name );
+	size_t pass_len = strlen( pass );
+	
+	if( name_len > 32	  ) return "Name too long";
+	if( !isalpha( *name ) ) return "Invalid name";
+	if( pass_len > 32	  ) return "Password too long";
+	
+	for( size_t i = 0 ; i < name_len ; ++i )
 	{
 		if( !isalnum( name[ i ] ) )
-			ERROR( "Invalid name" );
+			return "Invalid name";
 	}
 	
 	// Add user
 	
 	char buf[ 16 ];
-	mg_md5( buf, password.c_str(), 0 );	
+	mg_md5( buf, pass, 0 );	
 
 	int flags = 0;
 	if( admin ) flags |= CREST_USER_ADMIN;
@@ -104,67 +107,64 @@ bool crest_auth_manager::add_user(
 	
 	mg_mutex_lock( g_auth_mutex ); // -----------------------------
 	
-	bool exists = users_.find( name ) != users_.end();
-	if( !exists )
+	crest_user* user = find_user( name );
+	if( !user )
 	{
-		user& user = users_[ name ];
-		memcpy( user.password_, buf, 16 );
-		user.flags_ = flags;
+		crest_user* new_user = create_user( name );
+		memcpy( new_user->password_, buf, 16 );
+		new_user->flags_ = flags;
 	}
 	
 	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
 
-	if( exists )
-		ERROR( "Already exists user: " + name );
+	if( user )
+		return "User already exists";
 	
 	flush();
-	return true;	
+	return NULL;
 }
 
 /**********************************************************************************************/
-bool crest_auth_manager::delete_user(
-	const string&	name,
-	string*			err )
+const char* crest_auth_manager::delete_user( const char* name )
 {
 	// Check parameters
 	
-	if( name.empty() )
-		ERROR( "Empty user name" )
+	if( !name || !*name )
+		 return "Empty user name";
 	
 	// Delete user
 			
-	bool adminable = false;
-	bool deleted = false;
+	bool adminable	= false;
+	bool deleted	= false;
+	int  index		= -1;
 	
 	mg_mutex_lock( g_auth_mutex ); // -----------------------------
 	
-	map<string,user>::iterator it = users_.begin();
-	for( ; it != users_.end() ; ++it )
+	for( size_t i = 0 ; i < user_count_ ; ++i )
 	{
-		if( it->first != name && ( it->second.flags_ & CREST_USER_ADMIN ) )
-		{
+		if( !strcmp( users_[ i ].name_, name ) )
+			index = (int) i;
+		else if( users_[ i ].flags_ & CREST_USER_ADMIN )
 			adminable = true;
-			break;
-		}
 	}
 	
-	if( adminable )
+	if( adminable && index >= 0 )
 	{
-		it = users_.find( name );
-		if( it != users_.end() )
-		{
-			users_.erase( it );
-			deleted = true;
-		}
+		free( users_[ index ].name_ );
+		if( index < (int) user_count_ - 1 )
+			memmove( users_ + index, users_ + index + 1, user_count_ - index - 1 );
+		
+		--user_count_;
+		deleted = true;
 	}
 	
 	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
 
-	if( !adminable ) ERROR( "Must be atleast one user with admin rights" );	
-	if( !deleted   ) ERROR( "User not found: " + name );
+	if( !adminable ) return "Must be atleast one user with admin rights";	
+	if( !deleted   ) return "User not found";
 	
 	flush();
-	return true;
+	return NULL;
 }
 
 /**********************************************************************************************/
@@ -175,15 +175,14 @@ crest_auth_manager& crest_auth_manager::instance( void )
 }
 
 /**********************************************************************************************/
-bool crest_auth_manager::update_user_flags(
-	const string&	name,
-	int				flags,
-	string*			err )
+const char* crest_auth_manager::update_user_flags(
+	const char*	name,
+	int			flags )
 {
 	// Check parameters
 	
-	if( name.empty() )
-		ERROR( "Empty user name" )
+	if( !name || !*name )
+		return "Empty user name";
 	
 	// Update flags
 			
@@ -191,56 +190,58 @@ bool crest_auth_manager::update_user_flags(
 	
 	mg_mutex_lock( g_auth_mutex ); // -----------------------------
 	
-	map<string,user>::iterator it = users_.find( name );
-	if( it != users_.end() )
+	crest_user* user = find_user( name );
+	if( user )
 	{
-		it->second.flags_ = flags;
+		user->flags_ = flags;
 		updated = true;
 	}
 	
 	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
 	
 	if( !updated )
-		ERROR( "User not found: " + name );
+		return "User not found";
 	
 	flush();
-	return true;	
+	return NULL;	
 }
 
 /**********************************************************************************************/
-bool crest_auth_manager::update_user_password(
-	const string&	name,
-	const string&	password,
-	string*			err )
+const char* crest_auth_manager::update_user_password(
+	const char*	name,
+	const char*	pass )
 {
 	// Check parameters
 	
-	if( name.empty()		   ) ERROR( "Empty user name" )
-	if( password.length() > 32 ) ERROR( "Password too long" );
+	if( !pass )	pass = "";
+	size_t pass_len = strlen( pass );
+	
+	if( !name || !*name	) return "Empty user name";
+	if( pass_len > 32	) return "Password too long";
 	
 	// Update password
 	
 	char buf[ 16 ];
-	mg_md5( buf, password.c_str(), 0 );	
+	mg_md5( buf, pass, 0 );	
 	
 	bool updated = false;
 	
 	mg_mutex_lock( g_auth_mutex ); // -----------------------------
 	
-	map<string,user>::iterator it = users_.find( name );
-	if( it != users_.end() )
+	crest_user* user = find_user( name );
+	if( user )
 	{
-		memcpy( it->second.password_, buf, 16 );
+		memcpy( user->password_, buf, 16 );
 		updated = true;
 	}
 	
 	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
 	
 	if( !updated )
-		ERROR( "User not found: " + name );
+		return "User not found";
 	
 	flush();
-	return true;	
+	return NULL;
 }
 
 
@@ -250,28 +251,92 @@ bool crest_auth_manager::update_user_password(
 
 
 /**********************************************************************************************/
+crest_auth_manager_internal::crest_auth_manager_internal( void )
+{
+	auth_file_			= 0;
+	user_count_	= 0;
+	users_			= 0;
+}
+
+/**********************************************************************************************/
+crest_auth_manager_internal::~crest_auth_manager_internal( void )
+{
+	clean();
+}
+
+/**********************************************************************************************/
+void crest_auth_manager_internal::clean( void )
+{
+	mg_mutex_lock( g_auth_mutex ); // -----------------------------
+	
+	for( size_t i = 0 ; i < user_count_ ; ++i )
+		free( users_[ i ].name_ );
+	
+	free( users_ );
+	users_ = 0;
+	user_count_ = 0;
+	
+	free( auth_file_ );
+	auth_file_ = 0;
+	
+	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
+}
+
+/**********************************************************************************************/
+crest_user* crest_auth_manager_internal::create_user( const char* name )
+{
+	user_count_++;
+	
+	if( !users_ )
+	{
+		users_ = (crest_user*) malloc( sizeof( crest_user ) );
+		users_->name_ = crest_strdup( name );
+		
+		return users_;
+	}
+	
+	users_ = (crest_user*) realloc( users_, sizeof( crest_user ) * user_count_ );
+	crest_user* last = users_ + user_count_ - 1;
+	last->name_ = crest_strdup( name );
+	
+	return last;
+}
+
+/**********************************************************************************************/
+crest_user* crest_auth_manager_internal::find_user( const char* name ) const
+{
+	for( size_t i = 0 ; i < user_count_ ; ++i )
+	{
+		if( !strcmp( users_[ i ].name_, name ) )
+			return users_ + i;
+	}	
+	
+	return NULL;
+}
+
+/**********************************************************************************************/
 void crest_auth_manager_internal::flush( void )
 {
-	if( !file_ )
+	if( !auth_file_ )
 		return;
 	
-	FILE* f = fopen( file_, "wt" );
+	FILE* f = fopen( auth_file_, "wt" );
 	if( !f )
 		return;
 	
 	mg_mutex_lock( g_auth_mutex ); // -----------------------------
 	
-	map<string,user>::const_iterator it = users_.begin();
-	for( ; it != users_.end() ; ++it )
+	for( size_t i = 0 ; i < user_count_ ; ++i )
 	{
-		char flags = '0' + it->second.flags_;
+		crest_user& user = users_[ i ];
+		char flags = '0' + user.flags_;
 		
-		fwrite( it->first.c_str(), it->first.length(), 1, f );
+		fwrite( user.name_, strlen( user.name_ ), 1, f );
 		fputc( ' ', f );
 		fputc( flags, f );
 		fputc( ' ', f );
 		
-		const unsigned char* bt = (const unsigned char*) it->second.password_;
+		const unsigned char* bt = (const unsigned char*) user.password_;
 		for( size_t i = 0 ; i < 16 ; ++i )
 		{
 			fputc( "0123456789abcdef"[ *bt / 16 ], f );
@@ -290,16 +355,16 @@ void crest_auth_manager_internal::flush( void )
 /**********************************************************************************************/
 void crest_auth_manager_internal::load( void )
 {
-	if( !file_ )
+	if( !auth_file_ )
 		return;
 
-	FILE* f = fopen( file_, "rt" );
+	mg_mutex_lock( g_auth_mutex ); // -----------------------------
+	
+	FILE* f = fopen( auth_file_, "rt" );
 	if( f )
 	{	
 		char bt[ 3 ] = "00";
 		char buf[ 512 ];
-
-		mg_mutex_lock( g_auth_mutex ); // -----------------------------
 
 		while( !feof( f ) )
 		{
@@ -321,10 +386,10 @@ void crest_auth_manager_internal::load( void )
 
 			passwd[ 32 ] = 0;
 			
-			user& user = users_[ name ];
-			user.flags_ = *flags - '0';
+			crest_user* user = create_user( name );
+			user->flags_ = *flags - '0';
 
-			char* dpass = user.password_;
+			char* dpass = user->password_;
 			while( *passwd && *(passwd + 1) )
 			{
 				bt[ 0 ] = *passwd++;
@@ -334,24 +399,21 @@ void crest_auth_manager_internal::load( void )
 			}
 		}	
 
-		mg_mutex_unlock( g_auth_mutex ); // -----------------------------
 		fclose( f );
 	}
 	
 	// Add default 'root' user if need
-	if( users_.empty() )
+	if( !user_count_ )
 	{
 		char buf[ 16 ];
 		mg_md5( buf, "", 0 );		
 
-		mg_mutex_lock( g_auth_mutex ); // -----------------------------
-		
-		user& user = users_[ "root" ];
-		user.flags_ = CREST_USER_ADMIN;
-		memcpy( user.password_, buf, 16 );
-		
-		mg_mutex_unlock( g_auth_mutex ); // -----------------------------
+		crest_user* user = create_user( "root" );
+		user->flags_ = CREST_USER_ADMIN;
+		memcpy( user->password_, buf, 16 );
 		
 		flush();
 	}
+
+	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
 }

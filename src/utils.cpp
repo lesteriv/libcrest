@@ -84,3 +84,17 @@ string responce(
 	
 	return str;
 }
+
+/**********************************************************************************************/
+char* crest_strdup( const char* str )
+{
+	if( !str )
+		return 0;
+
+	size_t n = strlen( str );
+	char* res = (char*) malloc( n + 1 );
+	memcpy( res, str, n );
+	res[ n ] = 0;
+	
+	return res;
+}

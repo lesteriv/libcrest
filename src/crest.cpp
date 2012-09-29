@@ -7,6 +7,7 @@
 
 // STD
 #include <list>
+#include <map>
 
 // MONGOOSE
 #include "../third/mongoose/mongoose.h"
@@ -17,6 +18,7 @@
 
 /**********************************************************************************************/
 using std::list;
+using std::map;
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -184,13 +186,17 @@ class crest
 	// ---------------------
 	// Methods
 
+	static void clean( void )
+	{
+		crest_auth_manager::instance().clean();
+	}
+	  
 	static void set_auth_file( const char* path )
 	{
 		crest_auth_manager& mgr = crest_auth_manager::instance();
 		
 		free( mgr.file_ );
-		mgr.file_ = (char*) malloc( strlen( path ) + 1 );
-		strcpy( mgr.file_, path );
+		mgr.file_ = crest_strdup( path );
 		
 		mgr.load();
 	}
@@ -373,7 +379,7 @@ bool crest_start(
 	g_log_enabled = log_enabled;
 	
 	// Prepare and set options
-	crest::crest::set_auth_file( auth_file );
+	crest::set_auth_file( auth_file );
 	
 	g_log_file_path = log_file ? log_file : "";
 	if( g_log_file_path.length() )
@@ -397,6 +403,8 @@ bool crest_start(
 		
 		g_time_start = 0;
 		mg_stop( ctx );
+		
+		crest::clean();
 		
 		if( g_log_file )
 		{

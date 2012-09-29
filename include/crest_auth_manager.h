@@ -7,16 +7,8 @@
 
 #pragma once
 
-// STD
-#include <string>
-#include <vector>
-
 // CREST
 #include "internal/crest_auth_manager_internal.h"
-
-/**********************************************************************************************/
-using std::string;
-using std::vector;
 
 
 /**********************************************************************************************/
@@ -29,11 +21,17 @@ class crest_auth_manager : public crest_auth_manager_internal
 	// ---------------------
 	// Properties
 		
+							/** Returns count of users. */
+		size_t				get_user_count( void ) const;
+		
 							/** Returns flags for user. */
-		int					get_user_flags( const string& user ) const;
+		int					get_user_flags( const char* name ) const;
 
-							/** Returns list of users. */
-		vector<string>		get_users( void ) const;
+							/** Returns list of users, it should be deleted by caller -
+							 *  each string and top pointer. */
+		void				get_users( 
+								size_t&		count,
+								char**&		names ) const;
 
 		
 	public://////////////////////////////////////////////////////////////////////////
@@ -41,33 +39,30 @@ class crest_auth_manager : public crest_auth_manager_internal
 	// ---------------------
 	// Methods		
 
-							/** Adds new user, if fail optionally returns
-							 *  error's description in @err. */
-		bool				add_user(
-								const string&	name,
-								const string&	password,
-								bool			admin,
-								bool			ro,
-								string*			err = NULL );
+							/** Adds new user, returns error's description on fail,
+							 *  and NULL on success. */
+		const char*			add_user(
+								const char*	name,
+								const char*	password,
+								bool		admin,
+								bool		ro );
 		
-							/** Deletes existing user, if fail optionally returns
-							 *  error's description in @err. */
-		bool				delete_user( 
-								const string&	name,
-								string*			err = NULL );
+							/** Deletes existing user, returns error's description on fail,
+							 *  and NULL on success. */
+		const char*			delete_user( const char* name );
 		
 							/** Returns singleton. */
 static	crest_auth_manager&	instance( void );
 		
-							/** Changes user's flags. */
-		bool				update_user_flags(
-								const string&	name,
-								int				flags,
-								string*			err = NULL );
+							/** Changes user's flags, returns error's description on fail,
+							 *  and NULL on success. */
+		const char*			update_user_flags(
+								const char*	name,
+								int			flags );
 		
-							/** Changes user's password. */
-		bool				update_user_password(
-								const string&	name,
-								const string&	password,
-								string*			err = NULL );
+							/** Changes user's password, returns error's description on fail,
+							 *  and NULL on success. */
+		const char*			update_user_password(
+								const char*	name,
+								const char*	password );
 };

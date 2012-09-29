@@ -25,6 +25,9 @@ string			responce(
 					crest_http_status		status,
 					const string&	content );
 
+				/** The same as strdup. */
+char*			crest_strdup( const char* str );
+
 				/** Converts integer value to string. */
 				template< typename T >
 void			to_string( T value, char* buf )

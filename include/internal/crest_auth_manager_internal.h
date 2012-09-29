@@ -8,13 +8,18 @@
 #pragma once
 
 // STD
-#include <map>
 #include <stdlib.h>
-#include <string>
+
 
 /**********************************************************************************************/
-using std::map;
-using std::string;
+// Internal structure to store single user's info
+//
+struct crest_user
+{
+	int		flags_;
+	char*	name_;
+	char	password_[ 16 ];
+};
 
 
 /**********************************************************************************************/
@@ -26,21 +31,17 @@ class crest_auth_manager_internal
 
 	protected://////////////////////////////////////////////////////////////////////////
 	
-		crest_auth_manager_internal( void )
-		{
-			file_ = 0;
-		}
-		
-		~crest_auth_manager_internal( void )
-		{
-			free( file_ );
-		}
+							crest_auth_manager_internal( void );
+							~crest_auth_manager_internal( void );
 	
 	protected://////////////////////////////////////////////////////////////////////////
 		
 	// ---------------------
 	// Internal methods		
 		
+		void				clean( void );
+		crest_user*			create_user( const char* name );
+		crest_user*			find_user( const char* name ) const;
 		void				flush( void );
 		void				load( void );
 
@@ -49,12 +50,7 @@ class crest_auth_manager_internal
 
 // Properties		
 		
-		struct user
-		{
-			int				flags_;
-			char			password_[ 16 ];
-		};
-		
-		char*				file_;
-		map<string,user>	users_;
+		char*				auth_file_;
+		size_t				user_count_;
+		crest_user*			users_;
 };
