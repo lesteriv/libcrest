@@ -89,7 +89,37 @@ void connection::respond(
 /**********************************************************************************************/
 void connection::send_file( const string& path )
 {
-	mg_send_file( conn_, path.c_str() );
+	FILE* f = fopen( path.c_str(), "rb" );
+	if( !f )
+	{
+		respond( HTTP_INTERNAL_ERROR, "Unable to open file: " + path );
+		return;
+	}
+
+	fseek( f, 0, SEEK_END );
+	
+	char buf[ 24 ];
+	to_string( ftell( f ), buf );
+	string pref = "HTTP/1.1 200 OK\r\nContent-Length: ";
+	pref += buf;
+	pref += "\r\n\r\n";
+	mg_write( conn_, pref.c_str(), pref.length() );
+
+	fseek( f, 0, SEEK_SET );
+	
+	char data[ 16384 ];
+	while( !feof( f ) )
+	{
+		int r = fread( data, 1, 16384, f );
+		if( r <= 0 )
+			break;
+		
+		int w = mg_write( conn_, data, r );
+		if( w != r )
+			break;
+	}
+	
+	fclose( f );
 }
 
 /**********************************************************************************************/
