@@ -104,7 +104,10 @@ struct sl_connection : public connection
 			int( request->remote_ip & 0xFF ),
 			int( request->remote_port ) );
 
-		string log = string( stime ) + request->request_method;
+		string log;
+		log.reserve( 128 );
+		log  = stime;
+		log += request->request_method;
 
 		int count = 6 - strlen( request->request_method );
 		for( int i = 0 ; i < count ; ++i )
@@ -134,6 +137,7 @@ struct sl_connection : public connection
 			fputs( log.c_str(), g_log_file );
 			fflush( g_log_file );
 
+			// Move too big log file
 			g_log_size += log.length();
 			if( g_log_size > 100000 )
 			{
@@ -174,7 +178,7 @@ class crest
 	// ---------------------
 	// Methods
 	  
-	void set_auth_file( const string& path )
+	static void set_auth_file( const string& path )
 	{
 		auth_manager::instance().file_ = path;
 		auth_manager::instance().load();
@@ -215,7 +219,7 @@ static vector<string> parse_resource_name( const char* url )
 /**********************************************************************************************/
 static map<resource_key,resource_handler>& resources( http_method method )
 {
-	static map<resource_key,resource_handler> r[ 4 ];
+	static map<resource_key,resource_handler> r[ METHOD_COUNT ];
 	return r[ method ];
 }
 
@@ -244,67 +248,55 @@ crest_register_api::crest_register_api(
 }
 
 /**********************************************************************************************/
-static void event_handler(
-	mg_event		event,
-	mg_connection*	conn )
+static void event_handler( mg_connection* conn )
 {
-	if( event == MG_EVENT_LOG )
+	++g_request_count;
+
+	mg_request_info* request = mg_get_request_info( conn );
+	const char* method_name = request->request_method;
+
+	// Get method
+
+	http_method method;
+
+	if( !strcmp( method_name, "DELETE" ) ) method = METHOD_DELETE;
+	else if( !strcmp( method_name, "GET" ) ) method = METHOD_GET;
+	else if( !strcmp( method_name, "POST" ) ) method = METHOD_POST;
+	else if( !strcmp( method_name, "PUT" ) ) method = METHOD_PUT;
+	else
 	{
-		mg_request_info* request = mg_get_request_info( conn );
-		g_error = (const char*) request->ev_data;
+		string str = responce( HTTP_BAD_REQUEST, "Non-supported method" );
+		mg_write( conn, str.c_str(), str.length() );
 		return;
 	}
-	
-	if( event == MG_NEW_REQUEST )
+
+	// Resource
+
+	resource_key key;
+	key.keys_ = parse_resource_name( request->uri + 1 );
+
+	map<resource_key,resource_handler>::const_iterator it = resources( method ).find( key );
+	if( it != resources( method ).end() )
 	{
-		++g_request_count;
-		
-		mg_request_info* request = mg_get_request_info( conn );
-		const char* method_name = request->request_method;
-		
-		// Get method
-		
-		http_method method;
-			 
-		if( !strcmp( method_name, "DELETE" ) ) method = METHOD_DELETE;
-		else if( !strcmp( method_name, "GET" ) ) method = METHOD_GET;
-		else if( !strcmp( method_name, "POST" ) ) method = METHOD_POST;
-		else if( !strcmp( method_name, "PUT" ) ) method = METHOD_PUT;
-		else
-		{
-			string str = responce( HTTP_BAD_REQUEST, "" );
-			mg_write( conn, str.c_str(), str.length() );
-			return;
-		}
+		sl_connection sconn( conn, key.keys_ );
 
-		// Resource
-		
-		resource_key key;
-		key.keys_ = parse_resource_name( request->uri + 1 );
-	
-		map<resource_key,resource_handler>::const_iterator it = resources( method ).find( key );
-		if( it != resources( method ).end() )
-		{
-			sl_connection sconn( conn, key.keys_ );
-			
-			mg_mutex_lock( g_conns_mutex );
-			g_conns.push_back( &sconn );
-			mg_mutex_unlock( g_conns_mutex );
+		mg_mutex_lock( g_conns_mutex );
+		g_conns.push_back( &sconn );
+		mg_mutex_unlock( g_conns_mutex );
 
-			(*it->second.func_)( sconn );
+		(*it->second.func_)( sconn );
 
-			mg_mutex_lock( g_conns_mutex );
-			g_conns.remove( &sconn );
-			mg_mutex_unlock( g_conns_mutex );
-			
-			if( g_log_file )
-				sconn.log();
-		}
-		else
-		{
-			string data = responce( HTTP_NOT_FOUND, "" );
-			mg_write( conn, data.c_str(), data.length() );
-		}
+		mg_mutex_lock( g_conns_mutex );
+		g_conns.remove( &sconn );
+		mg_mutex_unlock( g_conns_mutex );
+
+		if( g_log_file )
+			sconn.log();
+	}
+	else
+	{
+		string data = responce( HTTP_NOT_FOUND, "" );
+		mg_write( conn, data.c_str(), data.length() );
 	}
 }
 
@@ -340,8 +332,8 @@ bool crest_start(
 		return false;
 	}
 	
-	crest sl;
-	sl.set_auth_file( auth_file );
+	// Prepare and set options
+	crest::set_auth_file( auth_file );
 	
 	g_log_file_path = log_file;
 	if( log_file.length() )
@@ -359,18 +351,17 @@ bool crest_start(
 		snprintf( ports, 64, "%zu,%zus", port, port_ssl ) :
 		snprintf( ports, 64, "%zu", port );
 	
-	// Start server
 	const char* options[] =
 	{
-		"listening_ports"			, ports,
-		"num_threads"				, "20",
-		"ssl_certificate"			, pem_file.c_str(),
+		"listening_ports", ports,
+		"ssl_certificate", pem_file.c_str(),
 		NULL
 	};
 	
 	if( pem_file.empty() )
-		options[ 4 ] = 0;
+		options[ 2 ] = 0;
 	
+	// Start server
 	mg_context* ctx = mg_start( &event_handler, options );
 	if( ctx )
 	{	
@@ -390,6 +381,7 @@ bool crest_start(
 	}
 	else
 	{
+		g_error = mg_error_string();
 		return false;
 	}
 	
@@ -400,6 +392,12 @@ bool crest_start(
 void crest_stop( void )
 {
 	g_shutdown = true;
+}
+
+/**********************************************************************************************/
+const char* crest_version( void )
+{
+	return "0.01 alpha";
 }
 
 

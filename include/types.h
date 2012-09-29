@@ -17,7 +17,8 @@ enum http_method
 	METHOD_DELETE,
 	METHOD_GET,
 	METHOD_POST,
-	METHOD_PUT
+	METHOD_PUT,
+	METHOD_COUNT
 };
 
 /**********************************************************************************************/

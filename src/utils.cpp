@@ -71,13 +71,19 @@ int64_t file_size( const char* path )
 /**********************************************************************************************/
 string responce(
 	http_status		status,
-	const string&	str )
+	const string&	content )
 {
 	char buf[ 24 ];
-	to_string( str.length(), buf );
+	to_string( content.length(), buf );
 	
-	return
-		RESPONCE_PREFIX[ status ] +	buf + "\r\n\r\n" + str;			
+	string str;
+	str.reserve( 85 + content.length() );
+	str  = RESPONCE_PREFIX[ status ];
+	str += buf;
+	str += "\r\n\r\n";
+	str += content;
+	
+	return str;
 }
 
 

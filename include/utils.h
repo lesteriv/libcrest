@@ -20,7 +20,7 @@ int64_t			file_size( const char* path );
 				/** Returns string with status code, 'Content-Length' header and body. */
 string			responce(
 					http_status		status,
-					const string&	str );
+					const string&	content );
 
 				/** Converts integer value to string. */
 				template< typename T >
