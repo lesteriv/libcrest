@@ -12,47 +12,51 @@
 
 
 /**********************************************************************************************/
-#define DELETE( name )			CREST_API( METHOD_DELETE	, false, false, #name )
-#define GET( name )				CREST_API( METHOD_GET		, false, false, #name )
-#define POST( name )			CREST_API( METHOD_POST		, false, false, #name )
-#define PUT( name )				CREST_API( METHOD_PUT		, false, false, #name )
+#define DELETE( name )			CREST_CPP_API( METHOD_DELETE	, false, false, #name )
+#define GET( name )				CREST_CPP_API( METHOD_GET		, false, false, #name )
+#define POST( name )			CREST_CPP_API( METHOD_POST		, false, false, #name )
+#define PUT( name )				CREST_CPP_API( METHOD_PUT		, false, false, #name )
 
 /**********************************************************************************************/
-#define DELETE_ADMIN( name )	CREST_API( METHOD_DELETE	, true, false, #name )
-#define GET_ADMIN( name )		CREST_API( METHOD_GET		, true, false, #name )
-#define POST_ADMIN( name )		CREST_API( METHOD_POST		, true, false, #name )
-#define PUT_ADMIN( name )		CREST_API( METHOD_PUT		, true, false, #name )
+#define DELETE_ADMIN( name )	CREST_CPP_API( METHOD_DELETE	, true, false, #name )
+#define GET_ADMIN( name )		CREST_CPP_API( METHOD_GET		, true, false, #name )
+#define POST_ADMIN( name )		CREST_CPP_API( METHOD_POST		, true, false, #name )
+#define PUT_ADMIN( name )		CREST_CPP_API( METHOD_PUT		, true, false, #name )
 
 /**********************************************************************************************/
-#define GET_READONLY( name )	CREST_API( METHOD_GET		, false, true, #name )
+#define GET_READONLY( name )	CREST_CPP_API( METHOD_GET		, false, true, #name )
 
 
-/**********************************************************************************************/
-CREST_NAMESPACE_START
+				/** Returns error description if crest unable to start,
+				 *  empty string otherwise. */
+const char*		crest_error_string( void );
 
+				/** Returns TRUE if authorization is required for each request. */
+bool			crest_get_auth_enabled( void );
+void			crest_set_auth_enabled( bool value );
 
-/**********************************************************************************************/
-string crest_error_string( void );
+				/** Returns TRUE if all requests are logging into file. */
+bool			crest_get_log_enabled( void );
+void			crest_set_log_enabled( bool value );
 
-/**********************************************************************************************/
-size_t crest_request_count( void );
+				/** Returns total count of processed requests. */
+size_t			crest_request_count( void );
 
-/**********************************************************************************************/
-bool crest_start(
-	const char*		ports		= "8080",
-	const string&	auth_file	= "",
-	const string&	log_file	= "",
-	const string&	pem_file	= "" );
+				/** Starts server, returns FALSE if cannot start. */
+bool			crest_start(
+					const char*	ports			= "8080",
+					const char*	auth_file		= "",
+					const char*	log_file		= "",
+					const char*	pem_file		= "",
+					bool		auth_enabled	= true,
+					bool		log_enabled		= true );
 
-/**********************************************************************************************/
-void crest_stop( void );
+				/** Stops running server. */
+void			crest_stop( void );
 
-/**********************************************************************************************/
-const char* crest_version( void );
+				/** Returns version of library. */
+const char*		crest_version( void );
 
-
-/**********************************************************************************************/
-CREST_NAMESPACE_END
 
 /**********************************************************************************************/
 using namespace crest;

@@ -11,9 +11,6 @@
 // CREST
 #include "../include/crest.h"
 
-/**********************************************************************************************/
-CREST_NAMESPACE_START
-
 
 //////////////////////////////////////////////////////////////////////////
 // static data
@@ -21,9 +18,11 @@ CREST_NAMESPACE_START
 
 
 /**********************************************************************************************/
+static bool					g_auth_enabled		= false;
 static list<connection*>	g_conns;
 static mg_mutex				g_conns_mutex		= mg_mutex_create();
 static string				g_error;
+static bool					g_log_enabled		= false;
 static FILE*				g_log_file			= 0;
 static string				g_log_file_path;
 static mg_mutex				g_log_mutex			= mg_mutex_create();
@@ -168,22 +167,26 @@ struct sl_connection : public connection
 	}
 };
 
-/**********************************************************************************************/
-class crest
-{
-	public://////////////////////////////////////////////////////////////////////////
 
-// This class API:		
-		
-	// ---------------------
-	// Methods
-	  
-	static void set_auth_file( const string& path )
+/**********************************************************************************************/
+namespace crest
+{
+	class crest
 	{
-		auth_manager::instance().file_ = path;
-		auth_manager::instance().load();
-	}
-};
+		public://////////////////////////////////////////////////////////////////////////
+
+	// This class API:		
+
+		// ---------------------
+		// Methods
+
+		static void set_auth_file( const char* path )
+		{
+			auth_manager::instance().file_ = path ? path : "";
+			auth_manager::instance().load();
+		}
+	};
+}
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -290,7 +293,7 @@ static void event_handler( mg_connection* conn )
 		g_conns.remove( &sconn );
 		mg_mutex_unlock( g_conns_mutex );
 
-		if( g_log_file )
+		if( g_log_file && g_log_enabled )
 			sconn.log();
 	}
 	else
@@ -307,9 +310,33 @@ static void event_handler( mg_connection* conn )
 
 
 /**********************************************************************************************/
-string crest_error_string( void )
+const char* crest_error_string( void )
 {
-	return g_error;
+	return g_error.c_str();
+}
+
+/**********************************************************************************************/
+bool crest_get_auth_enabled( void )
+{
+	return g_auth_enabled;
+}
+
+/**********************************************************************************************/
+void crest_set_auth_enabled( bool value )
+{
+	g_auth_enabled = value;
+}
+
+/**********************************************************************************************/
+bool crest_get_log_enabled( void )
+{
+	return g_log_enabled;
+}
+
+/**********************************************************************************************/
+void crest_set_log_enabled( bool value )
+{
+	g_log_enabled = value;
 }
 
 /**********************************************************************************************/
@@ -320,10 +347,12 @@ size_t crest_request_count( void )
 
 /**********************************************************************************************/
 bool crest_start(
-	const char*		ports,
-	const string&	auth_file,
-	const string&	log_file,
-	const string&	pem_file )
+	const char*	ports,
+	const char*	auth_file,
+	const char*	log_file,
+	const char*	pem_file,
+	bool		auth_enabled,
+	bool		log_enabled )
 {
 	if( g_time_start )
 	{
@@ -331,14 +360,18 @@ bool crest_start(
 		return false;
 	}
 	
-	// Prepare and set options
-	crest::set_auth_file( auth_file );
+	// Set global flags
+	g_auth_enabled = auth_enabled;
+	g_log_enabled = log_enabled;
 	
-	g_log_file_path = log_file;
-	if( log_file.length() )
+	// Prepare and set options
+	crest::crest::set_auth_file( auth_file );
+	
+	g_log_file_path = log_file ? log_file : "";
+	if( g_log_file_path.length() )
 	{
-		size_t len = log_file.length();
-		if( len < 4 || strcmp( log_file.c_str() + len - 4, ".log" ) )
+		size_t len = g_log_file_path.length();
+		if( len < 4 || strcmp( g_log_file_path.c_str() + len - 4, ".log" ) )
 			g_log_file_path += ".log";
 		
 		g_log_file = fopen( g_log_file_path.c_str(), "at" );
@@ -346,7 +379,7 @@ bool crest_start(
 	}
 	
 	// Start server
-	mg_context* ctx = mg_start( &event_handler, ports, pem_file.c_str() );
+	mg_context* ctx = mg_start( &event_handler, ports, pem_file );
 	if( ctx )
 	{	
 		g_time_start = time( NULL );
@@ -383,7 +416,3 @@ const char* crest_version( void )
 {
 	return "0.01 alpha";
 }
-
-
-/**********************************************************************************************/
-CREST_NAMESPACE_END

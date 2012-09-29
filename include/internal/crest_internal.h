@@ -36,7 +36,6 @@ struct mg_connection;
 #include "../connection.h"
 #include "../utils.h"
 
-
 /**********************************************************************************************/
 CREST_NAMESPACE_START
 	
@@ -56,7 +55,7 @@ struct crest_register_api
 };
 
 /**********************************************************************************************/
-#define CREST_API( method, admin, ro, name ) \
+#define CREST_CPP_API( method, admin, ro, name ) \
 	static void JOIN( f, __LINE__ )( connection& ); \
 	static crest_register_api JOIN( r, __LINE__ )( method, admin, ro, name, JOIN( f, __LINE__ ) ); \
 	static void JOIN( f, __LINE__ )

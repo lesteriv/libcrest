@@ -67,5 +67,5 @@ GET( proc/{pid}/limits )( connection& conn )
 int main( void )
 {
 	if( !crest_start( "8080" ) )
-		fputs( crest_error_string().c_str(), stdout );
+		fputs( crest_error_string(), stdout );
 }
