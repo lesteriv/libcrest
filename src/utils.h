@@ -7,9 +7,6 @@
 
 #pragma once
 
-// STD
-#include <limits>
-
 
 /**********************************************************************************************/
 // Functions
@@ -22,8 +19,9 @@ size_t			file_size( const char* path );
 
 				/** Returns string with status code, 'Content-Length' header and body. */
 string			responce(
-					crest_http_status		status,
-					const string&	content );
+					crest_http_status	status,
+					const char*			content,
+					size_t				len );
 
 				/** The same as strdup. */
 char*			crest_strdup( const char* str );
@@ -45,8 +43,7 @@ void			to_string( T value, char* buf )
 					}
 					while( value );
 
-					// Workaround to fix GCC warning
-					if( -1 * ( std::numeric_limits<T>::is_signed ? 1 : 0 ) * tmp > 0 )
+					if( tmp < 0 )
 						*ptr1++ = '-';
 
 					*ptr1-- = '\0';

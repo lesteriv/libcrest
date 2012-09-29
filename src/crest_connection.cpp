@@ -78,10 +78,10 @@ size_t crest_connection::read( char* buf, size_t len )
 
 /**********************************************************************************************/
 void crest_connection::respond(
-	crest_http_status		rc,
-	const string&	msg )
+	crest_http_status	rc,
+	const string&		msg )
 {
-	write( responce( rc, msg ) );
+	write( responce( rc, msg.c_str(), msg.length() ) );
 }
 
 /**********************************************************************************************/

@@ -7,7 +7,7 @@
 
 // STD
 #include <sys/stat.h>
-#include <cstdio>
+#include <stdio.h>
 
 // CREST
 #include "../include/crest.h"
@@ -69,14 +69,15 @@ size_t file_size( const char* path )
 
 /**********************************************************************************************/
 string responce(
-	crest_http_status		status,
-	const string&	content )
+	crest_http_status	status,
+	const char*			content,
+	size_t				len )
 {
 	char buf[ 24 ];
-	to_string( content.length(), buf );
+	to_string( (int) len, buf );
 	
 	string str;
-	str.reserve( 85 + content.length() );
+	str.reserve( 85 + len );
 	str  = RESPONCE_PREFIX[ status ];
 	str += buf;
 	str += "\r\n\r\n";

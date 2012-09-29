@@ -8,7 +8,7 @@
 #pragma once
 
 // STD
-#include <cstring>
+#include <string.h>
 
 // CREST
 #include "internal/crest_handler_register.h"
