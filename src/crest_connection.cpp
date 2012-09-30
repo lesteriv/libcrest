@@ -14,15 +14,6 @@
 
 
 //////////////////////////////////////////////////////////////////////////
-// static data
-//////////////////////////////////////////////////////////////////////////
-
-
-/**********************************************************************************************/
-static const string EMPTY_STRING;
-
-
-//////////////////////////////////////////////////////////////////////////
 // properties
 //////////////////////////////////////////////////////////////////////////
 
@@ -40,28 +31,27 @@ const char* crest_connection::get_http_header( const char* name )
 }
 
 /**********************************************************************************************/
-const string& crest_connection::get_path_parameter( size_t index )
+const char* crest_connection::get_path_parameter( size_t index )
 {
-	return path_params_.size() > index ?
-		path_params_[ index ] :
-		EMPTY_STRING;
+	return path_params_.count_ > index ?
+		path_params_.items_[ index ] :
+		"";
 }
 
 /**********************************************************************************************/
-string crest_connection::get_query_parameter( const char* name )
+char* crest_connection::get_query_parameter( const char* name )
 {
-	string res;
-	
 	const char* qs = mg_get_request_info( conn_ )->query_string;
 	if( !qs )
-		return res;
+		return 0;
 	
 	size_t len = strlen( qs );
-	vector<char> buf( len + 1 );
-	if( mg_get_var( qs, strlen( qs ), name, &buf[ 0 ], len + 1 ) )
-		res.assign( &buf[ 0 ] );
-		
-	return res;
+	char* buf = (char*) malloc( len + 1 );
+	if( mg_get_var( qs, strlen( qs ), name, &buf[ 0 ], len + 1 ) >= 0 )
+		return buf;
+
+	free( buf );
+	return 0;
 }
 
 
@@ -91,9 +81,9 @@ void crest_connection::respond(
 }
 
 /**********************************************************************************************/
-void crest_connection::send_file( const string& path )
+void crest_connection::send_file( const char* path )
 {
-	FILE* f = fopen( path.c_str(), "rb" );
+	FILE* f = fopen( path, "rb" );
 	if( !f )
 	{
 		respond( CREST_HTTP_INTERNAL_ERROR, "Unable to open file", 19 );
@@ -102,12 +92,12 @@ void crest_connection::send_file( const string& path )
 
 	fseek( f, 0, SEEK_END );
 	
-	char buf[ 24 ];
-	to_string( ftell( f ), buf );
-	string pref = "HTTP/1.1 200 OK\r\nContent-Length: ";
-	pref += buf;
-	pref += "\r\n\r\n";
-	mg_write( conn_, pref.c_str(), pref.length() );
+	char* header;
+	size_t header_len;
+	create_responce_header( header, header_len, CREST_HTTP_OK, ftell( f ) );
+	
+	mg_write( conn_, header, header_len );
+	free( header );
 
 	fseek( f, 0, SEEK_SET );
 	
@@ -130,4 +120,16 @@ void crest_connection::send_file( const string& path )
 int crest_connection::write( const char* buf, size_t len )
 {
 	return mg_write( conn_, buf, len );
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+// internal methods
+//////////////////////////////////////////////////////////////////////////
+
+
+/**********************************************************************************************/
+crest_connection_internal::~crest_connection_internal( void )
+{
+	free( path_params_.items_ );
 }

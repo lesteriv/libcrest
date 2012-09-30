@@ -8,3 +8,4 @@
 # release_32 configuration
 # release_64 configuration
 # examples configuration
+# tests configuration

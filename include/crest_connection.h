@@ -31,10 +31,10 @@ class crest_connection : public crest_connection_internal
 
 								/** Returns value of parameter passed via url,
 								 *  see examples. */
-		const string&			get_path_parameter( size_t index );
+		const char*				get_path_parameter( size_t index );
 		
 								/** Returns value of parameter passed via query string. */
-		string					get_query_parameter( const char* name );
+		char*					get_query_parameter( const char* name );
 		
 		
 	public://////////////////////////////////////////////////////////////////////////
@@ -54,7 +54,7 @@ class crest_connection : public crest_connection_internal
 
 								/** Sends content of file, or respond HTTP_BAD_REQUEST if
 								 *  file doesn't exist or not readable. */
-		void					send_file( const string& path );
+		void					send_file( const char* path );
 		
 								/** Sends data to the client. Returns
 								 *  0 when the connection has been closed,

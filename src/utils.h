@@ -11,7 +11,7 @@
 /**********************************************************************************************/
 // Functions
 	
-				/** Returns string with status code, 'Content-Length' header and body. */
+				/** Returns string with status code, 'Content-Length' header and content. */
 void			create_responce(
 					char*&				out,
 					size_t&				out_len,
@@ -19,8 +19,17 @@ void			create_responce(
 					const char*			content,
 					size_t				content_len );
 
+				/** Returns string with status code and 'Content-Length' header. */
+void			create_responce_header(
+					char*&				out,
+					size_t&				out_len,
+					crest_http_status	status,
+					size_t				content_len );
+
 				/** The same as strdup. */
-char*			crest_strdup( const char* str );
+char*			crest_strdup(
+					const char*			str,
+					int					len = -1 );
 
 				/** Returns TRUE if this file exists. */
 bool			file_exists( const char* path );

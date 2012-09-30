@@ -18,6 +18,18 @@ using std::string;
 
 
 /**********************************************************************************************/
+static string query_parameter(
+	crest_connection&	conn,
+	const char*			name )
+{
+	char* value = conn.get_query_parameter( name );
+	string res = value ? value : "";
+	free( value );
+	
+	return res;
+}
+
+/**********************************************************************************************/
 static void send_output(
 	crest_connection&	conn,
 	string				cmd )
@@ -40,31 +52,31 @@ GET( proc )( crest_connection& conn )
 /**********************************************************************************************/
 POST( proc )( crest_connection& conn )
 {
-	send_output( conn, conn.get_query_parameter( "cmd" ) + " &" );
+	send_output( conn, query_parameter( conn, "cmd" ) + " &" );
 }
 
 /**********************************************************************************************/
 GET( proc/{pid} )( crest_connection& conn )
 {
-	send_output( conn, "cat /proc/" + conn.get_path_parameter( 1 ) + "/status" );
+	send_output( conn, string( "cat /proc/" ) + conn.get_path_parameter( 1 ) + "/status" );
 }
 
 /**********************************************************************************************/
 DELETE( proc/{pid} )( crest_connection& conn )
 {
-	send_output( conn, "kill " + conn.get_path_parameter( 1 ) );
+	send_output( conn, string( "kill " ) + conn.get_path_parameter( 1 ) );
 }
 
 /**********************************************************************************************/
 GET( proc/{pid}/cmdline )( crest_connection& conn )
 {
-	send_output( conn, "cat /proc/" + conn.get_path_parameter( 1 ) + "/cmdline" );
+	send_output( conn, string( "cat /proc/" ) + conn.get_path_parameter( 1 ) + "/cmdline" );
 }
 
 /**********************************************************************************************/
 GET( proc/{pid}/limits )( crest_connection& conn )
 {
-	send_output( conn, "cat /proc/" + conn.get_path_parameter( 1 ) + "/limits" );
+	send_output( conn, string( "cat /proc/" ) + conn.get_path_parameter( 1 ) + "/limits" );
 }
 
 

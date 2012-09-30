@@ -41,7 +41,7 @@ static const char* const RESPONCE_PREFIX[ CREST_HTTP_STATUS_COUNT ] =
 /**********************************************************************************************/
 static const size_t RESPONCE_PREFIX_SIZE[ CREST_HTTP_STATUS_COUNT ] =
 {
-	35,	40,	41,	44,	45,	42,	51,	48,	53
+	33,	38,	39,	42,	43,	40,	49,	46,	51
 };
 
 
@@ -61,16 +61,16 @@ void create_responce(
 	size_t plen = RESPONCE_PREFIX_SIZE[ status ];
 	
 	out = (char*) malloc( content_len + 85 );
-	memccpy( out, RESPONCE_PREFIX[ status ], plen, 1 );
+	memcpy( out, RESPONCE_PREFIX[ status ], plen );
 	
 	char* str = out + plen;
 	to_string( (int) content_len, str );
-	str = (char*) memchr( str, 0, 1 );
+	str = (char*) memchr( str, 0, 24 );
 
-	*str++ = 'r';
-	*str++ = 'n';
-	*str++ = 'r';
-	*str++ = 'n';
+	*str++ = '\r';
+	*str++ = '\n';
+	*str++ = '\r';
+	*str++ = '\n';
 
 	memcpy( str, content, content_len );
 	str[ content_len ] = 0;
@@ -78,15 +78,43 @@ void create_responce(
 }
 
 /**********************************************************************************************/
-char* crest_strdup( const char* str )
+void create_responce_header(
+	char*&				out,
+	size_t&				out_len,
+	crest_http_status	status,
+	size_t				content_len )
+{
+	size_t plen = RESPONCE_PREFIX_SIZE[ status ];
+	
+	out = (char*) malloc( 85 );
+	memcpy( out, RESPONCE_PREFIX[ status ], plen );
+	
+	char* str = out + plen;
+	to_string( (int) content_len, str );
+	str = (char*) memchr( str, 0, 24 );
+
+	*str++ = '\r';
+	*str++ = '\n';
+	*str++ = '\r';
+	*str++ = '\n';
+
+	out_len = str - out;
+}
+
+/**********************************************************************************************/
+char* crest_strdup( 
+	const char* str,
+	int			len )
 {
 	if( !str )
 		return 0;
 
-	size_t n = strlen( str );
-	char* res = (char*) malloc( n + 1 );
-	memcpy( res, str, n );
-	res[ n ] = 0;
+	if( len < 0 )
+		len = strlen( str );
+	
+	char* res = (char*) malloc( len + 1 );
+	memcpy( res, str, len );
+	res[ len ] = 0;
 	
 	return res;
 }

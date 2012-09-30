@@ -46,6 +46,14 @@ CND_ARTIFACT_PATH_examples=dist/examples/GNU-Linux-x86/proc
 CND_PACKAGE_DIR_examples=dist/examples/GNU-Linux-x86/package
 CND_PACKAGE_NAME_examples=libcrest.tar
 CND_PACKAGE_PATH_examples=dist/examples/GNU-Linux-x86/package/libcrest.tar
+# tests configuration
+CND_PLATFORM_tests=GNU-Linux-x86
+CND_ARTIFACT_DIR_tests=dist/tests/GNU-Linux-x86
+CND_ARTIFACT_NAME_tests=proc
+CND_ARTIFACT_PATH_tests=dist/tests/GNU-Linux-x86/proc
+CND_PACKAGE_DIR_tests=dist/tests/GNU-Linux-x86/package
+CND_PACKAGE_NAME_tests=libcrest.tar
+CND_PACKAGE_PATH_tests=dist/tests/GNU-Linux-x86/package/libcrest.tar
 #
 # include compiler specific variables
 #

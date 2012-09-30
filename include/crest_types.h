@@ -7,6 +7,9 @@
 
 #pragma once
 
+// CREST
+#include "internal/crest_types_internal.h"
+
 
 /**********************************************************************************************/
 enum crest_http_method

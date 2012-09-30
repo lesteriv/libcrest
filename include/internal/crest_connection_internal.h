@@ -7,19 +7,11 @@
 
 #pragma once
 
-// STD
-#include <string>
-#include <vector>
-
 // CREST
 #include "../crest_types.h"
 
 /**********************************************************************************************/
 struct mg_connection;
-
-/**********************************************************************************************/
-using std::string;
-using std::vector;
 
 
 /**********************************************************************************************/
@@ -29,6 +21,10 @@ class crest_connection_internal
 {
 	protected://////////////////////////////////////////////////////////////////////////
 		
+								~crest_connection_internal( void );
+	
+	protected://////////////////////////////////////////////////////////////////////////
+		
 // References
 		
 		mg_connection*			conn_;
@@ -36,5 +32,5 @@ class crest_connection_internal
 
 // Properties
 
-		vector<string>			path_params_;
+		crest_string_array		path_params_;
 };

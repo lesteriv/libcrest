@@ -18,6 +18,7 @@ struct crest_user
 {
 	int		flags_;
 	char*	name_;
+	size_t	name_len_;
 	char	password_[ 16 ];
 };
 
@@ -27,19 +28,15 @@ struct crest_user
 //
 class crest_auth_manager_internal
 {
-	friend class crest;
-
 	protected://////////////////////////////////////////////////////////////////////////
 	
 							crest_auth_manager_internal( void );
-							~crest_auth_manager_internal( void );
-	
+
 	protected://////////////////////////////////////////////////////////////////////////
 		
 	// ---------------------
 	// Internal methods		
 		
-		void				clean( void );
 		crest_user*			create_user( const char* name );
 		crest_user*			find_user( const char* name ) const;
 		void				flush( void );

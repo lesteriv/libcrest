@@ -7,7 +7,7 @@
 
 // STD
 #include <list>
-#include <map>
+#include <string>
 
 // MONGOOSE
 #include "../third/mongoose/mongoose.h"
@@ -18,7 +18,7 @@
 
 /**********************************************************************************************/
 using std::list;
-using std::map;
+using std::string;
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -47,52 +47,72 @@ static time_t					g_time_start		= 0;
 
 
 /**********************************************************************************************/
-struct resource_handler
+struct resource
 {
 	bool					admin_;
-	crest_api_callback_t	func_;
-	bool					ro_;
+	crest_api_callback_t	handler_;
+	crest_string_array		keys_;
+	bool					read_only_;
 };
 
 /**********************************************************************************************/
-struct resource_key
+struct resource_array
 {
-	resource_key( void ) {}
-	resource_key( const resource_key& key )	{ keys_ = key.keys_; }
-	
-	bool operator<( const resource_key& v ) const
+	resource_array( void )
 	{
-		size_t count = keys_.size();
-		if( v.keys_.size() > count )
-			return true;
-		else if( v.keys_.size() < count )
-			return false;
-		
-		for( size_t i = 0 ; i < count ; ++i )
-		{
-			if( keys_[ i ].empty() || v.keys_[ i ].empty() || keys_[ i ] == v.keys_[ i ] )
-				continue;
-			
-			return keys_[ i ] < v.keys_[ i ];
-		}
-		
-		return false;
+		count_ = 0;
+		items_ = 0;
+	}
+	
+	size_t		count_;
+	resource*	items_;
+};
+
+/**********************************************************************************************/
+static int compare_resources( const void* a, const void* b )
+{
+	const resource* ra = (const resource*) a;
+	const resource* rb = (const resource*) b;
+	
+	const crest_string_array& ka = ra->keys_;
+	const crest_string_array& kb = rb->keys_;
+	
+	if( ka.count_ < kb.count_ )
+		return -1;
+	else if( ka.count_ > kb.count_ )
+		return 1;
+	
+	for( size_t i = 0 ; i < ka.count_ ; ++i )
+	{
+		// Skip {key} values
+		if( !ka.items_[ i ] || !kb.items_[ i ] )
+			continue;
+
+		int c = strcmp( ka.items_[ i ], kb.items_[ i ] );
+		if( c )
+			return c;
 	}
 
-	vector<string> keys_;
-};
+	return 0;
+}
+
+/**********************************************************************************************/
+inline void sort_resource_array( resource_array& arr )
+{
+	qsort( arr.items_, arr.count_, sizeof( resource ), compare_resources );
+}
 
 /**********************************************************************************************/
 struct sl_connection : public crest_connection
 {
 	sl_connection( 
-		mg_connection*	conn,
-		vector<string>&	params )
+		mg_connection*		conn,
+		crest_string_array	params )
 	{
 		// Properties
 		
 		conn_ = conn;
-		path_params_.swap( params );
+		path_params_ = params;
 	}
 	
 	void log( void )
@@ -176,32 +196,6 @@ struct sl_connection : public crest_connection
 	}
 };
 
-/**********************************************************************************************/
-class crest
-{
-	public://////////////////////////////////////////////////////////////////////////
-
-// This class API:		
-
-	// ---------------------
-	// Methods
-
-	static void clean( void )
-	{
-		crest_auth_manager::instance().clean();
-	}
-	  
-	static void set_auth_file( const char* path )
-	{
-		crest_auth_manager& mgr = crest_auth_manager::instance();
-		
-		free( mgr.auth_file_ );
-		mgr.auth_file_ = crest_strdup( path );
-		
-		mgr.load();
-	}
-};
-
 
 //////////////////////////////////////////////////////////////////////////
 // helper functions
@@ -209,23 +203,32 @@ class crest
 
 
 /**********************************************************************************************/
-static vector<string> parse_resource_name( const char* url )
+static crest_string_array parse_resource_name( 
+	const char* url,
+	size_t		len )
 {
-	vector<string> res;
+	crest_string_array res;
+	res.items_ = (char**) malloc( len + 1 + 16 * sizeof * res.items_ );
+	res.count_ = 0;
 	
-	while( *url )
+	char* curl = (char*) res.items_ + 16 * sizeof * res.items_;
+	memcpy( curl, url, len + 1 );
+	
+	while( *curl )
 	{
-		const char* sp = strchr( url, '/' );
+		char* sp = strchr( curl, '/' );
 		if( sp )
 		{
-			res.resize( res.size() + 1 );
-			res.back().assign( url, sp - url );
+			res.items_[ res.count_++ ] = curl;
+			*sp = 0;
+			curl = sp + 1;
 			
-			url = sp + 1;
+			if( res.count_ >= 16 )
+				break;
 		}
 		else
 		{
-			res.push_back( url );
+			res.items_[ res.count_++ ] = curl;
 			break;
 		}
 	}
@@ -234,34 +237,48 @@ static vector<string> parse_resource_name( const char* url )
 }
 
 /**********************************************************************************************/
-static map<resource_key,resource_handler>& resources( crest_http_method method )
+static resource_array& resources( int method )
 {
-	static map<resource_key,resource_handler> r[ CREST_METHOD_COUNT ];
+	static resource_array r[ CREST_METHOD_COUNT ];
 	return r[ method ];
 }
 
 /**********************************************************************************************/
 crest_handler_register::crest_handler_register(
 	crest_http_method	 method,
-	const char*			 resource,
+	const char*			 name,
 	crest_api_callback_t func,
 	bool				 for_admin_only,
 	bool			 	 read_only )
 {
-	resource_key key;
-	key.keys_ = parse_resource_name( resource );
+	resource* rs;
 	
-	size_t count = key.keys_.size();
-	for( size_t i = 0 ; i < count ; ++i )
+	resource_array& arr = resources( method );
+	if( !arr.count_ )
 	{
-		if( key.keys_[ i ][ 0 ] == '{' )
-			key.keys_[ i ].clear();
+		arr.count_ = 1;
+		arr.items_ = (resource*) malloc( sizeof( resource ) );
+		rs = arr.items_;
+	}
+	else
+	{
+		arr.count_++;
+		arr.items_ = (resource*) realloc( arr.items_, sizeof( resource ) * arr.count_ );
+		rs = arr.items_ + arr.count_ - 1;
 	}
 	
-	resource_handler& hnd  = resources( method )[ key ];
-	hnd.admin_ = for_admin_only;
-	hnd.func_  = func;
-	hnd.ro_    = read_only;
+	rs->keys_ = parse_resource_name( name, strlen( name ) );
+	
+	size_t count = rs->keys_.count_;
+	for( size_t i = 0 ; i < count ; ++i )
+	{
+		if( rs->keys_.items_[ i ][ 0 ] == '{' )
+			rs->keys_.items_[ i ] = 0;
+	}
+	
+	rs->admin_		= for_admin_only;
+	rs->handler_	= func;
+	rs->read_only_	= read_only;
 }
 
 /**********************************************************************************************/
@@ -293,11 +310,13 @@ static void event_handler( mg_connection* conn )
 
 	// Resource
 
-	resource_key key;
-	key.keys_ = parse_resource_name( request->uri + 1 );
+	resource_array& arr = resources( method );
+	
+	resource key;
+	key.keys_ = parse_resource_name( request->uri + 1, strlen( request->uri + 1 ) );
+	resource* it = (resource*) bsearch( &key, arr.items_, arr.count_, sizeof( resource ), compare_resources );
 
-	map<resource_key,resource_handler>::const_iterator it = resources( method ).find( key );
-	if( it != resources( method ).end() )
+	if( it )
 	{
 		sl_connection sconn( conn, key.keys_ );
 
@@ -305,7 +324,7 @@ static void event_handler( mg_connection* conn )
 		g_conns.push_back( &sconn );
 		mg_mutex_unlock( g_conns_mutex );
 
-		(*it->second.func_)( sconn );
+		(*it->handler_)( sconn );
 
 		mg_mutex_lock( g_conns_mutex );
 		g_conns.remove( &sconn );
@@ -382,12 +401,16 @@ bool crest_start(
 		return false;
 	}
 	
+	// Prepare resources
+	for( size_t i = 0 ; i < CREST_METHOD_COUNT ; ++i )
+		sort_resource_array( resources( i ) );
+	
 	// Set global flags
 	g_auth_enabled = auth_enabled;
 	g_log_enabled = log_enabled;
 	
 	// Prepare and set options
-	crest::set_auth_file( auth_file );
+	the_crest_auth_manager.set_auth_file( auth_file );
 	
 	g_log_file_path = log_file ? log_file : "";
 	if( g_log_file_path.length() )
@@ -412,7 +435,7 @@ bool crest_start(
 		g_time_start = 0;
 		mg_stop( ctx );
 		
-		crest::clean();
+		the_crest_auth_manager.clean();
 		
 		if( g_log_file )
 		{
