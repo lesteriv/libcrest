@@ -55,18 +55,11 @@ void add_item(
 	crest_string_array&	arr,
 	char*				str )
 {
-	if( !arr.count_ )
-	{
-		arr.count_ = 1;
-		arr.items_ = (char**) malloc( sizeof( char* ) );
-		arr.items_[ 0 ] = str;
-	}
-	else
-	{
-		arr.count_++;
-		arr.items_ = (char**) realloc( arr.items_, sizeof( char* ) * arr.count_ );
-		arr.items_[ arr.count_ - 1 ] = str;
-	}	
+	arr.items_ = ( ++arr.count_ == 1 ) ?
+		(char**) malloc( sizeof( char* ) ) :
+		(char**) realloc( arr.items_, sizeof( char* ) * arr.count_ );
+
+	arr.items_[ arr.count_ - 1 ] = str;
 }
 
 /**********************************************************************************************/
@@ -77,19 +70,17 @@ void create_responce(
 	const char*			content,
 	size_t				content_len )
 {
-	size_t plen = RESPONCE_PREFIX_SIZE[ status ];
+	size_t pref_len = RESPONCE_PREFIX_SIZE[ status ];
 	
 	out = (char*) malloc( content_len + 85 );
-	memcpy( out, RESPONCE_PREFIX[ status ], plen );
+	memcpy( out, RESPONCE_PREFIX[ status ], pref_len );
 	
-	char* str = out + plen;
+	char* str = out + pref_len;
 	to_string( (int) content_len, str );
 	str = (char*) memchr( str, 0, 24 );
 
-	*str++ = '\r';
-	*str++ = '\n';
-	*str++ = '\r';
-	*str++ = '\n';
+	*str++ = '\r'; *str++ = '\n';
+	*str++ = '\r'; *str++ = '\n';
 
 	memcpy( str, content, content_len );
 	str[ content_len ] = 0;
@@ -112,11 +103,10 @@ void create_responce_header(
 	to_string( (int) content_len, str );
 	str = (char*) memchr( str, 0, 24 );
 
-	*str++ = '\r';
-	*str++ = '\n';
-	*str++ = '\r';
-	*str++ = '\n';
-
+	*str++ = '\r'; *str++ = '\n';
+	*str++ = '\r'; *str++ = '\n';
+	*str = 0;
+	
 	out_len = str - out;
 }
 

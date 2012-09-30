@@ -89,7 +89,7 @@ void crest_connection::send_file( const char* path )
 	FILE* f = fopen( path, "rb" );
 	if( !f )
 	{
-		respond( CREST_HTTP_INTERNAL_ERROR, "Unable to open file", 19 );
+		mg_write( conn_, "HTTP/1.1 404 Not Found\r\nContent-Length: 19\r\n\r\bUnable to open file", 71 );
 		return;
 	}
 
@@ -134,8 +134,10 @@ int crest_connection::write( const char* buf, size_t len )
 /**********************************************************************************************/
 crest_connection_internal::~crest_connection_internal( void )
 {
+	// Free path params
 	free( path_params_.items_ );
-	
+
+	// Free query params
 	for( size_t i = 0 ; i < query_params_.count_ ; ++i )
 		free( query_params_.items_[ i ] );
 		
