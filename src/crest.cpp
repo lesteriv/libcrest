@@ -30,7 +30,7 @@ using std::string;
 static bool						g_auth_enabled		= false;
 static list<crest_connection*>	g_conns;
 static mg_mutex					g_conns_mutex		= mg_mutex_create();
-static string					g_error;
+static char*					g_error				= 0;
 static bool						g_log_enabled		= false;
 static FILE*					g_log_file			= 0;
 static char*					g_log_file_path		= 0;
@@ -363,7 +363,7 @@ static void event_handler( mg_connection* conn )
 /**********************************************************************************************/
 const char* crest_error_string( void )
 {
-	return g_error.c_str();
+	return g_error;
 }
 
 /**********************************************************************************************/
@@ -407,7 +407,9 @@ bool crest_start(
 {
 	if( g_time_start )
 	{
-		g_error = "Server already running";
+		free( g_error );
+		g_error = crest_strdup( "Server already running" );
+		
 		return false;
 	}
 	
@@ -463,7 +465,9 @@ bool crest_start(
 	}
 	else
 	{
-		g_error = mg_error_string();
+		free( g_error );
+		g_error = crest_strdup( mg_error_string() );
+		
 		return false;
 	}
 	
