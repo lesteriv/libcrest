@@ -7,7 +7,6 @@
 
 // STD
 #include <list>
-#include <string>
 
 // MONGOOSE
 #include "../third/mongoose/mongoose.h"
@@ -18,7 +17,6 @@
 
 /**********************************************************************************************/
 using std::list;
-using std::string;
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -122,51 +120,27 @@ struct sl_connection : public crest_connection
 		
 		char stime[ 32 ];
 		tm* lt = localtime( &t );
-		strftime( stime, 32, "%y-%m-%d %H:%M:%S ", lt );
+		strftime( stime, 32, "%y-%m-%d %H:%M:%S", lt );
 
-		char host[ 64 ];
-		snprintf( host, 64, " from %d.%d.%d.%d:%d",
+		char buf[ 128 ];
+		int blen = snprintf( 
+			buf, 127, "%s %-6s %-40s from %d.%d.%d.%d:%d\n",
+			stime, request->request_method, request->uri,
 			int( request->remote_ip >> 24 ),
 			int( ( request->remote_ip >> 16 ) & 0xFF ),
 			int( ( request->remote_ip >> 8  ) & 0xFF ),
 			int( request->remote_ip & 0xFF ),
 			int( request->remote_port ) );
 
-		string log;
-		log.reserve( 128 );
-		log  = stime;
-		log += request->request_method;
-
-		int count = 6 - strlen( request->request_method );
-		for( int i = 0 ; i < count ; ++i )
-			log.push_back( ' ' );
-
-		log.push_back( ' ' );
-		log += request->uri;
-
-		if( log.length() < 63 )
-			log.append( 63 - log.length(), ' ' );
-
-		log += host;
-
-/*		if( request->remote_user )
-		{
-			log += " (";
-			log += request->remote_user;
-			log.push_back( ')' );
-		}*/
-
-		log.push_back( '\n' );
-
 		mg_mutex_lock( g_log_mutex ); // ------------------------
 
 		if( g_log_file_path && *g_log_file_path )
 		{
-			fputs( log.c_str(), g_log_file );
+			fputs( buf, g_log_file );
 			fflush( g_log_file );
 
 			// Move too big log file
-			g_log_size += log.length();
+			g_log_size += blen;
 			if( g_log_size > 100000 )
 			{
 				size_t glen = strlen( g_log_file_path );
