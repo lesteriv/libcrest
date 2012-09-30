@@ -34,7 +34,7 @@ class crest_connection : public crest_connection_internal
 		const char*				get_path_parameter( size_t index );
 		
 								/** Returns value of parameter passed via query string. */
-		char*					get_query_parameter( const char* name );
+		const char*				get_query_parameter( const char* name );
 		
 		
 	public://////////////////////////////////////////////////////////////////////////

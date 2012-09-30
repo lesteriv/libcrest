@@ -18,21 +18,9 @@ using std::string;
 
 
 /**********************************************************************************************/
-static string query_parameter(
-	crest_connection&	conn,
-	const char*			name )
-{
-	char* value = conn.get_query_parameter( name );
-	string res = value ? value : "";
-	free( value );
-	
-	return res;
-}
-
-/**********************************************************************************************/
 static void send_output(
 	crest_connection&	conn,
-	string				cmd )
+	const string&		cmd )
 {
 	char file[ 64 ];
 	snprintf( file, 64, "/tmp/proc_out_%ld", (long) &conn );
@@ -52,7 +40,7 @@ GET( proc )( crest_connection& conn )
 /**********************************************************************************************/
 POST( proc )( crest_connection& conn )
 {
-	send_output( conn, query_parameter( conn, "cmd" ) + " &" );
+	send_output( conn, string( conn.get_query_parameter( "cmd" ) ) + " &" );
 }
 
 /**********************************************************************************************/

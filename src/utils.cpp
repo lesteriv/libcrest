@@ -51,6 +51,25 @@ static const size_t RESPONCE_PREFIX_SIZE[ CREST_HTTP_STATUS_COUNT ] =
 
 
 /**********************************************************************************************/
+void add_item(
+	crest_string_array&	arr,
+	char*				str )
+{
+	if( !arr.count_ )
+	{
+		arr.count_ = 1;
+		arr.items_ = (char**) malloc( sizeof( char* ) );
+		arr.items_[ 0 ] = str;
+	}
+	else
+	{
+		arr.count_++;
+		arr.items_ = (char**) realloc( arr.items_, sizeof( char* ) * arr.count_ );
+		arr.items_[ arr.count_ - 1 ] = str;
+	}	
+}
+
+/**********************************************************************************************/
 void create_responce(
 	char*&				out,
 	size_t&				out_len,

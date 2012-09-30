@@ -10,7 +10,12 @@
 
 /**********************************************************************************************/
 // Functions
-	
+
+				/** Adds new item to string array. */
+void			add_item(
+					crest_string_array&	arr,
+					char*				str );
+
 				/** Returns string with status code, 'Content-Length' header and content. */
 void			create_responce(
 					char*&				out,

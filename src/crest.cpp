@@ -33,7 +33,7 @@ static mg_mutex					g_conns_mutex		= mg_mutex_create();
 static string					g_error;
 static bool						g_log_enabled		= false;
 static FILE*					g_log_file			= 0;
-static string					g_log_file_path;
+static char*					g_log_file_path		= 0;
 static mg_mutex					g_log_mutex			= mg_mutex_create();
 static size_t					g_log_size			= 0;
 static size_t					g_request_count		= 0;
@@ -160,7 +160,7 @@ struct sl_connection : public crest_connection
 
 		mg_mutex_lock( g_log_mutex ); // ------------------------
 
-		if( g_log_file_path.length() )
+		if( g_log_file_path && *g_log_file_path )
 		{
 			fputs( log.c_str(), g_log_file );
 			fflush( g_log_file );
@@ -169,26 +169,36 @@ struct sl_connection : public crest_connection
 			g_log_size += log.length();
 			if( g_log_size > 100000 )
 			{
-				string nfile;
-				string rfile = g_log_file_path;
-				rfile.resize( rfile.length() - 4 );
+				size_t glen = strlen( g_log_file_path );
+				
+				char* nfile = 0;
+				char* rfile = crest_strdup( g_log_file_path, glen );
+				rfile[ glen - 4 ] = 0;
 
 				size_t index = 0;
 				while( ++index < 1000 )
 				{
-					char buf[ 32 ];
-					snprintf( buf, 32, "%zu.log", index );				
-					nfile = rfile + buf;
+					char buf[ glen + 32 ];
+					snprintf( buf, glen + 32, "%s%zu.log", rfile, index );				
 					
-					if( !file_exists( nfile.c_str() ) )
+					if( !file_exists( buf ) )
+					{
+						nfile = crest_strdup( buf );
 						break;
+					}
 				}
 
-				fclose( g_log_file );
-				rename( g_log_file_path.c_str(), nfile.c_str() );
+				if( nfile )
+				{
+					fclose( g_log_file );
+					rename( g_log_file_path, nfile );
 
-				g_log_file = fopen( g_log_file_path.c_str(), "at" );
-				g_log_size = file_size( g_log_file_path.c_str() );				
+					g_log_file = fopen( g_log_file_path, "at" );
+					g_log_size = file_size( g_log_file_path );				
+				}
+				
+				free( nfile );
+				free( rfile );
 			}
 		}
 
@@ -412,15 +422,20 @@ bool crest_start(
 	// Prepare and set options
 	the_crest_auth_manager.set_auth_file( auth_file );
 	
-	g_log_file_path = log_file ? log_file : "";
-	if( g_log_file_path.length() )
+	if( log_file && *log_file )
+		g_log_file_path = crest_strdup( log_file );
+	
+	if( g_log_file_path )
 	{
-		size_t len = g_log_file_path.length();
-		if( len < 4 || strcmp( g_log_file_path.c_str() + len - 4, ".log" ) )
-			g_log_file_path += ".log";
+		size_t len = strlen( g_log_file_path );
+		if( len < 4 || strcmp( g_log_file_path + len - 4, ".log" ) )
+		{
+			g_log_file_path = (char*) realloc( g_log_file_path, len + 5 );
+			memcpy( g_log_file_path + len, ".log", 5 );
+		}
 		
-		g_log_file = fopen( g_log_file_path.c_str(), "at" );
-		g_log_size = file_size( g_log_file_path.c_str() );
+		g_log_file = fopen( g_log_file_path, "at" );
+		g_log_size = file_size( g_log_file_path );
 	}
 	
 	// Start server
@@ -436,6 +451,9 @@ bool crest_start(
 		mg_stop( ctx );
 		
 		the_crest_auth_manager.clean();
+		
+		free( g_log_file_path );
+		g_log_file_path = 0;
 		
 		if( g_log_file )
 		{

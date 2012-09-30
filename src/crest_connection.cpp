@@ -39,7 +39,7 @@ const char* crest_connection::get_path_parameter( size_t index )
 }
 
 /**********************************************************************************************/
-char* crest_connection::get_query_parameter( const char* name )
+const char* crest_connection::get_query_parameter( const char* name )
 {
 	const char* qs = mg_get_request_info( conn_ )->query_string;
 	if( !qs )
@@ -48,10 +48,13 @@ char* crest_connection::get_query_parameter( const char* name )
 	size_t len = strlen( qs );
 	char* buf = (char*) malloc( len + 1 );
 	if( mg_get_var( qs, strlen( qs ), name, &buf[ 0 ], len + 1 ) >= 0 )
+	{
+		add_item( query_params_, buf );
 		return buf;
+	}
 
 	free( buf );
-	return 0;
+	return "";
 }
 
 
@@ -132,4 +135,9 @@ int crest_connection::write( const char* buf, size_t len )
 crest_connection_internal::~crest_connection_internal( void )
 {
 	free( path_params_.items_ );
+	
+	for( size_t i = 0 ; i < query_params_.count_ ; ++i )
+		free( query_params_.items_[ i ] );
+		
+	free( query_params_.items_ );
 }

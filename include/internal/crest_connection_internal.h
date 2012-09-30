@@ -33,4 +33,5 @@ class crest_connection_internal
 // Properties
 
 		crest_string_array		path_params_;
+		crest_string_array		query_params_;
 };
