@@ -130,7 +130,7 @@ const char* crest_auth_manager::add_user(
 	// Add user
 	
 	char buf[ 16 ];
-	mg_md5( buf, pass, 0 );	
+	mg_md5( buf, pass );	
 
 	int flags = 0;
 	if( admin ) flags |= CREST_USER_ADMIN;
@@ -170,7 +170,7 @@ bool crest_auth_manager::auth(
 	if( user )
 	{
 		char buf[ 16 ];
-		mg_md5( buf, password, 0 );
+		mg_md5( buf, password );
 		
 		if( !memcmp( user->password_, buf, 16 ) )
 		{
@@ -287,7 +287,7 @@ const char* crest_auth_manager::update_user_password(
 	// Update password
 	
 	char buf[ 16 ];
-	mg_md5( buf, pass, 0 );	
+	mg_md5( buf, pass );	
 	
 	mg_mutex_lock( g_auth_mutex ); // -----------------------------
 	
@@ -446,7 +446,7 @@ void crest_auth_manager_internal::load( void )
 		{
 			crest_user* user = create_user( "root" );
 			user->flags_ = CREST_USER_ADMIN;
-			mg_md5( user->password_, "", 0 );		
+			mg_md5( user->password_, "" );		
 
 			need_flush = true;
 		}
