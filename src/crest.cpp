@@ -283,12 +283,7 @@ static void event_handler( mg_connection* conn )
 	else if( !strcmp( method_name, "PUT" ) ) method = CREST_METHOD_PUT;
 	else
 	{
-		char* buf;
-		size_t len;
-		create_responce( buf, len, CREST_HTTP_BAD_REQUEST, "Non-supported method", 20 );
-		mg_write( conn, buf, len );
-		
-		free( buf );
+		mg_write( conn, "HTTP/1.1 400 Bad Request\r\nContent-Length: 20\r\n\r\nNon-supported method", 68 );
 		return;
 	}
 
@@ -319,12 +314,20 @@ static void event_handler( mg_connection* conn )
 	}
 	else
 	{
-		char* buf;
-		size_t len;		
-		create_responce( buf, len, CREST_HTTP_NOT_FOUND, "", 0 );
-		mg_write( conn, buf, len );
+		for( size_t i = 0 ; i < CREST_METHOD_COUNT ; ++i )
+		{
+			if( i != method )
+			{
+				resource_array& carr = resources( i );
+				if( bsearch( &key, carr.items_, carr.count_, sizeof( resource ), compare_resources ) )
+				{
+					mg_write( conn, "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\n\r\n", 54 );
+					return;
+				}
+			}
+		}
 		
-		free( buf );
+		mg_write( conn, "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n", 45 );
 	}
 }
 

@@ -77,10 +77,11 @@ void crest_connection::respond(
 {
 	char* str;
 	size_t len;
-	create_responce( str, len, rc, msg, msg_len );
-	
-	write( str, len );
+	create_responce_header( str, len, rc, msg_len );
+	mg_write( conn_, str, len );
 	free( str );
+	
+	mg_write( conn_, msg, msg_len );
 }
 
 /**********************************************************************************************/
@@ -89,7 +90,7 @@ void crest_connection::send_file( const char* path )
 	FILE* f = fopen( path, "rb" );
 	if( !f )
 	{
-		mg_write( conn_, "HTTP/1.1 404 Not Found\r\nContent-Length: 19\r\n\r\bUnable to open file", 71 );
+		mg_write( conn_, "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 19\r\n\r\nUnable to open file", 77 );
 		return;
 	}
 
