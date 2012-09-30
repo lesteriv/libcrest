@@ -33,5 +33,8 @@ class crest_connection_internal
 // Properties
 
 		crest_string_array		path_params_;
-		crest_string_array		query_params_;
+		
+mutable	size_t					query_params_count_;
+mutable	char*					query_params_names_[ 64 ];
+mutable	char*					query_params_values_[ 64 ];
 };

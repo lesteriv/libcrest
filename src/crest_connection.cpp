@@ -25,13 +25,19 @@ time_t crest_connection::get_birth_time( void ) const
 }
 
 /**********************************************************************************************/
-const char* crest_connection::get_http_header( const char* name )
+size_t crest_connection::get_content_length( void ) const
+{
+	return mg_get_content_len( conn_ );
+}
+
+/**********************************************************************************************/
+const char* crest_connection::get_http_header( const char* name ) const
 {
 	return mg_get_header( conn_, name );
 }
 
 /**********************************************************************************************/
-const char* crest_connection::get_path_parameter( size_t index )
+const char* crest_connection::get_path_parameter( size_t index ) const
 {
 	return path_params_.count_ > index ?
 		path_params_.items_[ index ] :
@@ -39,21 +45,23 @@ const char* crest_connection::get_path_parameter( size_t index )
 }
 
 /**********************************************************************************************/
-const char* crest_connection::get_query_parameter( const char* name )
+const char* crest_connection::get_query_parameter( const char* name ) const
 {
-	const char* qs = mg_get_request_info( conn_ )->query_string;
-	if( !qs )
-		return 0;
-	
-	size_t len = strlen( qs );
-	char* buf = (char*) malloc( len + 1 );
-	if( mg_get_var( qs, strlen( qs ), name, &buf[ 0 ], len + 1 ) >= 0 )
+	if( query_params_count_ == (size_t) -1 )
 	{
-		add_item( query_params_, buf );
-		return buf;
+		parse_query_parameters(
+			query_params_count_,
+			query_params_names_,
+			query_params_values_,
+			mg_get_request_info( conn_ )->query_string );
 	}
 
-	free( buf );
+	for( size_t i = 0 ; i < query_params_count_ ; ++i )
+	{
+		if( !strcmp( name, query_params_names_[ i ] ) )
+			return query_params_values_[ i ];
+	}
+	
 	return "";
 }
 
@@ -137,10 +145,4 @@ crest_connection_internal::~crest_connection_internal( void )
 {
 	// Free path params
 	free( path_params_.items_ );
-
-	// Free query params
-	for( size_t i = 0 ; i < query_params_.count_ ; ++i )
-		free( query_params_.items_[ i ] );
-		
-	free( query_params_.items_ );
 }

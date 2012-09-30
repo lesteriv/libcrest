@@ -39,8 +39,8 @@ static time_t				g_time_start;
 
 
 /**********************************************************************************************/
-extern "C" int __cxa_guard_acquire( void ) {}
-extern "C" int __cxa_guard_release( int  ) {}
+extern "C" int __cxa_guard_acquire( void ) { return 0; }
+extern "C" int __cxa_guard_release( int  ) { return 0; }
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -115,6 +115,7 @@ struct sl_connection : public crest_connection
 		
 		conn_ = conn;
 		path_params_ = params;
+		query_params_count_ = (size_t) -1;
 	}
 	
 	void log( void )
@@ -136,6 +137,7 @@ struct sl_connection : public crest_connection
 			int( request->remote_ip & 0xFF ),
 			int( request->remote_port ) );
 
+		buf[ 127 ] = 0;
 		mg_mutex_lock( g_log_mutex ); // ------------------------
 
 		if( g_log_file_path && *g_log_file_path )
@@ -158,6 +160,7 @@ struct sl_connection : public crest_connection
 				{
 					char buf[ glen + 32 ];
 					snprintf( buf, glen + 32, "%s%zu.log", rfile, index );				
+					buf[ glen + 31 ] = 0;
 					
 					if( !file_exists( buf ) )
 					{

@@ -42,11 +42,11 @@ OBJECTFILES= \
 
 
 # C Compiler Flags
-CFLAGS=-O3 -flto
+CFLAGS=-O3 -flto -fvisibility=hidden
 
 # CC Compiler Flags
-CCFLAGS=-O3 -flto
-CXXFLAGS=-O3 -flto
+CCFLAGS=-O3 -flto -fno-exceptions -fno-rtti -fvisibility=hidden
+CXXFLAGS=-O3 -flto -fno-exceptions -fno-rtti -fvisibility=hidden
 
 # Fortran Compiler Flags
 FFLAGS=

@@ -25,16 +25,19 @@ class crest_connection : public crest_connection_internal
 
 								/** Time of connection creation. */
 		time_t					get_birth_time( void ) const;
+
+								/** Returns count of bytes in content. */
+		size_t					get_content_length( void ) const;
 		
 								/** Returns value of request header by name. */
-		const char*				get_http_header( const char* name );
+		const char*				get_http_header( const char* name ) const;
 
 								/** Returns value of parameter passed via url,
 								 *  see examples. */
-		const char*				get_path_parameter( size_t index );
+		const char*				get_path_parameter( size_t index ) const;
 		
 								/** Returns value of parameter passed via query string. */
-		const char*				get_query_parameter( const char* name );
+		const char*				get_query_parameter( const char* name ) const;
 		
 		
 	public://////////////////////////////////////////////////////////////////////////

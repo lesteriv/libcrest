@@ -11,11 +11,6 @@
 /**********************************************************************************************/
 // Functions
 
-				/** Adds new item to string array. */
-void			add_item(
-					crest_string_array&	arr,
-					char*				str );
-
 				/** Returns string with status code, 'Content-Length' header and content. */
 void			create_responce(
 					char*&				out,
@@ -41,6 +36,13 @@ bool			file_exists( const char* path );
 
 				/** Returns file's size. */
 size_t			file_size( const char* path );
+
+				/** Parse string with query parameters */
+void			parse_query_parameters(
+					size_t&				count,
+					char**				names,
+					char**				values,
+					char*				str );
 
 				/** Converts integer value to string. */
 				template< typename T >

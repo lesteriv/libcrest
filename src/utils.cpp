@@ -7,16 +7,12 @@
 
 // STD
 #include <sys/stat.h>
+#include <ctype.h>
 #include <stdio.h>
 
 // CREST
 #include "../include/crest.h"
 #include "utils.h"
-
-/**********************************************************************************************/
-#ifdef _WIN32
-#define stat _stat
-#endif // _WIN32
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -46,21 +42,21 @@ static const size_t RESPONCE_PREFIX_SIZE[ CREST_HTTP_STATUS_COUNT ] =
 
 
 //////////////////////////////////////////////////////////////////////////
-// functions
+// helper functions
 //////////////////////////////////////////////////////////////////////////
 
 
 /**********************************************************************************************/
-void add_item(
-	crest_string_array&	arr,
-	char*				str )
+inline char hex_to_int( char ch )
 {
-	arr.items_ = ( ++arr.count_ == 1 ) ?
-		(char**) malloc( sizeof( char* ) ) :
-		(char**) realloc( arr.items_, sizeof( char* ) * arr.count_ );
-
-	arr.items_[ arr.count_ - 1 ] = str;
+	return isdigit( ch ) ? ch - '0' : ch - 'W';
 }
+
+
+//////////////////////////////////////////////////////////////////////////
+// functions
+//////////////////////////////////////////////////////////////////////////
+
 
 /**********************************************************************************************/
 void create_responce(
@@ -152,4 +148,54 @@ size_t file_size( const char* path )
 	}
 
 	return size;
+}
+
+/**********************************************************************************************/
+void parse_query_parameters(
+	size_t&	count,
+	char**	names,
+	char**	values,
+	char*	str )
+{
+	count = 0;
+	
+	while( str && *str )
+	{
+		// Name
+		names[ count ] = str;
+
+		// Search for '='
+		for( ; *str && *str != '=' ; ++str );
+
+		// If found = read value
+		if( *str == '=' )
+		{
+			*str++ = 0;
+			values[ count ] = str;
+			count++;
+			char* v = str;
+			
+			for( ; *str && *str != '&' ; ++str, ++v )
+			{
+				if( *str == '+' )
+				{
+					*v = ' ';
+				}
+				else if( *str == '%' && isxdigit( str[ 1 ] ) && isxdigit( str[ 2 ] ) )
+				{
+					*v = ( hex_to_int( tolower( str[ 1 ] ) ) << 4 ) | hex_to_int( tolower( str[ 2 ] ) );
+					str += 2;
+				}
+				else
+				{
+					if( v != str )
+						*v = *str;
+				}
+			}
+
+			*v = 0;
+			if( !*str++ || count > 63 )
+				break;
+		}
+	}
 }
