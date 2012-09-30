@@ -131,8 +131,11 @@ char* crest_strdup(
 /**********************************************************************************************/
 bool file_exists( const char* path )
 {
-	struct stat st;
-	return stat( path, &st ) == 0 && ( st.st_mode & S_IFREG );
+	FILE* f = fopen( path, "rb" );
+	if( f )
+		fclose( f );
+	
+	return f != NULL;
 }
 
 /**********************************************************************************************/

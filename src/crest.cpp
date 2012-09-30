@@ -5,18 +5,12 @@
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
-// STD
-#include <list>
-
 // MONGOOSE
 #include "../third/mongoose/mongoose.h"
 
 // CREST
 #include "../include/crest.h"
 #include "utils.h"
-
-/**********************************************************************************************/
-using std::list;
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -25,18 +19,28 @@ using std::list;
 
 
 /**********************************************************************************************/
-static bool						g_auth_enabled		= false;
-static list<crest_connection*>	g_conns;
-static mg_mutex					g_conns_mutex		= mg_mutex_create();
-static char*					g_error				= 0;
-static bool						g_log_enabled		= false;
-static FILE*					g_log_file			= 0;
-static char*					g_log_file_path		= 0;
-static mg_mutex					g_log_mutex			= mg_mutex_create();
-static size_t					g_log_size			= 0;
-static size_t					g_request_count		= 0;
-static bool						g_shutdown			= false;
-static time_t					g_time_start		= 0;
+static bool					g_auth_enabled;
+static crest_connection*	g_conns[ 20 ];
+static mg_mutex				g_conns_mutex		= mg_mutex_create();
+static char*				g_error;
+static bool					g_log_enabled;
+static FILE*				g_log_file;
+static char*				g_log_file_path;
+static mg_mutex				g_log_mutex			= mg_mutex_create();
+static size_t				g_log_size;
+static size_t				g_request_count;
+static bool					g_shutdown;
+static time_t				g_time_start;
+
+
+//////////////////////////////////////////////////////////////////////////
+// fix build without libstdc++
+//////////////////////////////////////////////////////////////////////////
+
+
+/**********************************************************************************************/
+extern "C" int __cxa_guard_acquire( void ) {}
+extern "C" int __cxa_guard_release( int  ) {}
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -300,13 +304,31 @@ static void event_handler( mg_connection* conn )
 		sl_connection sconn( conn, key.keys_ );
 
 		mg_mutex_lock( g_conns_mutex );
-		g_conns.push_back( &sconn );
+		
+		for( size_t i = 0 ; i < 20 ; ++i )
+		{
+			if( !g_conns[ i ] )
+			{
+				g_conns[ i ] = &sconn;
+				break;
+			}
+		}
+		
 		mg_mutex_unlock( g_conns_mutex );
 
 		(*it->handler_)( sconn );
 
 		mg_mutex_lock( g_conns_mutex );
-		g_conns.remove( &sconn );
+		
+		for( size_t i = 0 ; i < 20 ; ++i )
+		{
+			if( g_conns[ i ] == &sconn )
+			{
+				g_conns[ i ] = 0;
+				break;
+			}
+		}
+		
 		mg_mutex_unlock( g_conns_mutex );
 
 		if( g_log_file && g_log_enabled )

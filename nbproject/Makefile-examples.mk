@@ -43,11 +43,11 @@ OBJECTFILES= \
 
 
 # C Compiler Flags
-CFLAGS=
+CFLAGS=-flto -Ofast -fvisibility=hidden
 
 # CC Compiler Flags
-CCFLAGS=-Wall -Wextra
-CXXFLAGS=-Wall -Wextra
+CCFLAGS=-Wall -Wextra -fno-exceptions -fno-rtti -flto -Ofast -fvisibility=hidden
+CXXFLAGS=-Wall -Wextra -fno-exceptions -fno-rtti -flto -Ofast -fvisibility=hidden
 
 # Fortran Compiler Flags
 FFLAGS=
@@ -64,37 +64,37 @@ LDLIBSOPTIONS=-lpthread -ldl
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc ${OBJECTFILES} ${LDLIBSOPTIONS} 
+	${LINK.cc} -flto -Ofast -fvisibility=hidden -static-libstdc++ -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc -s ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
 ${OBJECTDIR}/src/utils.o: src/utils.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/utils.o src/utils.cpp
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/utils.o src/utils.cpp
 
 ${OBJECTDIR}/src/crest.o: src/crest.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest.o src/crest.cpp
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest.o src/crest.cpp
 
 ${OBJECTDIR}/third/mongoose/mongoose.o: third/mongoose/mongoose.c 
 	${MKDIR} -p ${OBJECTDIR}/third/mongoose
 	${RM} $@.d
-	$(COMPILE.c) -g -Wall -Wextra -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.c
+	$(COMPILE.c) -s -Wall -Wextra -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.c
 
 ${OBJECTDIR}/examples/proc.o: examples/proc.cpp 
 	${MKDIR} -p ${OBJECTDIR}/examples
 	${RM} $@.d
-	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/proc.o examples/proc.cpp
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/proc.o examples/proc.cpp
 
 ${OBJECTDIR}/src/crest_connection.o: src/crest_connection.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_connection.o src/crest_connection.cpp
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_connection.o src/crest_connection.cpp
 
 ${OBJECTDIR}/src/crest_auth_manager.o: src/crest_auth_manager.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_auth_manager.o src/crest_auth_manager.cpp
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_auth_manager.o src/crest_auth_manager.cpp
 
 # Subprojects
 .build-subprojects:
