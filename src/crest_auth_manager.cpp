@@ -7,6 +7,8 @@
 
 // STD
 #include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 // MONGOOSE
 #include "../third/mongoose/mongoose.h"
@@ -166,11 +168,8 @@ bool crest_auth_manager::auth(
 		int64_t buf[ 2];
 		mg_md5( (char*) buf, password );
 		
-		if( user->password_[ 0 ] == buf[ 0 ] &&
-			user->password_[ 1 ] == buf[ 1 ] )
-		{
+		if( !memcmp( user->password_, buf, 16 ) )
 			res = !admin || user->admin_;
-		}
 	}
 	
 	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
@@ -421,7 +420,7 @@ void crest_auth_manager_internal::load( void )
 				crest_user* user = create_user( name );
 				user->admin_ = ( *flags == '1' );
 
-				char* dpass = (char*) user->password_;
+				char* dpass = user->password_;
 				while( *passwd && *(passwd + 1) )
 				{
 					bt[ 0 ] = *passwd++;
@@ -439,7 +438,7 @@ void crest_auth_manager_internal::load( void )
 		{
 			crest_user* user = create_user( "root" );
 			user->admin_ = true;
-			mg_md5( (char*) user->password_, "" );		
+			mg_md5( user->password_, "" );		
 
 			need_flush = true;
 		}

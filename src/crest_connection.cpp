@@ -5,6 +5,10 @@
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
+// STD
+#include <stdio.h>
+#include <stdlib.h>
+
 // MONGOOSE
 #include "../third/mongoose/mongoose.h"
 

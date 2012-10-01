@@ -7,9 +7,6 @@
 
 #pragma once
 
-// STD
-#include <stdlib.h>
-
 
 /**********************************************************************************************/
 // Internal structure to store single user's info
@@ -19,7 +16,7 @@ struct crest_user
 	bool	admin_;
 	char*	name_;
 	size_t	name_len_;
-	int64_t	password_[ 2 ];
+	char	password_[ 16 ];
 };
 
 
