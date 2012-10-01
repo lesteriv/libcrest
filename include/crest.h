@@ -16,16 +16,20 @@
 /**********************************************************************************************/
 // Macroses
 
+								/** Register handlers for 'usual' resources. */
 #define DELETE( name )			CREST_CPP_HANDLER( CREST_METHOD_DELETE	, false, false, #name )
 #define GET( name )				CREST_CPP_HANDLER( CREST_METHOD_GET		, false, false, #name )
 #define POST( name )			CREST_CPP_HANDLER( CREST_METHOD_POST	, false, false, #name )
 #define PUT( name )				CREST_CPP_HANDLER( CREST_METHOD_PUT		, false, false, #name )
 
+								/** Register handlers for resources for administrators only. */
 #define DELETE_ADMIN( name )	CREST_CPP_HANDLER( CREST_METHOD_DELETE	,  true, false, #name )
 #define GET_ADMIN( name )		CREST_CPP_HANDLER( CREST_METHOD_GET		,  true, false, #name )
 #define POST_ADMIN( name )		CREST_CPP_HANDLER( CREST_METHOD_POST	,  true, false, #name )
 #define PUT_ADMIN( name )		CREST_CPP_HANDLER( CREST_METHOD_PUT		,  true, false, #name )
 
+								/** Register handlers for public resources, that's always can
+								 *  be accessed without authentification. */
 #define DELETE_PUBLIC( name )	CREST_CPP_HANDLER( CREST_METHOD_GET		, false,  true, #name )
 #define GET_PUBLIC( name )		CREST_CPP_HANDLER( CREST_METHOD_GET		, false,  true, #name )
 #define POST_PUBLIC( name )		CREST_CPP_HANDLER( CREST_METHOD_GET		, false,  true, #name )

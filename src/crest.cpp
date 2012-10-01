@@ -292,7 +292,8 @@ crest_handler_register::crest_handler_register(
 }
 
 /**********************************************************************************************/
-static void event_handler( mg_connection* conn )
+void event_handler( mg_connection* conn );
+void event_handler( mg_connection* conn )
 {
 	++g_request_count;
 
@@ -329,11 +330,12 @@ static void event_handler( mg_connection* conn )
 		if( !it->public_ && g_auth_enabled )
 		{
 			const char* auth = mg_get_header( conn, "Authorization" );
-			size_t auth_len = strlen( auth );
+			size_t auth_len = auth ? strlen( auth ) : 0;
 			char buf[ auth_len + 1 ];
 			char *user, *pass;
 			
-			if( !parse_basic_auth( auth, auth_len, buf, pass, user ) ||
+			if( !auth ||
+				!parse_basic_auth( auth, auth_len, buf, user, pass ) ||
 				!the_crest_auth_manager.auth( user, pass, it->admin_ ) )
 			{
 				mg_write( conn, "HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\nWWW-Authenticate: Basic\r\n\r\n", 73 );
@@ -414,7 +416,7 @@ bool crest_get_auth_enabled( void )
 /**********************************************************************************************/
 void crest_set_auth_enabled( bool value )
 {
-	g_auth_enabled = value;
+	g_auth_enabled = value && the_crest_auth_manager.get_auth_file();
 }
 
 /**********************************************************************************************/
@@ -426,7 +428,7 @@ bool crest_get_log_enabled( void )
 /**********************************************************************************************/
 void crest_set_log_enabled( bool value )
 {
-	g_log_enabled = value;
+	g_log_enabled = value && g_log_file;
 }
 
 /**********************************************************************************************/
@@ -457,8 +459,8 @@ bool crest_start(
 		sort_resource_array( resources( i ) );
 	
 	// Set global flags
-	g_auth_enabled = auth_enabled;
-	g_log_enabled = log_enabled;
+	g_auth_enabled = auth_enabled && auth_file;
+	g_log_enabled = log_enabled && log_file;
 	
 	// Prepare and set options
 	the_crest_auth_manager.set_auth_file( auth_file );
@@ -480,7 +482,7 @@ bool crest_start(
 	}
 	
 	// Start server
-	mg_context* ctx = mg_start( &event_handler, ports, pem_file );
+	mg_context* ctx = mg_start( ports, pem_file );
 	if( ctx )
 	{	
 		g_time_start = time( NULL );
