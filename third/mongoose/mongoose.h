@@ -71,4 +71,4 @@ int					mg_read( mg_connection*, void* buf, size_t len );
 void				mg_sleep( int ms );
 mg_context*			mg_start( const char* ports, const char* pem_file );
 void				mg_stop( mg_context* );
-int					mg_write( mg_connection*, const void*buf, size_t len );
+int					mg_write( mg_connection*, const char* buf, size_t len );

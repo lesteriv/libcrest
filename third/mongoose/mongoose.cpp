@@ -497,34 +497,6 @@ static int set_non_blocking_mode(SOCKET sock) {
 }
 #endif // _WIN32
 
-// Write data to the IO channel - opened file descriptor, socket or SSL
-// descriptor. Return number of bytes written.
-static int push(SOCKET sock, SSL *ssl, const char *buf,
-					int len) {
-  int sent;
-  int n, k;
-
-  sent = 0;
-  while (sent < len) {
-
-	// How many bytes we send in this iteration
-	k = (int) (len - sent);
-
-	if (ssl != NULL) {
-	  n = SSL_write(ssl, buf + sent, k);
-	} else {
-	  n = send(sock, buf + sent, (size_t) k, MSG_NOSIGNAL);
-	}
-
-	if (n < 0)
-	  break;
-
-	sent += n;
-  }
-
-  return sent;
-}
-
 // This function is needed to prevent Mongoose to be stuck in a blocking
 // socket read when user requested exit. To do that, we sleep in select
 // with a timeout, and when returned, check the context for the stop flag.
@@ -613,9 +585,30 @@ int mg_read(mg_connection *conn, void *buf, size_t len) {
   return nread;
 }
 
-int mg_write(mg_connection *conn, const void *buf, size_t len) {
-  return push(conn->client.sock, (SSL*) conn->ssl, (const char *) buf,
-				 (int) len);
+int mg_write( mg_connection* conn, const char* buf, size_t len )
+{
+  int sent;
+  int n, k;
+
+  sent = 0;
+  while( sent < (int) len )
+  {
+	// How many bytes we send in this iteration
+	k = (int) (len - sent);
+
+	if (conn->ssl) {
+	  n = SSL_write((SSL*) conn->ssl, buf + sent, k);
+	} else {
+	  n = send(conn->client.sock, buf + sent, (size_t) k, MSG_NOSIGNAL);
+	}
+
+	if (n < 0)
+	  break;
+
+	sent += n;
+  }
+
+  return sent;	
 }
 
 // URL-decode input buffer into destination buffer.
