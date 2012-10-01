@@ -65,6 +65,12 @@ const char* crest_connection::get_query_parameter( const char* name ) const
 	return "";
 }
 
+/**********************************************************************************************/
+const char* crest_connection::get_url( void ) const
+{
+	return mg_get_request_info( conn_ )->uri;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // methods

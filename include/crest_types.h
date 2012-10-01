@@ -32,10 +32,3 @@ enum crest_http_status
 	CREST_HTTP_INTERNAL_ERROR,
 	CREST_HTTP_STATUS_COUNT
 };
-
-/**********************************************************************************************/
-enum crest_user_flags
-{
-	CREST_USER_ADMIN	= 1,
-	CREST_USER_READONLY	= 2
-};

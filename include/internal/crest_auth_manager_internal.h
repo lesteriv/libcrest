@@ -16,10 +16,10 @@
 //
 struct crest_user
 {
-	int		flags_;
+	bool	admin_;
 	char*	name_;
 	size_t	name_len_;
-	char	password_[ 16 ];
+	int64_t	password_[ 2 ];
 };
 
 

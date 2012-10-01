@@ -36,18 +36,18 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 OBJECTFILES= \
 	${OBJECTDIR}/src/utils.o \
 	${OBJECTDIR}/src/crest.o \
-	${OBJECTDIR}/third/mongoose/mongoose.o \
 	${OBJECTDIR}/examples/proc.o \
+	${OBJECTDIR}/third/mongoose/mongoose.o \
 	${OBJECTDIR}/src/crest_connection.o \
 	${OBJECTDIR}/src/crest_auth_manager.o
 
 
 # C Compiler Flags
-CFLAGS=-fvisibility=hidden
+CFLAGS=-fvisibility=hidden -Os
 
 # CC Compiler Flags
-CCFLAGS=-Wall -Wextra -fno-exceptions -fno-rtti -fvisibility=hidden
-CXXFLAGS=-Wall -Wextra -fno-exceptions -fno-rtti -fvisibility=hidden
+CCFLAGS=-Wall -Wextra -fno-exceptions -fno-rtti -fvisibility=hidden -Os
+CXXFLAGS=-Wall -Wextra -fno-exceptions -fno-rtti -fvisibility=hidden -Os
 
 # Fortran Compiler Flags
 FFLAGS=
@@ -64,37 +64,37 @@ LDLIBSOPTIONS=-lpthread -ldl
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -fvisibility=hidden -static-libstdc++ -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc ${OBJECTFILES} ${LDLIBSOPTIONS} 
+	g++ -fvisibility=hidden -static-libstdc++ -Os -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc -s ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
 ${OBJECTDIR}/src/utils.o: src/utils.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/utils.o src/utils.cpp
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/utils.o src/utils.cpp
 
 ${OBJECTDIR}/src/crest.o: src/crest.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest.o src/crest.cpp
-
-${OBJECTDIR}/third/mongoose/mongoose.o: third/mongoose/mongoose.c 
-	${MKDIR} -p ${OBJECTDIR}/third/mongoose
-	${RM} $@.d
-	$(COMPILE.c) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.c
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest.o src/crest.cpp
 
 ${OBJECTDIR}/examples/proc.o: examples/proc.cpp 
 	${MKDIR} -p ${OBJECTDIR}/examples
 	${RM} $@.d
-	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/proc.o examples/proc.cpp
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/proc.o examples/proc.cpp
+
+${OBJECTDIR}/third/mongoose/mongoose.o: third/mongoose/mongoose.cpp 
+	${MKDIR} -p ${OBJECTDIR}/third/mongoose
+	${RM} $@.d
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.cpp
 
 ${OBJECTDIR}/src/crest_connection.o: src/crest_connection.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_connection.o src/crest_connection.cpp
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_connection.o src/crest_connection.cpp
 
 ${OBJECTDIR}/src/crest_auth_manager.o: src/crest_auth_manager.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_auth_manager.o src/crest_auth_manager.cpp
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_auth_manager.o src/crest_auth_manager.cpp
 
 # Subprojects
 .build-subprojects:

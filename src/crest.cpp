@@ -54,7 +54,7 @@ struct resource
 	bool					admin_;
 	crest_api_callback_t	handler_;
 	crest_string_array		keys_;
-	bool					read_only_;
+	bool					public_;
 };
 
 /**********************************************************************************************/
@@ -235,41 +235,55 @@ static resource_array& resources( int method )
 }
 
 /**********************************************************************************************/
+static resource* default_resource( int method )
+{
+	static resource r[ CREST_METHOD_COUNT ];
+	return &r[ method ];
+}
+
+/**********************************************************************************************/
 crest_handler_register::crest_handler_register(
 	crest_http_method	 method,
 	const char*			 name,
 	crest_api_callback_t func,
 	bool				 for_admin_only,
-	bool			 	 read_only )
+	bool			 	 publ )
 {
 	resource* rs;
 	
-	resource_array& arr = resources( method );
-	if( !arr.count_ )
+	if( *name == '*' )
 	{
-		arr.count_ = 1;
-		arr.items_ = (resource*) malloc( sizeof( resource ) );
-		rs = arr.items_;
+		rs = default_resource( method );
 	}
 	else
 	{
-		arr.count_++;
-		arr.items_ = (resource*) realloc( arr.items_, sizeof( resource ) * arr.count_ );
-		rs = arr.items_ + arr.count_ - 1;
-	}
-	
-	rs->keys_ = parse_resource_name( name, strlen( name ) );
-	
-	size_t count = rs->keys_.count_;
-	for( size_t i = 0 ; i < count ; ++i )
-	{
-		if( rs->keys_.items_[ i ][ 0 ] == '{' )
-			rs->keys_.items_[ i ] = 0;
+		resource_array& arr = resources( method );
+		if( !arr.count_ )
+		{
+			arr.count_ = 1;
+			arr.items_ = (resource*) malloc( sizeof( resource ) );
+			rs = arr.items_;
+		}
+		else
+		{
+			arr.count_++;
+			arr.items_ = (resource*) realloc( arr.items_, sizeof( resource ) * arr.count_ );
+			rs = arr.items_ + arr.count_ - 1;
+		}
+
+		rs->keys_ = parse_resource_name( name, strlen( name ) );
+
+		size_t count = rs->keys_.count_;
+		for( size_t i = 0 ; i < count ; ++i )
+		{
+			if( rs->keys_.items_[ i ][ 0 ] == '{' )
+				rs->keys_.items_[ i ] = 0;
+		}
 	}
 	
 	rs->admin_		= for_admin_only;
 	rs->handler_	= func;
-	rs->read_only_	= read_only;
+	rs->public_		= publ;
 }
 
 /**********************************************************************************************/
@@ -302,8 +316,26 @@ static void event_handler( mg_connection* conn )
 	key.keys_ = parse_resource_name( request->uri + 1, strlen( request->uri + 1 ) );
 	resource* it = (resource*) bsearch( &key, arr.items_, arr.count_, sizeof( resource ), compare_resources );
 
-	if( it )
+	if( !it )
+		it = default_resource( method );
+	
+	if( it && it->handler_ )
 	{
+		if( !it->public_ && g_auth_enabled )
+		{
+			const char* auth = mg_get_header( conn, "Authorization" );
+			size_t auth_len = strlen( auth );
+			char buf[ auth_len + 1 ];
+			char *user, *pass;
+			
+			if( !parse_basic_auth( auth, auth_len, buf, pass, user ) ||
+				!the_crest_auth_manager.auth( user, pass, it->admin_ ) )
+			{
+				mg_write( conn, "HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\nWWW-Authenticate: Basic\r\n\r\n", 73 );
+				return;
+			}
+		}
+		
 		sl_connection sconn( conn, key.keys_ );
 
 		mg_mutex_lock( g_conns_mutex );

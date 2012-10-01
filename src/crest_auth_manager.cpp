@@ -55,15 +55,15 @@ size_t crest_auth_manager::get_user_count( void ) const
 }
 
 /**********************************************************************************************/
-int crest_auth_manager::get_user_flags( const char* name ) const
+bool crest_auth_manager::get_user_is_admin( const char* name ) const
 {
-	int res = 0;
+	bool res = false;
 	
 	mg_mutex_lock( g_auth_mutex ); // -----------------------------
 	
 	crest_user* user = find_user( name );
 	if( user )
-		res = user->flags_;
+		res = user->admin_;
 	
 	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
 	
@@ -106,8 +106,7 @@ void crest_auth_manager::get_users(
 const char* crest_auth_manager::add_user(
 	const char*	name,
 	const char*	pass,
-	bool		admin,
-	bool		ro )
+	bool		admin )
 {
 	// Check parameters
 
@@ -132,10 +131,6 @@ const char* crest_auth_manager::add_user(
 	char buf[ 16 ];
 	mg_md5( buf, pass );	
 
-	int flags = 0;
-	if( admin ) flags |= CREST_USER_ADMIN;
-	if( ro    ) flags |= CREST_USER_READONLY;
-	
 	mg_mutex_lock( g_auth_mutex ); // -----------------------------
 	
 	crest_user* user = find_user( name );
@@ -143,7 +138,7 @@ const char* crest_auth_manager::add_user(
 	{
 		crest_user* new_user = create_user( name );
 		memcpy( new_user->password_, buf, 16 );
-		new_user->flags_ = flags;
+		new_user->admin_ = admin;
 	}
 	
 	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
@@ -159,8 +154,7 @@ const char* crest_auth_manager::add_user(
 bool crest_auth_manager::auth(
 	const char*	name,
 	const char*	password,
-	bool		admin,
-	bool		ro )
+	bool		admin )
 {
 	bool res = false;
 	
@@ -169,14 +163,13 @@ bool crest_auth_manager::auth(
 	crest_user* user = find_user( name );
 	if( user )
 	{
-		char buf[ 16 ];
-		mg_md5( buf, password );
+		int64_t buf[ 2];
+		mg_md5( (char*) buf, password );
 		
-		if( !memcmp( user->password_, buf, 16 ) )
+		if( user->password_[ 0 ] == buf[ 0 ] &&
+			user->password_[ 1 ] == buf[ 1 ] )
 		{
-			res = 
-				( !admin ||  ( user->flags_ & CREST_USER_ADMIN	  ) ) &&
-				( ro	 || !( user->flags_ & CREST_USER_READONLY ) );
+			res = !admin || user->admin_;
 		}
 	}
 	
@@ -245,9 +238,9 @@ crest_auth_manager& crest_auth_manager::instance( void )
 }
 
 /**********************************************************************************************/
-const char* crest_auth_manager::update_user_flags(
+const char* crest_auth_manager::update_user_is_admin(
 	const char*	name,
-	int			flags )
+	bool		value )
 {
 	// Check parameters
 	
@@ -260,7 +253,7 @@ const char* crest_auth_manager::update_user_flags(
 	
 	crest_user* user = find_user( name );
 	if( user )
-		user->flags_ = flags;
+		user->admin_ = value;
 	
 	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
 	
@@ -365,11 +358,10 @@ void crest_auth_manager_internal::flush( void )
 			for( size_t i = 0 ; i < users_count_ ; ++i )
 			{
 				crest_user& user = users_[ i ];
-				char flags = '0' + user.flags_;
 
 				fwrite( user.name_, strlen( user.name_ ), 1, f );
 				fputc( ' ', f );
-				fputc( flags, f );
+				fputc( user.admin_ ? '1' : '0', f );
 				fputc( ' ', f );
 
 				const unsigned char* bt = (const unsigned char*) user.password_;
@@ -407,7 +399,8 @@ void crest_auth_manager_internal::load( void )
 
 			while( !feof( f ) )
 			{
-				(void) fgets( buf, 512, f );
+				if( !fgets( buf, 512, f ) )
+					break;
 
 				char* name = buf;
 
@@ -426,9 +419,9 @@ void crest_auth_manager_internal::load( void )
 				passwd[ 32 ] = 0;
 
 				crest_user* user = create_user( name );
-				user->flags_ = *flags - '0';
+				user->admin_ = ( *flags == '1' );
 
-				char* dpass = user->password_;
+				char* dpass = (char*) user->password_;
 				while( *passwd && *(passwd + 1) )
 				{
 					bt[ 0 ] = *passwd++;
@@ -445,8 +438,8 @@ void crest_auth_manager_internal::load( void )
 		if( !users_count_ )
 		{
 			crest_user* user = create_user( "root" );
-			user->flags_ = CREST_USER_ADMIN;
-			mg_md5( user->password_, "" );		
+			user->admin_ = true;
+			mg_md5( (char*) user->password_, "" );		
 
 			need_flush = true;
 		}

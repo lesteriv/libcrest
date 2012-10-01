@@ -31,8 +31,8 @@ class crest_auth_manager : public crest_auth_manager_internal
 							/** Returns count of users. */
 		size_t				get_user_count( void ) const;
 		
-							/** Returns flags for user. */
-		int					get_user_flags( const char* name ) const;
+							/** Returns TRUE if user is admin. */
+		bool				get_user_is_admin( const char* name ) const;
 
 							/** Returns list of users, it should be deleted by caller
 							 * via "free( names );". */
@@ -51,16 +51,14 @@ class crest_auth_manager : public crest_auth_manager_internal
 		const char*			add_user(
 								const char*	name,
 								const char*	password,
-								bool		admin,
-								bool		ro );
+								bool		admin );
 		
 							/** Returns TRUE if user @name exists, has password
 							 *  @password and match flags. */
 		bool				auth(
 								const char*	name,
 								const char*	password,
-								bool		admin,
-								bool		ro );								
+								bool		admin );								
 
 							/** Reset all info and free used memory. */
 		void				clean( void );
@@ -74,9 +72,9 @@ static	crest_auth_manager&	instance( void );
 		
 							/** Changes user's flags, returns error's description on fail,
 							 *  and NULL on success. */
-		const char*			update_user_flags(
+		const char*			update_user_is_admin(
 								const char*	name,
-								int			flags );
+								bool			value );
 		
 							/** Changes user's password, returns error's description on fail,
 							 *  and NULL on success. */

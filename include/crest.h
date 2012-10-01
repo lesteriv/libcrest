@@ -24,12 +24,15 @@
 #define POST( name )			CREST_CPP_HANDLER( CREST_METHOD_POST	, false, false, #name )
 #define PUT( name )				CREST_CPP_HANDLER( CREST_METHOD_PUT		, false, false, #name )
 
-#define DELETE_ADMIN( name )	CREST_CPP_HANDLER( CREST_METHOD_DELETE	, true, false, #name )
-#define GET_ADMIN( name )		CREST_CPP_HANDLER( CREST_METHOD_GET		, true, false, #name )
-#define POST_ADMIN( name )		CREST_CPP_HANDLER( CREST_METHOD_POST	, true, false, #name )
-#define PUT_ADMIN( name )		CREST_CPP_HANDLER( CREST_METHOD_PUT		, true, false, #name )
+#define DELETE_ADMIN( name )	CREST_CPP_HANDLER( CREST_METHOD_DELETE	,  true, false, #name )
+#define GET_ADMIN( name )		CREST_CPP_HANDLER( CREST_METHOD_GET		,  true, false, #name )
+#define POST_ADMIN( name )		CREST_CPP_HANDLER( CREST_METHOD_POST	,  true, false, #name )
+#define PUT_ADMIN( name )		CREST_CPP_HANDLER( CREST_METHOD_PUT		,  true, false, #name )
 
-#define GET_READONLY( name )	CREST_CPP_HANDLER( CREST_METHOD_GET		, false, true, #name )
+#define DELETE_PUBLIC( name )	CREST_CPP_HANDLER( CREST_METHOD_GET		, false,  true, #name )
+#define GET_PUBLIC( name )		CREST_CPP_HANDLER( CREST_METHOD_GET		, false,  true, #name )
+#define POST_PUBLIC( name )		CREST_CPP_HANDLER( CREST_METHOD_GET		, false,  true, #name )
+#define PUT_PUBLIC( name )		CREST_CPP_HANDLER( CREST_METHOD_GET		, false,  true, #name )
 
 
 /**********************************************************************************************/

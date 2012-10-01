@@ -61,9 +61,9 @@ int main( void )
 		the_crest_auth_manager.update_user_password( "root", "qwerty" );
 		the_crest_auth_manager.set_auth_file( "/tmp/auth.passwd2" );
 		
-		bool res = !the_crest_auth_manager.auth( "root", "qwerty", false, false );
+		bool res = !the_crest_auth_manager.auth( "root", "qwerty", false );
 		the_crest_auth_manager.set_auth_file( "/tmp/auth.passwd" );
-		res = res && the_crest_auth_manager.auth( "root", "qwerty", false, false );
+		res = res && the_crest_auth_manager.auth( "root", "qwerty", false );
 		
 		remove( "/tmp/auth.passwd" );
 		remove( "/tmp/auth.passwd2" );
@@ -99,7 +99,7 @@ int main( void )
 		the_crest_auth_manager.clean();
 		
 		the_crest_auth_manager.set_auth_file( "/tmp/auth.passwd" );
-		bool res = the_crest_auth_manager.get_user_flags( "root" ) == CREST_USER_ADMIN;
+		bool res = the_crest_auth_manager.get_user_is_admin( "root" );
 		
 		remove( "/tmp/auth.passwd" );
 		RETURN( res );
@@ -129,10 +129,10 @@ int main( void )
 		the_crest_auth_manager.clean();
 		
 		the_crest_auth_manager.set_auth_file( "/tmp/auth.passwd" );
-		the_crest_auth_manager.add_user( "test", "qwerty", true, true );
+		the_crest_auth_manager.add_user( "test", "qwerty", true );
 		
 		bool res = the_crest_auth_manager.get_user_count() == 2;
-		res = res && the_crest_auth_manager.auth( "test", "qwerty", true, true );
+		res = res && the_crest_auth_manager.auth( "test", "qwerty", true );
 	
 		the_crest_auth_manager.clean();
 		res = res && !the_crest_auth_manager.get_auth_file();
@@ -147,7 +147,7 @@ int main( void )
 		the_crest_auth_manager.clean();
 		
 		the_crest_auth_manager.set_auth_file( "/tmp/auth.passwd" );
-		the_crest_auth_manager.add_user( "test", "qwerty", true, true );
+		the_crest_auth_manager.add_user( "test", "qwerty", true );
 		
 		bool res = the_crest_auth_manager.get_user_count() == 2;
 		the_crest_auth_manager.delete_user( "test" );
@@ -162,10 +162,10 @@ int main( void )
 		the_crest_auth_manager.clean();
 		
 		the_crest_auth_manager.set_auth_file( "/tmp/auth.passwd" );
-		the_crest_auth_manager.add_user( "test", "qwerty", false, false );
+		the_crest_auth_manager.add_user( "test", "qwerty", false );
 		
-		the_crest_auth_manager.update_user_flags( "test", CREST_USER_ADMIN );
-		bool res = the_crest_auth_manager.get_user_flags( "test" ) == CREST_USER_ADMIN;
+		the_crest_auth_manager.update_user_is_admin( "test", true );
+		bool res = the_crest_auth_manager.get_user_is_admin( "test" );
 		
 		remove( "/tmp/auth.passwd" );
 		RETURN( res );
@@ -176,16 +176,31 @@ int main( void )
 		the_crest_auth_manager.clean();
 		
 		the_crest_auth_manager.set_auth_file( "/tmp/auth.passwd" );
-		the_crest_auth_manager.add_user( "test", "qwerty", false, false );
+		the_crest_auth_manager.add_user( "test", "qwerty", false );
 		
-		bool res = the_crest_auth_manager.auth( "test", "qwerty", false, false );
+		bool res = the_crest_auth_manager.auth( "test", "qwerty", false );
 		
 		the_crest_auth_manager.update_user_password( "test", "ytrewq" );
-		res = res && the_crest_auth_manager.auth( "test", "ytrewq", false, false );
+		res = res && the_crest_auth_manager.auth( "test", "ytrewq", false );
 		
 		remove( "/tmp/auth.passwd" );
 		RETURN( res );
 	}
 
+	TEST( parse_basic_auth )
+	{
+		const char* auth = "Basic QWxhZGluOnNlc2FtIG9wZW4=";
+		size_t auth_len = strlen( auth );
+		char buf[ auth_len + 1 ];
+		char *user, *pass;
+		
+		bool res =
+			parse_basic_auth( auth, auth_len, buf, user, pass ) &&
+			!strcmp( user, "Aladin" ) &&
+			!strcmp( pass, "sesam open" );
+		
+		RETURN( res );
+	}
+	
 	FINISH
 }

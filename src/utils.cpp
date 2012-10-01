@@ -21,6 +21,27 @@
 
 
 /**********************************************************************************************/
+static const unsigned char BASE64_TABLE[] =
+{
+	64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+	64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+	64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 62, 64, 64, 64, 63,
+	52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 64, 64, 64, 64, 64, 64,
+	64,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+	15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 64, 64, 64, 64, 64,
+	64, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+	41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 64, 64, 64, 64, 64,
+	64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+	64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+	64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+	64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+	64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+	64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+	64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+	64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64
+};
+
+/**********************************************************************************************/
 static const char* const RESPONCE_PREFIX[ CREST_HTTP_STATUS_COUNT ] =
 {
 	"HTTP/1.1 200 OK\r\nContent-Length: ",
@@ -57,6 +78,44 @@ inline char hex_to_int( char ch )
 // functions
 //////////////////////////////////////////////////////////////////////////
 
+
+/**********************************************************************************************/
+size_t base64_decode(
+	char*		vout,
+	const char*	vdata,
+	size_t		data_size )
+{
+	if( !data_size )	
+		return 0;
+		
+	size_t res = ( ( data_size + 3 ) / 4 ) * 3;
+    
+	unsigned char*       out  = (unsigned char*)		vout;
+	const unsigned char* data = (const unsigned char*)	vdata;
+
+    while( data_size && data[ data_size - 1 ] == '=' )
+        --data_size;
+
+	while( data_size > 4 )
+	{
+		*(out++) = BASE64_TABLE[ data[ 0 ] ] << 2 | BASE64_TABLE[ data[ 1 ] ] >> 4;
+		*(out++) = BASE64_TABLE[ data[ 1 ] ] << 4 | BASE64_TABLE[ data[ 2 ] ] >> 2;
+		*(out++) = BASE64_TABLE[ data[ 2 ] ] << 6 | BASE64_TABLE[ data[ 3 ] ];
+
+		data += 4;
+		data_size -= 4;
+	}
+
+	if( data_size > 1 )
+		*(out++) = BASE64_TABLE[ data[ 0 ] ] << 2 | BASE64_TABLE[ data[ 1 ] ] >> 4;
+	if( data_size > 2 )
+		*(out++) = BASE64_TABLE[ data[ 1 ] ] << 4 | BASE64_TABLE[ data[ 2 ] ] >> 2;
+	if (data_size > 3)
+		*(out++) = BASE64_TABLE[ data[ 2 ] ] << 6 | BASE64_TABLE[ data[ 3 ] ];
+
+	res -= ( 4 - data_size ) & 3;
+	return res;
+}
 
 /**********************************************************************************************/
 void create_responce(
@@ -148,6 +207,35 @@ size_t file_size( const char* path )
 	}
 
 	return size;
+}
+
+/**********************************************************************************************/
+bool parse_basic_auth(
+	const char*	auth,
+	size_t		auth_len,
+	char*		buf,
+	char*&		user,
+	char*&		password )
+{
+	if( !auth )
+		return false;
+
+	if( strncmp( "Basic ", auth, 6 ) )
+		return false;
+	
+	auth += 6;
+	size_t len = base64_decode( buf, auth, auth_len - 6 );
+	buf[ len ] = 0;
+
+	char* sp = strchr( buf, ':' );
+	if( !sp )
+		return false;
+	
+	*sp = 0;
+	user = buf;
+	password = sp + 1;
+	
+	return true;
 }
 
 /**********************************************************************************************/

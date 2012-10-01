@@ -31,7 +31,7 @@
       <logicalFolder name="third" displayName="third" projectFiles="true">
         <logicalFolder name="mongoose" displayName="mongoose" projectFiles="true">
           <itemPath>third/mongoose/LICENSE</itemPath>
-          <itemPath>third/mongoose/mongoose.c</itemPath>
+          <itemPath>third/mongoose/mongoose.cpp</itemPath>
           <itemPath>third/mongoose/mongoose.h</itemPath>
         </logicalFolder>
       </logicalFolder>
@@ -168,18 +168,26 @@
       </toolsSet>
       <compileType>
         <cTool>
-          <commandLine>-fvisibility=hidden</commandLine>
+          <developmentMode>0</developmentMode>
+          <stripSymbols>true</stripSymbols>
+          <commandlineTool>gcc</commandlineTool>
+          <commandLine>-fvisibility=hidden -Os</commandLine>
         </cTool>
         <ccTool>
-          <commandLine>-Wall -Wextra -fno-exceptions -fno-rtti -fvisibility=hidden</commandLine>
+          <developmentMode>0</developmentMode>
+          <stripSymbols>true</stripSymbols>
+          <commandlineTool>g++</commandlineTool>
+          <commandLine>-Wall -Wextra -fno-exceptions -fno-rtti -fvisibility=hidden -Os</commandLine>
         </ccTool>
         <linkerTool>
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc</output>
+          <stripSymbols>true</stripSymbols>
+          <commandlineTool>g++</commandlineTool>
           <linkerLibItems>
             <linkerLibStdlibItem>PosixThreads</linkerLibStdlibItem>
             <linkerLibStdlibItem>DynamicLinking</linkerLibStdlibItem>
           </linkerLibItems>
-          <commandLine>-fvisibility=hidden -static-libstdc++</commandLine>
+          <commandLine>-fvisibility=hidden -static-libstdc++ -Os</commandLine>
         </linkerTool>
       </compileType>
       <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
@@ -208,11 +216,6 @@
         <ccTool>
           <commandLine>-std=c++11</commandLine>
         </ccTool>
-      </item>
-      <item path="third/mongoose/mongoose.c" ex="false" tool="0" flavor="0">
-        <cTool>
-          <commandLine>-Wall -Wextra</commandLine>
-        </cTool>
       </item>
     </conf>
   </confs>

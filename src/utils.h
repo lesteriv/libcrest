@@ -11,6 +11,12 @@
 /**********************************************************************************************/
 // Functions
 
+				/** Decode base64-encoded data, return count of bytes in result. */
+size_t			base64_decode(
+					char*		out,
+					const char*	data,
+					size_t		data_size );
+
 				/** Returns string with status code, 'Content-Length' header and content. */
 void			create_responce(
 					char*&				out,
@@ -36,6 +42,14 @@ bool			file_exists( const char* path );
 
 				/** Returns file's size. */
 size_t			file_size( const char* path );
+
+				/** Parse basic auth HTTP header. */
+bool			parse_basic_auth(
+					const char*	auth,
+					size_t		auth_len,
+					char*		buf,
+					char*&		user,
+					char*&		password );
 
 				/** Parse string with query parameters */
 void			parse_query_parameters(

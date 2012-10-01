@@ -39,6 +39,9 @@ class crest_connection : public crest_connection_internal
 								/** Returns value of parameter passed via query string. */
 		const char*				get_query_parameter( const char* name ) const;
 		
+								/** Returns URL of request. */
+		const char*				get_url( void ) const;
+		
 		
 	public://////////////////////////////////////////////////////////////////////////
 		

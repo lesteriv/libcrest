@@ -29,7 +29,7 @@ static void send_output(
 	strcat( buf, " > " );
 	strcat( buf, file );
 	
-	system( buf );
+	(void) system( buf );
 	conn.send_file( file );
 	remove( file );
 }
@@ -92,6 +92,12 @@ GET( proc/{pid}/limits )( crest_connection& conn )
 	strcat( buf, "/limits" );
 	
 	send_output( conn, buf );
+}
+
+/**********************************************************************************************/
+GET( * )( crest_connection& conn )
+{
+	conn.respond( CREST_HTTP_OK, conn.get_url(), strlen( conn.get_url() ) );
 }
 
 
