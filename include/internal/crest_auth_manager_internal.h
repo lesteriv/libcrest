@@ -48,6 +48,6 @@ class crest_auth_manager_internal
 // Properties		
 		
 		char*				auth_file_;
-		size_t				user_count_;
+		size_t				users_count_;
 		crest_user*			users_;
 };

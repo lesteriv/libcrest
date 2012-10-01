@@ -79,7 +79,7 @@ ${OBJECTDIR}/src/crest.o: src/crest.cpp
 ${OBJECTDIR}/third/mongoose/mongoose.o: third/mongoose/mongoose.c 
 	${MKDIR} -p ${OBJECTDIR}/third/mongoose
 	${RM} $@.d
-	$(COMPILE.c) -g -Wall -Wextra -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.c
+	$(COMPILE.c) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.c
 
 ${OBJECTDIR}/examples/proc.o: examples/proc.cpp 
 	${MKDIR} -p ${OBJECTDIR}/examples

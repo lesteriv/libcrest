@@ -12,7 +12,6 @@
           <itemPath>include/internal/crest_auth_manager_internal.h</itemPath>
           <itemPath>include/internal/crest_connection_internal.h</itemPath>
           <itemPath>include/internal/crest_handler_register.h</itemPath>
-          <itemPath>include/internal/crest_types_internal.h</itemPath>
         </logicalFolder>
         <itemPath>include/crest.h</itemPath>
         <itemPath>include/crest_auth_manager.h</itemPath>
@@ -184,11 +183,6 @@
         </linkerTool>
       </compileType>
       <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
-      </item>
-      <item path="third/mongoose/mongoose.c" ex="false" tool="0" flavor="0">
-        <cTool>
-          <commandLine>-Wall -Wextra</commandLine>
-        </cTool>
       </item>
     </conf>
     <conf name="tests" type="1">

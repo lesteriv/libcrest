@@ -50,7 +50,9 @@ void			crest_set_log_enabled( bool value );
 				/** Returns total count of processed requests. */
 size_t			crest_request_count( void );
 
-				/** Starts server, returns FALSE if cannot start. */
+				/** Starts server, returns FALSE if cannot start,
+				 *  @ports is comma separated list of [ip_address:]port[s] values,
+				 *  examples: 80, 443s, 127.0.0.1:3128, 1.2.3.4:8080s. */
 bool			crest_start(
 					const char*	ports			= "8080",
 					const char*	auth_file		= "",

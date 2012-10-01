@@ -51,7 +51,7 @@ void crest_auth_manager::set_auth_file( const char* file )
 /**********************************************************************************************/
 size_t crest_auth_manager::get_user_count( void ) const
 {
-	return user_count_;
+	return users_count_;
 }
 
 /**********************************************************************************************/
@@ -77,16 +77,16 @@ void crest_auth_manager::get_users(
 {
 	mg_mutex_lock( g_auth_mutex ); // -----------------------------
 
-	size_t flen = ( user_count_ + 1 ) * sizeof( crest_user* );
-	for( size_t i = 0 ; i < user_count_ ; ++i )
+	size_t flen = ( users_count_ + 1 ) * sizeof( crest_user* );
+	for( size_t i = 0 ; i < users_count_ ; ++i )
 		flen += users_[ i ].name_len_ + 1;
 	
-	count = user_count_;
+	count = users_count_;
 	names = (char**) malloc( flen );
 
-	char* s = (char*) names + user_count_ * sizeof( crest_user* );
+	char* s = (char*) names + users_count_ * sizeof( crest_user* );
 	
-	for( size_t i = 0 ; i < user_count_ ; ++i )
+	for( size_t i = 0 ; i < users_count_ ; ++i )
 	{
 		names[ i ] = s;
 		memcpy( s, users_[ i ].name_, users_[ i ].name_len_ + 1 );
@@ -190,12 +190,12 @@ void crest_auth_manager::clean( void )
 {
 	mg_mutex_lock( g_auth_mutex ); // -----------------------------
 	
-	for( size_t i = 0 ; i < user_count_ ; ++i )
+	for( size_t i = 0 ; i < users_count_ ; ++i )
 		free( users_[ i ].name_ );
 	
 	free( users_ );
 	users_ = 0;
-	user_count_ = 0;
+	users_count_ = 0;
 	
 	free( auth_file_ );
 	auth_file_ = 0;
@@ -217,15 +217,15 @@ const char* crest_auth_manager::delete_user( const char* name )
 	
 	mg_mutex_lock( g_auth_mutex ); // -----------------------------
 	
-	for( size_t i = 0 ; i < user_count_ ; ++i )
+	for( size_t i = 0 ; i < users_count_ ; ++i )
 	{
 		if( !strcmp( users_[ i ].name_, name ) )
 		{
 			free( users_[ i ].name_ );
-			if( i + 1 < user_count_ )
-				memmove( users_ + i, users_ + i + 1, user_count_ - i - 1 );
+			if( i + 1 < users_count_ )
+				memmove( users_ + i, users_ + i + 1, users_count_ - i - 1 );
 
-			--user_count_;
+			--users_count_;
 		}
 	}
 	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
@@ -314,14 +314,14 @@ const char* crest_auth_manager::update_user_password(
 crest_auth_manager_internal::crest_auth_manager_internal( void )
 {
 	auth_file_	= 0;
-	user_count_	= 0;
+	users_count_	= 0;
 	users_		= 0;
 }
 
 /**********************************************************************************************/
 crest_user* crest_auth_manager_internal::create_user( const char* name )
 {
-	++user_count_;
+	++users_count_;
 	
 	if( !users_ )
 	{
@@ -332,8 +332,8 @@ crest_user* crest_auth_manager_internal::create_user( const char* name )
 		return users_;
 	}
 	
-	users_ = (crest_user*) realloc( users_, sizeof( crest_user ) * user_count_ );
-	crest_user* last = users_ + user_count_ - 1;
+	users_ = (crest_user*) realloc( users_, sizeof( crest_user ) * users_count_ );
+	crest_user* last = users_ + users_count_ - 1;
 	last->name_len_ = strlen( name );
 	last->name_ = crest_strdup( name, last->name_len_ );
 	
@@ -343,7 +343,7 @@ crest_user* crest_auth_manager_internal::create_user( const char* name )
 /**********************************************************************************************/
 crest_user* crest_auth_manager_internal::find_user( const char* name ) const
 {
-	for( size_t i = 0 ; i < user_count_ ; ++i )
+	for( size_t i = 0 ; i < users_count_ ; ++i )
 	{
 		if( !strcmp( users_[ i ].name_, name ) )
 			return users_ + i;
@@ -362,7 +362,7 @@ void crest_auth_manager_internal::flush( void )
 		FILE* f = fopen( auth_file_, "wt" );
 		if( f )
 		{
-			for( size_t i = 0 ; i < user_count_ ; ++i )
+			for( size_t i = 0 ; i < users_count_ ; ++i )
 			{
 				crest_user& user = users_[ i ];
 				char flags = '0' + user.flags_;
@@ -442,7 +442,7 @@ void crest_auth_manager_internal::load( void )
 		}
 
 		// Add default 'root' user if need
-		if( !user_count_ )
+		if( !users_count_ )
 		{
 			crest_user* user = create_user( "root" );
 			user->flags_ = CREST_USER_ADMIN;
