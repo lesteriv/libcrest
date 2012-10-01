@@ -43,6 +43,12 @@ bool			file_exists( const char* path );
 				/** Returns file's size. */
 size_t			file_size( const char* path );
 
+				/** Calculate md5 hash. */
+void			md5(
+					char		hash[ 16 ],
+					const char* data,
+					size_t		len );
+
 				/** Parse basic auth HTTP header. */
 bool			parse_basic_auth(
 					const char*	auth,

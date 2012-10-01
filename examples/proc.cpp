@@ -111,6 +111,6 @@ GET( * )( crest_connection& conn )
 /**********************************************************************************************/
 int main( void )
 {
-	if( !crest_start( "8080" ) )
+	if( !crest_start( "8080", "/tmp/auth" ) )
 		fputs( crest_error_string(), stdout );
 }

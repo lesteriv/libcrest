@@ -66,7 +66,6 @@ void				mg_mutex_lock( mg_mutex mtx );
 void				mg_mutex_unlock( mg_mutex mtx );
 
 /**********************************************************************************************/
-void				mg_md5( char buf[ 16 ], const char* str );
 int					mg_read( mg_connection*, void* buf, size_t len );
 void				mg_sleep( int ms );
 mg_context*			mg_start( const char* ports, const char* pem_file );
