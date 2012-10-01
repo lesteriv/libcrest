@@ -32,6 +32,10 @@
                     <type>1</type>
                 </confElem>
                 <confElem>
+                    <name>examples_debug</name>
+                    <type>1</type>
+                </confElem>
+                <confElem>
                     <name>tests</name>
                     <type>1</type>
                 </confElem>
