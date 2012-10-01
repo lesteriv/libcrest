@@ -499,7 +499,7 @@ static int set_non_blocking_mode(SOCKET sock) {
 
 // Write data to the IO channel - opened file descriptor, socket or SSL
 // descriptor. Return number of bytes written.
-static int push(FILE *fp, SOCKET sock, SSL *ssl, const char *buf,
+static int push(SOCKET sock, SSL *ssl, const char *buf,
 					int len) {
   int sent;
   int n, k;
@@ -512,10 +512,6 @@ static int push(FILE *fp, SOCKET sock, SSL *ssl, const char *buf,
 
 	if (ssl != NULL) {
 	  n = SSL_write(ssl, buf + sent, k);
-	} else if (fp != NULL) {
-	  n = (int) fwrite(buf + sent, 1, (size_t) k, fp);
-	  if (ferror(fp))
-		n = -1;
 	} else {
 	  n = send(sock, buf + sent, (size_t) k, MSG_NOSIGNAL);
 	}
@@ -618,7 +614,7 @@ int mg_read(mg_connection *conn, void *buf, size_t len) {
 }
 
 int mg_write(mg_connection *conn, const void *buf, size_t len) {
-  return push(NULL, conn->client.sock, (SSL*)conn->ssl, (const char *) buf,
+  return push(conn->client.sock, (SSL*) conn->ssl, (const char *) buf,
 				 (int) len);
 }
 
