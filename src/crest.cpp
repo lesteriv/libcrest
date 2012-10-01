@@ -135,12 +135,12 @@ struct sl_connection : public crest_connection
 		char buf[ 128 ];
 		int blen = snprintf( 
 			buf, 127, "%s %-6s %-40s from %d.%d.%d.%d:%d\n",
-			stime, request->request_method, request->uri,
-			int( request->remote_ip >> 24 ),
-			int( ( request->remote_ip >> 16 ) & 0xFF ),
-			int( ( request->remote_ip >> 8  ) & 0xFF ),
-			int( request->remote_ip & 0xFF ),
-			int( request->remote_port ) );
+			stime, request->method_, request->uri_,
+			int( request->remote_ip_ >> 24 ),
+			int( ( request->remote_ip_ >> 16 ) & 0xFF ),
+			int( ( request->remote_ip_ >> 8  ) & 0xFF ),
+			int( request->remote_ip_ & 0xFF ),
+			int( request->remote_port_ ) );
 
 		buf[ 127 ] = 0;
 		mg_mutex_lock( g_log_mutex ); // ------------------------
@@ -297,7 +297,7 @@ static void event_handler( mg_connection* conn )
 	++g_request_count;
 
 	mg_request_info* request = mg_get_request_info( conn );
-	const char* method_name = request->request_method;
+	const char* method_name = request->method_;
 
 	// Get method
 
@@ -318,7 +318,7 @@ static void event_handler( mg_connection* conn )
 	resource_array& arr = resources( method );
 	
 	resource key;
-	key.keys_ = parse_resource_name( request->uri + 1, strlen( request->uri + 1 ) );
+	key.keys_ = parse_resource_name( request->uri_ + 1, strlen( request->uri_ + 1 ) );
 	resource* it = (resource*) bsearch( &key, arr.items_, arr.count_, sizeof( resource ), compare_resources );
 
 	if( !it )
@@ -505,7 +505,7 @@ bool crest_start(
 	else
 	{
 		free( g_error );
-		g_error = crest_strdup( mg_error_string() );
+		g_error = crest_strdup( mg_get_error_string() );
 		
 		return false;
 	}

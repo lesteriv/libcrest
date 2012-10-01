@@ -58,7 +58,7 @@ const char* crest_connection::get_query_parameter( const char* name ) const
 			query_params_count_,
 			query_params_names_,
 			query_params_values_,
-			mg_get_request_info( conn_ )->query_string );
+			mg_get_request_info( conn_ )->query_parameters_ );
 	}
 
 	for( size_t i = 0 ; i < query_params_count_ ; ++i )
@@ -73,7 +73,7 @@ const char* crest_connection::get_query_parameter( const char* name ) const
 /**********************************************************************************************/
 const char* crest_connection::get_url( void ) const
 {
-	return mg_get_request_info( conn_ )->uri;
+	return mg_get_request_info( conn_ )->uri_;
 }
 
 
