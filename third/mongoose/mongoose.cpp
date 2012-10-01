@@ -453,21 +453,6 @@ static int pthread_cond_destroy(pthread_cond_t *cv) {
   return CloseHandle(cv->signal) && CloseHandle(cv->broadcast) ? 0 : -1;
 }
 
-// For Windows, change all slashes to backslashes in path names.
-static void change_slashes_to_backslashes(char *path) {
-  int i;
-
-  for (i = 0; path[i] != '\0'; i++) {
-	if (path[i] == '/')
-	  path[i] = '\\';
-	// i > 0 check is to preserve UNC paths, like \\server\file.txt
-	if (path[i] == '\\' && i > 0)
-	  while (path[i + 1] == '\\' || path[i + 1] == '/')
-		(void) memmove(path + i + 1,
-			path + i + 2, strlen(path + i + 1));
-  }
-}
-
 #define set_close_on_exec(fd) // No FD_CLOEXEC on Windows
 
 static int mg_start_thread(mg_thread_func_t f, void *p) {
