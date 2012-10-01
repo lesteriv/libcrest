@@ -521,15 +521,10 @@ static int wait_until_socket_is_readable(mg_connection *conn) {
 
 // Read from IO channel - opened file descriptor, socket, or SSL descriptor.
 // Return negative value on error, or number of bytes read on success.
-static int pull(FILE *fp, mg_connection *conn, char *buf, int len) {
+static int pull(mg_connection *conn, char *buf, int len) {
   int nread;
 
-  if (fp != NULL) {
-	// Use read() instead of fread(), because if we're reading from the CGI
-	// pipe, fread() may block until IO buffer is filled up. We cannot afford
-	// to block and must pass all read bytes immediately to the client.
-	nread = read(fileno(fp), buf, (size_t) len);
-  } else if (!wait_until_socket_is_readable(conn)) {
+  if (!wait_until_socket_is_readable(conn)) {
 	nread = -1;
   } else if (conn->ssl != NULL) {
 	nread = SSL_read((SSL*)conn->ssl, buf, len);
@@ -568,7 +563,7 @@ int mg_read(mg_connection *conn, void *buf, size_t len) {
 
 	// We have returned all buffered data. Read new data from the remote socket.
 	while (len > 0) {
-	  n = pull(NULL, conn, (char *) buf, (int) len);
+	  n = pull(conn, (char *) buf, (int) len);
 	  if (n < 0) {
 		nread = n;  // Propagate the error
 		break;
@@ -640,10 +635,12 @@ static size_t url_decode(char* buf, size_t len)
   return j;
 }
 
-static int sslize(mg_connection *conn, SSL_CTX *s, int (*func)(SSL *)) {
-  return (conn->ssl = SSL_new(s)) != NULL &&
-	SSL_set_fd((SSL*)conn->ssl, conn->client.sock) == 1 &&
-	func((SSL*)conn->ssl) == 1;
+static int sslize( mg_connection* conn, SSL_CTX* s, int (*func)(SSL *) )
+{
+	return 
+		(conn->ssl = SSL_new(s)) != NULL &&
+		SSL_set_fd((SSL*)conn->ssl, conn->client.sock) == 1 &&
+		func((SSL*)conn->ssl) == 1;
 }
 
 // Check whether full request is buffered. Return:
@@ -672,24 +669,10 @@ static int get_request_len(const char *buf, int buflen) {
 
 struct MD5_CTX
 {
-  uint32_t buf[4];
-  uint32_t bits[2];
+  uint32_t		buf[4];
+  uint32_t		bits[2];
   unsigned char in[64];
 };
-
-#if defined(__BYTE_ORDER) && (__BYTE_ORDER == 1234)
-#define byteReverse(buf, len) // Do nothing
-#else
-static void byteReverse(unsigned char *buf, unsigned longs) {
-  uint32_t t;
-  do {
-	t = (uint32_t) ((unsigned) buf[3] << 8 | buf[2]) << 16 |
-	  ((unsigned) buf[1] << 8 | buf[0]);
-	*(uint32_t *) buf = t;
-	buf += 4;
-  } while (--longs);
-}
-#endif
 
 #define F1(x, y, z) (z ^ (x & (y ^ z)))
 #define F2(x, y, z) F1(z, x, y)
@@ -812,7 +795,6 @@ static void MD5Update(MD5_CTX *ctx, unsigned char const *buf, unsigned len) {
 	  return;
 	}
 	memcpy(p, buf, t);
-	byteReverse(ctx->in, 16);
 	MD5Transform(ctx->buf, (uint32_t *) ctx->in);
 	buf += t;
 	len -= t;
@@ -820,7 +802,6 @@ static void MD5Update(MD5_CTX *ctx, unsigned char const *buf, unsigned len) {
 
   while (len >= 64) {
 	memcpy(ctx->in, buf, 64);
-	byteReverse(ctx->in, 16);
 	MD5Transform(ctx->buf, (uint32_t *) ctx->in);
 	buf += 64;
 	len -= 64;
@@ -840,19 +821,16 @@ static void MD5Final(unsigned char digest[16], MD5_CTX *ctx) {
   count = 64 - 1 - count;
   if (count < 8) {
 	memset(p, 0, count);
-	byteReverse(ctx->in, 16);
 	MD5Transform(ctx->buf, (uint32_t *) ctx->in);
 	memset(ctx->in, 0, 56);
   } else {
 	memset(p, 0, count - 8);
   }
-  byteReverse(ctx->in, 14);
 
   ((uint32_t *) ctx->in)[14] = ctx->bits[0];
   ((uint32_t *) ctx->in)[15] = ctx->bits[1];
 
   MD5Transform(ctx->buf, (uint32_t *) ctx->in);
-  byteReverse((unsigned char *) ctx->buf, 4);
   memcpy(digest, ctx->buf, 16);
   memset((char *) ctx, 0, sizeof(*ctx));
 }
@@ -909,13 +887,13 @@ static int parse_http_message(char *buf, int len, mg_request_info *ri) {
 // buffer (which marks the end of HTTP request). Buffer buf may already
 // have some data. The length of the data is stored in nread.
 // Upon every read operation, increase nread by the number of bytes read.
-static int read_request(FILE *fp, mg_connection *conn,
+static int read_request(mg_connection *conn,
 						char *buf, int bufsiz, int *nread) {
   int request_len, n = 1;
 
   request_len = get_request_len(buf, *nread);
   while (*nread < bufsiz && request_len == 0 && n > 0) {
-	n = pull(fp, conn, buf + *nread, bufsiz - *nread);
+	n = pull(conn, buf + *nread, bufsiz - *nread);
 	if (n > 0) {
 	  *nread += n;
 	  request_len = get_request_len(buf, *nread);
@@ -950,7 +928,7 @@ static void handle_request(mg_connection *conn) {
 
 static void close_all_listening_sockets(mg_context *ctx) {
   mg_socket *sp, *tmp;
-  for (sp = ctx->listening_sockets; sp != NULL; sp = tmp) {
+  for (sp = ctx->listening_sockets; sp ; sp = tmp) {
 	tmp = sp->next;
 	(void) closesocket(sp->sock);
 	free(sp);
@@ -960,7 +938,7 @@ static void close_all_listening_sockets(mg_context *ctx) {
 // Valid listening port specification is: [ip_address:]port[s]
 // Examples: 80, 443s, 127.0.0.1:3128, 1.2.3.4:8080s
 // TODO(lsm): add parsing of the IPv6 address
-static int parse_port_string(const struct vec *vec, mg_socket *so) {
+static int parse_port_string(const vec *vec, mg_socket *so) {
   int a, b, c, d, port, len;
 
   // MacOS needs that. If we do not zero it, subsequent bind() will fail.
@@ -990,7 +968,7 @@ static int parse_port_string(const struct vec *vec, mg_socket *so) {
   return 1;
 }
 
-const char* next_option( const char* str, vec& vc )
+static const char* next_option( const char* str, vec& vc )
 {
 	if( !str || !*str )
 		return NULL;
@@ -1010,7 +988,7 @@ static int set_ports_option(mg_context* ctx, const char* list, const char* pem_f
 
   while (success && (list = next_option(list, vc)) != NULL) {
 	if (!parse_port_string(&vc, &so)) {
-	  error_string = "invalid port spec. Expecting list of: [IP_ADDRESS:]PORT[s|p]";
+	  error_string = "Invalid port spec. Expecting list of: [IP_ADDRESS:]PORT[s|p]";
 	  success = 0;
 	} else if (so.is_ssl &&
 			   (ctx->ssl_ctx == NULL || pem_file == NULL)) {
@@ -1055,9 +1033,8 @@ static int set_ports_option(mg_context* ctx, const char* list, const char* pem_f
 
 static void add_to_set(SOCKET fd, fd_set *set, int *max_fd) {
   FD_SET(fd, set);
-  if (fd > (SOCKET) *max_fd) {
+  if (fd > (SOCKET) *max_fd)
 	*max_fd = (int) fd;
-  }
 }
 
 static pthread_mutex_t *ssl_mutexes;
@@ -1200,7 +1177,7 @@ static void close_socket_gracefully(mg_connection *conn) {
   // when server decides to close the connection; then when client
   // does recv() it gets no data back.
   do {
-	n = pull(NULL, conn, buf, sizeof(buf));
+	n = pull(conn, buf, sizeof(buf));
   } while (n > 0);
 
   // Now we know that our FIN is ACK-ed, safe to close
@@ -1224,14 +1201,16 @@ static int is_valid_uri(const char *uri) {
   return uri[0] == '/' || (uri[0] == '*' && uri[1] == '\0');
 }
 
-static void process_new_connection(mg_connection *conn) {
+static void process_new_connection(mg_connection *conn)
+{
   mg_request_info *ri = &conn->request_info;
   int discard_len;
   const char *cl;
 
-  do {
+  do
+  {
 	reset_per_request_attributes(conn);
-	conn->request_len = read_request(NULL, conn, conn->buf, MAX_REQUEST_SIZE,
+	conn->request_len = read_request(conn, conn->buf, MAX_REQUEST_SIZE,
 									 &conn->data_len);
 	if (conn->request_len == 0 && conn->data_len == MAX_REQUEST_SIZE) {
 	  mg_write( conn, "HTTP/1.1 413 Request Entity Too Large\r\nContent-Length: 0\r\n\r\n", 60 );
