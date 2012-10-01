@@ -7,6 +7,9 @@
 
 #pragma once
 
+// STD
+#include <time.h>
+
 // CREST
 #include "internal/crest_connection_internal.h"
 

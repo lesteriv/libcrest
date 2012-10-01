@@ -9,6 +9,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 // MONGOOSE
 #include "../third/mongoose/mongoose.h"

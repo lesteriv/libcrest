@@ -7,9 +7,6 @@
 
 #pragma once
 
-// STD
-#include <string.h>
-
 // CREST
 #include "internal/crest_handler_register.h"
 #include "crest_auth_manager.h"

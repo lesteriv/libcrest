@@ -7,6 +7,9 @@
 
 #pragma once
 
+// STD
+#include <stddef.h>
+
 
 /**********************************************************************************************/
 // Internal structure to store single user's info
