@@ -43,11 +43,11 @@ OBJECTFILES= \
 
 
 # C Compiler Flags
-CFLAGS=-fvisibility=hidden -Os
+CFLAGS=-fvisibility=hidden -Os -ffast-math -fno-threadsafe-statics
 
 # CC Compiler Flags
-CCFLAGS=-Wall -Wextra -fno-exceptions -fno-rtti -fvisibility=hidden -Os
-CXXFLAGS=-Wall -Wextra -fno-exceptions -fno-rtti -fvisibility=hidden -Os
+CCFLAGS=-Wall -Wextra -fno-exceptions -fno-rtti -fvisibility=hidden -Os -ffast-math -fno-threadsafe-statics
+CXXFLAGS=-Wall -Wextra -fno-exceptions -fno-rtti -fvisibility=hidden -Os -ffast-math -fno-threadsafe-statics
 
 # Fortran Compiler Flags
 FFLAGS=
@@ -64,7 +64,7 @@ LDLIBSOPTIONS=-lpthread -ldl
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	g++ -fvisibility=hidden -static-libstdc++ -Os -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc -s ${OBJECTFILES} ${LDLIBSOPTIONS} 
+	g++ -fvisibility=hidden -static-libstdc++ -Os -fno-threadsafe-statics -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc -s ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
 ${OBJECTDIR}/src/utils.o: src/utils.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src

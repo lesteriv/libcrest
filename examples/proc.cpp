@@ -24,6 +24,7 @@ static void send_output(
 {
 	char file[ 64 ];
 	snprintf( file, 64, "/tmp/proc_out_%ld", (long) &conn );
+	file[ 63 ] = 0;
 	
 	char buf[ 1024 ];
 	strcpy( buf, cmd );

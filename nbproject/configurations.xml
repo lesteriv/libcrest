@@ -171,13 +171,13 @@
           <developmentMode>0</developmentMode>
           <stripSymbols>true</stripSymbols>
           <commandlineTool>gcc</commandlineTool>
-          <commandLine>-fvisibility=hidden -Os</commandLine>
+          <commandLine>-fvisibility=hidden -Os -ffast-math -fno-threadsafe-statics</commandLine>
         </cTool>
         <ccTool>
           <developmentMode>0</developmentMode>
           <stripSymbols>true</stripSymbols>
           <commandlineTool>g++</commandlineTool>
-          <commandLine>-Wall -Wextra -fno-exceptions -fno-rtti -fvisibility=hidden -Os</commandLine>
+          <commandLine>-Wall -Wextra -fno-exceptions -fno-rtti -fvisibility=hidden -Os -ffast-math -fno-threadsafe-statics</commandLine>
         </ccTool>
         <linkerTool>
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc</output>
@@ -187,7 +187,7 @@
             <linkerLibStdlibItem>PosixThreads</linkerLibStdlibItem>
             <linkerLibStdlibItem>DynamicLinking</linkerLibStdlibItem>
           </linkerLibItems>
-          <commandLine>-fvisibility=hidden -static-libstdc++ -Os</commandLine>
+          <commandLine>-fvisibility=hidden -static-libstdc++ -Os -fno-threadsafe-statics</commandLine>
         </linkerTool>
       </compileType>
       <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
