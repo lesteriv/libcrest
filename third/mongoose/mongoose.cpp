@@ -36,8 +36,6 @@
 #if defined(_WIN32) // Windows specific
 #define _WIN32_WINNT 0x0400 // To make it link in VS2005
 #include <windows.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
 
 #ifndef PATH_MAX
 #define PATH_MAX MAX_PATH
@@ -252,7 +250,7 @@ struct mg_socket
 	SOCKET		sock;   // Listening socket
 	union usa	lsa;	// Local socket address
 	union usa	rsa;	// Remote socket address
-	int			is_ssl; // Is socket SSL-ed
+	bool		is_ssl; // Is socket SSL-ed
 };
 
 static const char* error_string;
@@ -470,45 +468,6 @@ static void change_slashes_to_backslashes(char *path) {
   }
 }
 
-// Encode 'path' which is assumed UTF-8 string, into UNICODE string.
-// wbuf and wbuf_len is a target buffer and its length.
-static void to_unicode(const char *path, wchar_t *wbuf, size_t wbuf_len) {
-  char buf[PATH_MAX], buf2[PATH_MAX], *p;
-
-  mg_strlcpy(buf, path, sizeof(buf));
-  change_slashes_to_backslashes(buf);
-
-  // Point p to the end of the file name
-  p = buf + strlen(buf) - 1;
-
-  // Trim trailing backslash character
-  while (p > buf && *p == '\\' && p[-1] != ':') {
-	*p-- = '\0';
-  }
-
-   // Protect from CGI code disclosure.
-   // This is very nasty hole. Windows happily opens files with
-   // some garbage in the end of file name. So fopen("a.cgi	", "r")
-   // actually opens "a.cgi", and does not return an error!
-  if (*p == 0x20 ||			   // No space at the end
-	  (*p == 0x2e && p > buf) ||  // No '.' but allow '.' as full path
-	  *p == 0x2b ||			   // No '+'
-	  (*p & ~0x7f)) {			 // And generally no non-ASCII chars
-	(void) fprintf(stderr, "Rejecting suspicious path: [%s]", buf);
-	wbuf[0] = L'\0';
-  } else {
-	// Convert to Unicode and back. If doubly-converted string does not
-	// match the original, something is fishy, reject.
-	memset(wbuf, 0, wbuf_len * sizeof(wchar_t));
-	MultiByteToWideChar(CP_UTF8, 0, buf, -1, wbuf, (int) wbuf_len);
-	WideCharToMultiByte(CP_UTF8, 0, wbuf, (int) wbuf_len, buf2, sizeof(buf2),
-						NULL, NULL);
-	if (strcmp(buf, buf2) != 0) {
-	  wbuf[0] = L'\0';
-	}
-  }
-}
-
 #define set_close_on_exec(fd) // No FD_CLOEXEC on Windows
 
 static int mg_start_thread(mg_thread_func_t f, void *p) {
@@ -516,10 +475,8 @@ static int mg_start_thread(mg_thread_func_t f, void *p) {
 }
 
 static HANDLE dlopen(const char *dll_name, int flags) {
-  wchar_t wbuf[PATH_MAX];
   flags = 0; // Unused
-  to_unicode(dll_name, wbuf, ARRAY_SIZE(wbuf));
-  return LoadLibraryW(wbuf);
+  return LoadLibraryA(dll_name);
 }
 
 static int set_non_blocking_mode(SOCKET sock) {

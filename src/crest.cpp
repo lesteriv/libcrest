@@ -6,6 +6,7 @@
 /**********************************************************************************************/
 
 // STD
+#include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +17,11 @@
 // CREST
 #include "../include/crest.h"
 #include "utils.h"
+
+/**********************************************************************************************/
+#ifdef _WIN32
+#define snprintf _snprintf
+#endif // _WIN32
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -163,7 +169,7 @@ struct sl_connection : public crest_connection
 				size_t index = 0;
 				while( ++index < 1000 )
 				{
-					char buf[ glen + 32 ];
+					char* buf = (char*) alloca( glen + 32 );
 					snprintf( buf, glen + 32, "%s%zu.log", rfile, index );				
 					buf[ glen + 31 ] = 0;
 					
@@ -331,7 +337,7 @@ void event_handler( mg_connection* conn )
 		{
 			const char* auth = mg_get_header( conn, "Authorization" );
 			size_t auth_len = auth ? strlen( auth ) : 0;
-			char buf[ auth_len + 1 ];
+			char* buf = (char*) alloca( auth_len + 1 );
 			char *user, *pass;
 			
 			if( !auth ||
