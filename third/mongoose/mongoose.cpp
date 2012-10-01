@@ -616,29 +616,27 @@ int mg_write( mg_connection* conn, const char* buf, size_t len )
 // form-url-encoded data differs from URI encoding in a way that it
 // uses '+' as character for space, see RFC 1866 section 8.2.1
 // http://ftp.ics.uci.edu/pub/ietf/html/rfc1866.txt
-static size_t url_decode(const char *src, size_t src_len, char *dst,
-						 size_t dst_len, int is_form_url_encoded) {
+static size_t url_decode(char* buf, size_t len)
+{
   size_t i, j;
   int a, b;
 #define HEXTOI(x) (isdigit(x) ? x - '0' : x - 'W')
 
-  for (i = j = 0; i < src_len && j < dst_len - 1; i++, j++) {
-	if (src[i] == '%' &&
-		isxdigit(* (const unsigned char *) (src + i + 1)) &&
-		isxdigit(* (const unsigned char *) (src + i + 2))) {
-	  a = tolower(* (const unsigned char *) (src + i + 1));
-	  b = tolower(* (const unsigned char *) (src + i + 2));
-	  dst[j] = (char) ((HEXTOI(a) << 4) | HEXTOI(b));
+  for (i = j = 0; i < len; i++, j++) {
+	if (buf[i] == '%' &&
+		isxdigit(* (const unsigned char *) (buf + i + 1)) &&
+		isxdigit(* (const unsigned char *) (buf + i + 2))) {
+	  a = tolower(* (const unsigned char *) (buf + i + 1));
+	  b = tolower(* (const unsigned char *) (buf + i + 2));
+	  buf[j] = (char) ((HEXTOI(a) << 4) | HEXTOI(b));
 	  i += 2;
-	} else if (is_form_url_encoded && src[i] == '+') {
-	  dst[j] = ' ';
 	} else {
-	  dst[j] = src[i];
+	  if( j != i )
+	    buf[j] = buf[i];
 	}
   }
 
-  dst[j] = '\0'; // Null-terminate the destination
-
+  buf[j] = '\0'; // Null-terminate the destination
   return j;
 }
 
@@ -945,8 +943,7 @@ static void handle_request(mg_connection *conn) {
 	* ((char *) conn->request_info.query_parameters_++) = '\0';
   }
   uri_len = (int) strlen(ri->uri_);
-  url_decode(ri->uri_, (size_t)uri_len, (char *) ri->uri_,
-			 (size_t) (uri_len + 1), 0);
+  url_decode(ri->uri_, uri_len);
 
   event_handler(conn);
 }

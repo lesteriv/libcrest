@@ -41,7 +41,7 @@ struct mg_request_info
 	char*			query_parameters_;	// URL part after '?', not including '?', or NULL
 	long			remote_ip_;         // Client's IP address
 	int				remote_port_;       // Client's port
-	const char*		uri_;			    // URL-decoded URI
+	char*			uri_;			    // URL-decoded URI
 	
 	struct mg_header
 	{
