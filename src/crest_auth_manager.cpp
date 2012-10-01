@@ -19,6 +19,11 @@
 #include "../include/crest.h"
 #include "utils.h"
 
+/**********************************************************************************************/
+#ifdef _MSC_VER
+#pragma warning( disable: 4996 )
+#endif // _WIN32
+
 
 //////////////////////////////////////////////////////////////////////////
 // global data
@@ -428,7 +433,7 @@ void crest_auth_manager_internal::load( void )
 					bt[ 0 ] = *passwd++;
 					bt[ 1 ] = *passwd++;
 
-					*dpass++ = strtol( bt, NULL, 16 );
+					*dpass++ = (char) strtol( bt, NULL, 16 );
 				}
 			}	
 

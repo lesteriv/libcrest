@@ -14,7 +14,12 @@
 #include "../include/crest.h"
 
 /**********************************************************************************************/
-// strcat and strcpy - very bad, I know, that's just example
+// strcat, strcpy, sprintf - very bad, I know, that's just example
+
+/**********************************************************************************************/
+#ifdef _MSC_VER
+#pragma warning( disable: 4996 )
+#endif // _MSC_VER
 
 
 /**********************************************************************************************/
@@ -23,7 +28,7 @@ static void send_output(
 	const char*			cmd )
 {
 	char file[ 64 ];
-	snprintf( file, 64, "/tmp/proc_out_%ld", (long) &conn );
+	sprintf( file, "/tmp/proc_out_%ld", (long) &conn );
 	file[ 63 ] = 0;
 	
 	char buf[ 1024 ];
