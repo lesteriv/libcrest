@@ -98,8 +98,7 @@ void crest_auth_manager::get_users(
 	for( size_t i = 0 ; i < users_count_ ; ++i )
 	{
 		names[ i ] = s;
-		memcpy( s, users_[ i ].name_, users_[ i ].name_len_ + 1 );
-		s += users_[ i ].name_len_ + 1;
+		s = add_string( s,users_[ i ].name_, users_[ i ].name_len_ + 1 );
 	}
 
 	mg_mutex_unlock( g_auth_mutex ); // -----------------------------

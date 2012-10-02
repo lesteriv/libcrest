@@ -33,12 +33,12 @@
 /**********************************************************************************************/
 static bool					g_auth_enabled;
 static crest_connection*	g_conns[ 20 ];
-static mg_mutex				g_conns_mutex		= mg_mutex_create();
-static char*				g_error;
+static mg_mutex				g_conns_mutex;
+static const char*			g_error;
 static bool					g_log_enabled;
 static FILE*				g_log_file;
 static char*				g_log_file_path;
-static mg_mutex				g_log_mutex			= mg_mutex_create();
+static mg_mutex				g_log_mutex;
 static size_t				g_log_size;
 static size_t				g_request_count;
 static bool					g_shutdown;
@@ -167,13 +167,16 @@ struct sl_connection : public crest_connection
 				char* rfile = crest_strdup( g_log_file_path, glen );
 				rfile[ glen - 4 ] = 0;
 
-				size_t index = 0;
+				int index = 0;
 				while( ++index < 1000 )
 				{
 					char* buf = (char*) alloca( glen + 32 );
-					snprintf( buf, glen + 32, "%s%zu.log", rfile, index );				
-					buf[ glen + 31 ] = 0;
 					
+					char* str = buf;
+					str = add_string ( str, rfile, glen - 4 );
+					str = to_string  ( index, str );
+					str = add_string ( str, ".log", 5 );
+
 					if( !file_exists( buf ) )
 					{
 						nfile = crest_strdup( buf );
@@ -411,7 +414,7 @@ void event_handler( mg_connection* conn )
 /**********************************************************************************************/
 const char* crest_error_string( void )
 {
-	return g_error;
+	return g_error ? g_error : "";
 }
 
 /**********************************************************************************************/
@@ -455,11 +458,13 @@ bool crest_start(
 {
 	if( g_time_start )
 	{
-		free( g_error );
 		g_error = crest_strdup( "Server already running" );
-		
 		return false;
 	}
+	
+	// Allocate mutexes
+	g_conns_mutex = mg_mutex_create();
+	g_log_mutex   = mg_mutex_create();
 	
 	// Prepare resources
 	for( size_t i = 0 ; i < CREST_METHOD_COUNT ; ++i )
@@ -499,27 +504,28 @@ bool crest_start(
 		
 		g_time_start = 0;
 		mg_stop( ctx );
-		
-		the_crest_auth_manager.clean();
-		
-		free( g_log_file_path );
-		g_log_file_path = 0;
-		
-		if( g_log_file )
-		{
-			fclose( g_log_file );
-			g_log_file = 0;
-		}
 	}
 	else
 	{
-		free( g_error );
-		g_error = crest_strdup( mg_get_error_string() );
-		
-		return false;
+		g_error = mg_get_error_string();
 	}
 	
-	return true;
+	// Clean
+	mg_mutex_destroy( g_conns_mutex );
+	mg_mutex_destroy( g_log_mutex );
+
+	the_crest_auth_manager.clean();
+
+	free( g_log_file_path );
+	g_log_file_path = 0;
+
+	if( g_log_file )
+	{
+		fclose( g_log_file );
+		g_log_file = 0;
+	}
+	
+	return ctx != NULL;
 }
 
 /**********************************************************************************************/

@@ -60,8 +60,6 @@
 #define _POSIX_
 
 #define SHUT_WR 1
-#define snprintf _snprintf
-#define vsnprintf _vsnprintf
 #define mg_sleep_int(x) Sleep(x)
 
 #define pipe(x) _pipe(x, MG_BUF_LEN, _O_BINARY)

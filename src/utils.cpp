@@ -133,44 +133,31 @@ void create_responce(
 	const char*			content,
 	size_t				content_len )
 {
-	size_t pref_len = RESPONCE_PREFIX_SIZE[ status ];
-	
 	out = (char*) malloc( content_len + 85 );
-	memcpy( out, RESPONCE_PREFIX[ status ], pref_len );
 	
-	char* str = out + pref_len;
-	to_string( (int) content_len, str );
-	str = (char*) memchr( str, 0, 24 );
-
-	*str++ = '\r'; *str++ = '\n';
-	*str++ = '\r'; *str++ = '\n';
-
-	memcpy( str, content, content_len );
-	str[ content_len ] = 0;
-	out_len = str - out + content_len;
+	char* str = out;
+	str = add_string ( str, RESPONCE_PREFIX[ status ], RESPONCE_PREFIX_SIZE[ status ] );
+	str = to_string	 ( (int) content_len, str );
+	str = add_string ( str, "\r\n\r\n", 4 );
+	str = add_string ( str, content, content_len );
+	
+	*++str = 0;
+	out_len = str - out - 1;
 }
 
 /**********************************************************************************************/
 void create_responce_header(
-	char*&				out,
+	char*				out,
 	size_t&				out_len,
 	crest_http_status	status,
 	size_t				content_len )
 {
-	size_t plen = RESPONCE_PREFIX_SIZE[ status ];
+	char* str = out;
+	str = add_string ( str, RESPONCE_PREFIX[ status ], RESPONCE_PREFIX_SIZE[ status ] );
+	str = to_string  ( (int) content_len, str );
+	str = add_string ( str, "\r\n\r\n", 5 );
 	
-	out = (char*) malloc( 85 );
-	memcpy( out, RESPONCE_PREFIX[ status ], plen );
-	
-	char* str = out + plen;
-	to_string( (int) content_len, str );
-	str = (char*) memchr( str, 0, 24 );
-
-	*str++ = '\r'; *str++ = '\n';
-	*str++ = '\r'; *str++ = '\n';
-	*str = 0;
-	
-	out_len = str - out;
+	out_len = str - out - 1;
 }
 
 /**********************************************************************************************/
@@ -465,4 +452,36 @@ final:
 
 	md5_transform( buf, (uint32_t*) in);
 	memcpy( hash, buf, 16 );
+}
+
+/**********************************************************************************************/
+char* to_string( int value, char* buf )
+{
+	char	ch;
+	char*	ptr1 = buf;
+	char*	ptr2 = buf;
+	int		tmp;
+
+	do
+	{
+		tmp = value;
+		value /= 10;
+		*ptr1++ = "9876543210123456789" [ 9 + ( tmp - value * 10 ) ];
+	}
+	while( value );
+
+	if( tmp < 0 )
+		*ptr1++ = '-';
+
+	char* end = ptr1;
+	*ptr1-- = '\0';
+
+	while( ptr2 < ptr1 )
+	{
+		ch		= *ptr1;
+		*ptr1--	= *ptr2;
+		*ptr2++	= ch;
+	}
+	
+	return end;
 }

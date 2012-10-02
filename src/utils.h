@@ -11,6 +11,16 @@
 /**********************************************************************************************/
 // Functions
 
+				/** Adds string to another. */
+inline char*	add_string(
+					char*				dest,
+					const char*			src,
+					size_t				len )
+				{
+					memcpy( dest, src, len + 1 );
+					return dest + len;
+				}
+
 				/** Decode base64-encoded data, return count of bytes in result. */
 size_t			base64_decode(
 					char*		out,
@@ -27,7 +37,7 @@ void			create_responce(
 
 				/** Returns string with status code and 'Content-Length' header. */
 void			create_responce_header(
-					char*&				out,
+					char*				out,
 					size_t&				out_len,
 					crest_http_status	status,
 					size_t				content_len );
@@ -64,32 +74,7 @@ void			parse_query_parameters(
 					char**		values,
 					char*		str );
 
-				/** Converts integer value to string. */
-				template< typename T >
-void			to_string( T value, char* buf )
-				{
-					char	ch;
-					char*	ptr1 = buf;
-					char*	ptr2 = buf;
-					T		tmp;
-
-					do
-					{
-						tmp = value;
-						value /= 10;
-						*ptr1++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz" [ 35 + ( tmp - value * 10 ) ];
-					}
-					while( value );
-
-					if( tmp < 0 )
-						*ptr1++ = '-';
-
-					*ptr1-- = '\0';
-
-					while( ptr2 < ptr1 )
-					{
-						ch		= *ptr1;
-						*ptr1--	= *ptr2;
-						*ptr2++	= ch;
-					}
-				}
+				/** Converts integer value to string, returns end of string - \0 pos. */
+char*			to_string(
+					int			value,
+					char*		buf );

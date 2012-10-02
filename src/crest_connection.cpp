@@ -99,11 +99,10 @@ void crest_connection::respond(
 	const char*			msg,
 	size_t				msg_len )
 {
-	char* str;
-	size_t len;
-	create_responce_header( str, len, rc, msg_len );
-	mg_write( conn_, str, len );
-	free( str );
+	char header[ 128 ];
+	size_t header_len;
+	create_responce_header( header, header_len, rc, msg_len );
+	mg_write( conn_, header, header_len );
 	
 	mg_write( conn_, msg, msg_len );
 }
@@ -120,12 +119,10 @@ void crest_connection::send_file( const char* path )
 
 	fseek( f, 0, SEEK_END );
 	
-	char* header;
+	char header[ 128 ];
 	size_t header_len;
 	create_responce_header( header, header_len, CREST_HTTP_OK, ftell( f ) );
-	
 	mg_write( conn_, header, header_len );
-	free( header );
 
 	fseek( f, 0, SEEK_SET );
 	

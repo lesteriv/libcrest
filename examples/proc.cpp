@@ -14,12 +14,12 @@
 #include "../include/crest.h"
 
 /**********************************************************************************************/
-// strcat, strcpy, sprintf - very bad, I know, that's just example
-
-/**********************************************************************************************/
 #ifdef _MSC_VER
 #pragma warning( disable: 4996 )
 #endif // _MSC_VER
+
+/**********************************************************************************************/
+extern "C" int gethostname( char*, size_t );
 
 
 /**********************************************************************************************/
@@ -29,14 +29,13 @@ static void send_output(
 {
 	char file[ 64 ];
 	sprintf( file, "/tmp/proc_out_%ld", (long) &conn );
-	file[ 63 ] = 0;
 	
 	char buf[ 1024 ];
 	strcpy( buf, cmd );
 	strcat( buf, " > " );
 	strcat( buf, file );
+	system( buf );
 	
-	(void) system( buf );
 	conn.send_file( file );
 	remove( file );
 }
@@ -51,7 +50,7 @@ GET( proc )( crest_connection& conn )
 /**********************************************************************************************/
 POST( proc )( crest_connection& conn )
 {
-	char buf[ 1024 ];
+	char buf[ 65536 ];
 	strcpy( buf, conn.get_query_parameter( "cmd" ) );
 	strcat( buf, " &" );
 	
@@ -61,7 +60,7 @@ POST( proc )( crest_connection& conn )
 /**********************************************************************************************/
 GET( proc/{pid} )( crest_connection& conn )
 {
-	char buf[ 1024 ];
+	char buf[ 65536 ];
 	strcpy( buf, "cat /proc/" );
 	strcat( buf, conn.get_path_parameter( 1 ) );
 	strcat( buf, "/status" );
@@ -72,7 +71,7 @@ GET( proc/{pid} )( crest_connection& conn )
 /**********************************************************************************************/
 DELETE( proc/{pid} )( crest_connection& conn )
 {
-	char buf[ 1024 ];
+	char buf[ 65536 ];
 	strcpy( buf, "kill " );
 	strcat( buf, conn.get_path_parameter( 1 ) );
 	
@@ -82,7 +81,7 @@ DELETE( proc/{pid} )( crest_connection& conn )
 /**********************************************************************************************/
 GET( proc/{pid}/cmdline )( crest_connection& conn )
 {
-	char buf[ 1024 ];
+	char buf[ 65536 ];
 	strcpy( buf, "cat /proc/" );
 	strcat( buf, conn.get_path_parameter( 1 ) );
 	strcat( buf, "/cmdline" );
@@ -93,7 +92,7 @@ GET( proc/{pid}/cmdline )( crest_connection& conn )
 /**********************************************************************************************/
 GET( proc/{pid}/limits )( crest_connection& conn )
 {
-	char buf[ 1024 ];
+	char buf[ 65536 ];
 	strcpy( buf, "cat /proc/" );
 	strcat( buf, conn.get_path_parameter( 1 ) );
 	strcat( buf, "/limits" );
@@ -104,13 +103,21 @@ GET( proc/{pid}/limits )( crest_connection& conn )
 /**********************************************************************************************/
 GET( * )( crest_connection& conn )
 {
-	conn.respond( CREST_HTTP_OK, conn.get_url(), strlen( conn.get_url() ) );
+	char host[ 1024 ];
+	gethostname( host, 1024 );
+	
+	char buf[ 65536 ];
+	strcpy( buf, conn.get_url() );
+	strcat( buf, " at " );
+	strcat( buf, host );
+	
+	conn.respond( CREST_HTTP_OK, buf, strlen( buf ) );
 }
 
 
 /**********************************************************************************************/
 int main( void )
 {
-	if( !crest_start( "8080", "/tmp/auth" ) )
+	if( !crest_start( "8080" ) )
 		fputs( crest_error_string(), stdout );
 }
