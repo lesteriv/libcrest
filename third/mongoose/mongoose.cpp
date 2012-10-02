@@ -479,17 +479,17 @@ static int set_non_blocking_mode(SOCKET sock) {
 #else
 
 static void set_close_on_exec(int fd) {
-  (void) fcntl(fd, F_SETFD, FD_CLOEXEC);
+  fcntl(fd, F_SETFD, FD_CLOEXEC);
 }
 
 static int mg_start_thread(mg_thread_func_t func, void *param) {
   pthread_t thread_id;
   pthread_attr_t attr;
 
-  (void) pthread_attr_init(&attr);
-  (void) pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
   // TODO(lsm): figure out why mongoose dies on Linux if next line is enabled
-  // (void) pthread_attr_setstacksize(&attr, sizeof(mg_connection) * 5);
+  // pthread_attr_setstacksize(&attr, sizeof(mg_connection) * 5);
 
   return pthread_create(&thread_id, &attr, func, param);
 }
@@ -498,7 +498,7 @@ static int set_non_blocking_mode(SOCKET sock) {
   int flags;
 
   flags = fcntl(sock, F_GETFL, 0);
-  (void) fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+  fcntl(sock, F_SETFL, flags | O_NONBLOCK);
 
   return 0;
 }
@@ -765,7 +765,7 @@ static void close_all_listening_sockets(mg_context *ctx) {
   mg_socket *sp, *tmp;
   for (sp = ctx->listening_sockets; sp ; sp = tmp) {
 	tmp = sp->next;
-	(void) closesocket(sp->sock);
+	closesocket(sp->sock);
 	free(sp);
   }
 }
@@ -886,13 +886,13 @@ static pthread_mutex_t *ssl_mutexes;
 
 static void ssl_locking_callback(int mode, int mutex_num, const char *file,
 								 int line) {
-  (void) line;
-  (void) file;
+  line;
+  file;
 
   if (mode & CRYPTO_LOCK) {
-	(void) pthread_mutex_lock(&ssl_mutexes[mutex_num]);
+	pthread_mutex_lock(&ssl_mutexes[mutex_num]);
   } else {
-	(void) pthread_mutex_unlock(&ssl_mutexes[mutex_num]);
+	pthread_mutex_unlock(&ssl_mutexes[mutex_num]);
   }
 }
 
@@ -966,7 +966,7 @@ static int set_ssl_option(mg_context *ctx,const char* pem) {
   }
 
   if (pem != NULL) {
-	(void) SSL_CTX_use_certificate_chain_file(ctx->ssl_ctx, pem);
+	SSL_CTX_use_certificate_chain_file(ctx->ssl_ctx, pem);
   }
 
   // Initialize locking callbacks, needed for thread safety.
@@ -1014,7 +1014,7 @@ static void close_socket_gracefully(mg_connection *conn) {
   setsockopt(sock, SOL_SOCKET, SO_LINGER, (char *) &linger, sizeof(linger));
 
   // Send FIN to the client
-  (void) shutdown(sock, SHUT_WR);
+  shutdown(sock, SHUT_WR);
   set_non_blocking_mode(sock);
 
   // Read and discard pending incoming data. If we do not do that and close the
@@ -1027,7 +1027,7 @@ static void close_socket_gracefully(mg_connection *conn) {
   } while (n > 0);
 
   // Now we know that our FIN is ACK-ed, safe to close
-  (void) closesocket(sock);
+  closesocket(sock);
 }
 
 static void close_connection(mg_connection *conn) {
@@ -1098,7 +1098,7 @@ static void process_new_connection(mg_connection *conn)
 
 // Worker threads take accepted socket from the queue
 static int consume_socket(mg_context *ctx, mg_socket *sp) {
-  (void) pthread_mutex_lock(&ctx->mutex);
+  pthread_mutex_lock(&ctx->mutex);
 
   // If the queue is empty, wait. We're idle at this point.
   while (ctx->sq_head == ctx->sq_tail && ctx->stop_flag == 0) {
@@ -1118,8 +1118,8 @@ static int consume_socket(mg_context *ctx, mg_socket *sp) {
 	}
   }
 
-  (void) pthread_cond_signal(&ctx->sq_empty);
-  (void) pthread_mutex_unlock(&ctx->mutex);
+  pthread_cond_signal(&ctx->sq_empty);
+  pthread_mutex_unlock(&ctx->mutex);
 
   return !ctx->stop_flag;
 }
@@ -1160,20 +1160,20 @@ static void worker_thread(mg_context *ctx) {
   }
 
   // Signal master that we're done with connection and exiting
-  (void) pthread_mutex_lock(&ctx->mutex);
+  pthread_mutex_lock(&ctx->mutex);
   ctx->num_threads--;
-  (void) pthread_cond_signal(&ctx->cond);
-  (void) pthread_mutex_unlock(&ctx->mutex);
+  pthread_cond_signal(&ctx->cond);
+  pthread_mutex_unlock(&ctx->mutex);
 }
 
 // Master thread adds accepted socket to a queue
 static void produce_socket(mg_context *ctx, const mg_socket *sp) {
-  (void) pthread_mutex_lock(&ctx->mutex);
+  pthread_mutex_lock(&ctx->mutex);
 
   // If the queue is full, wait
   while (ctx->stop_flag == 0 &&
 		 ctx->sq_head - ctx->sq_tail >= (int) ARRAY_SIZE(ctx->queue)) {
-	(void) pthread_cond_wait(&ctx->sq_empty, &ctx->mutex);
+	pthread_cond_wait(&ctx->sq_empty, &ctx->mutex);
   }
 
   if (ctx->sq_head - ctx->sq_tail < (int) ARRAY_SIZE(ctx->queue)) {
@@ -1182,8 +1182,8 @@ static void produce_socket(mg_context *ctx, const mg_socket *sp) {
 	ctx->sq_head++;
   }
 
-  (void) pthread_cond_signal(&ctx->sq_full);
-  (void) pthread_mutex_unlock(&ctx->mutex);
+  pthread_cond_signal(&ctx->sq_full);
+  pthread_mutex_unlock(&ctx->mutex);
 }
 
 static void accept_new_connection(const mg_socket *listener,
@@ -1249,17 +1249,17 @@ static void master_thread(mg_context *ctx) {
   pthread_cond_broadcast(&ctx->sq_full);
 
   // Wait until all threads finish
-  (void) pthread_mutex_lock(&ctx->mutex);
+  pthread_mutex_lock(&ctx->mutex);
   while (ctx->num_threads > 0) {
-	(void) pthread_cond_wait(&ctx->cond, &ctx->mutex);
+	pthread_cond_wait(&ctx->cond, &ctx->mutex);
   }
-  (void) pthread_mutex_unlock(&ctx->mutex);
+  pthread_mutex_unlock(&ctx->mutex);
 
   // All threads exited, no sync is needed. Destroy mutex and condvars
-  (void) pthread_mutex_destroy(&ctx->mutex);
-  (void) pthread_cond_destroy(&ctx->cond);
-  (void) pthread_cond_destroy(&ctx->sq_empty);
-  (void) pthread_cond_destroy(&ctx->sq_full);
+  pthread_mutex_destroy(&ctx->mutex);
+  pthread_cond_destroy(&ctx->cond);
+  pthread_cond_destroy(&ctx->sq_empty);
+  pthread_cond_destroy(&ctx->sq_full);
 
 #ifndef NO_SSL
   uninitialize_ssl(ctx);
@@ -1295,12 +1295,12 @@ void mg_stop(mg_context *ctx) {
 
   // Wait until mg_fini() stops
   while (ctx->stop_flag != 2) {
-	(void) mg_sleep_int(10);
+	mg_sleep_int(10);
   }
   free_context(ctx);
 
 #if defined(_WIN32)
-  (void) WSACleanup();
+  WSACleanup();
 #endif // _WIN32
 }
 
@@ -1335,15 +1335,15 @@ mg_context *mg_start(
 #if !defined(_WIN32)
   // Ignore SIGPIPE signal, so if browser cancels the request, it
   // won't kill the whole process.
-  (void) signal(SIGPIPE, SIG_IGN);
+  signal(SIGPIPE, SIG_IGN);
   // Also ignoring SIGCHLD to let the OS to reap zombies properly.
-  (void) signal(SIGCHLD, SIG_IGN);
+  signal(SIGCHLD, SIG_IGN);
 #endif // !_WIN32
 
-  (void) pthread_mutex_init(&ctx->mutex, NULL);
-  (void) pthread_cond_init(&ctx->cond, NULL);
-  (void) pthread_cond_init(&ctx->sq_empty, NULL);
-  (void) pthread_cond_init(&ctx->sq_full, NULL);
+  pthread_mutex_init(&ctx->mutex, NULL);
+  pthread_cond_init(&ctx->cond, NULL);
+  pthread_cond_init(&ctx->sq_empty, NULL);
+  pthread_cond_init(&ctx->sq_full, NULL);
 
   // Start master (listening) thread
   mg_start_thread((mg_thread_func_t) master_thread, ctx);
@@ -1360,7 +1360,7 @@ mg_context *mg_start(
 mg_mutex mg_mutex_create(void)
 {
 	pthread_mutex_t* m = (pthread_mutex_t*) calloc(sizeof(pthread_mutex_t), 1);
-	(void) pthread_mutex_init(m, NULL);
+	pthread_mutex_init(m, NULL);
 	return m;
 }
 
