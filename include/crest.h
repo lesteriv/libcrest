@@ -58,12 +58,12 @@ size_t			crest_request_count( void );
 				 *  @ports is comma separated list of [ip_address:]port[s] values,
 				 *  examples: 80, 443s, 127.0.0.1:3128, 1.2.3.4:8080s. */
 bool			crest_start(
-					const char*		ports			= "8080",
-					const char*		auth_file		= "",
-					const char*		log_file		= "",
-					const char*		pem_file		= "",
-					crest_http_auth	auth_kind		= CREST_AUTH_BASIC,
-					bool			log_enabled		= true );
+					const char*		ports		= "8080",
+					crest_http_auth	auth_kind	= CREST_AUTH_BASIC,
+					const char*		auth_file	= "",
+					bool			log_enabled	= true,
+					const char*		log_file	= "",
+					const char*		pem_file	= "" );
 
 				/** Stops running server. */
 void			crest_stop( void );

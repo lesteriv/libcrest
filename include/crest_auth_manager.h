@@ -11,6 +11,9 @@
 #include "internal/crest_auth_manager_internal.h"
 
 /**********************************************************************************************/
+#ifndef NO_AUTH
+
+/**********************************************************************************************/
 #define the_crest_auth_manager ( crest_auth_manager::instance() )
 
 
@@ -82,3 +85,7 @@ static	crest_auth_manager&	instance( void );
 								const char*	name,
 								const char*	password );
 };
+
+
+/**********************************************************************************************/
+#endif // NO_AUTH

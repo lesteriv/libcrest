@@ -31,18 +31,26 @@
 
 
 /**********************************************************************************************/
-static crest_http_auth		g_auth_kind;
 static crest_connection*	g_conns[ 20 ];
 static mg_mutex				g_conns_mutex;
 static const char*			g_error;
+static size_t				g_request_count;
+static bool					g_shutdown;
+static time_t				g_time_start;
+
+/**********************************************************************************************/
+#ifndef NO_AUTH
+static crest_http_auth		g_auth_kind;
+#endif // NO_AUTH
+
+/**********************************************************************************************/
+#ifndef NO_LOG
 static bool					g_log_enabled;
 static FILE*				g_log_file;
 static char*				g_log_file_path;
 static mg_mutex				g_log_mutex;
 static size_t				g_log_size;
-static size_t				g_request_count;
-static bool					g_shutdown;
-static time_t				g_time_start;
+#endif // NO_LOG
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -130,6 +138,8 @@ struct sl_connection : public crest_connection
 		query_params_count_ = (size_t) -1;
 	}
 	
+#ifndef NO_LOG
+	
 	void log( void )
 	{
 		mg_request_info* request = mg_get_request_info( conn_ );
@@ -200,6 +210,8 @@ struct sl_connection : public crest_connection
 
 		mg_mutex_unlock( g_log_mutex ); // ------------------------
 	}
+
+#endif // NO_LOG
 };
 
 
@@ -337,6 +349,8 @@ void event_handler( mg_connection* conn )
 	
 	if( it && it->handler_ )
 	{
+#ifndef NO_AUTH
+		
 		if( !it->public_ && g_auth_kind == CREST_AUTH_BASIC )
 		{
 			const char* auth = mg_get_header( conn, "Authorization" );
@@ -352,6 +366,8 @@ void event_handler( mg_connection* conn )
 				return;
 			}
 		}
+		
+#endif // NO_AUTH
 		
 		sl_connection sconn( conn, key.keys_ );
 
@@ -383,8 +399,12 @@ void event_handler( mg_connection* conn )
 		
 		mg_mutex_unlock( g_conns_mutex );
 
+#ifndef NO_LOG
+
 		if( g_log_file && g_log_enabled )
 			sconn.log();
+			
+#endif // NO_LOG
 	}
 	else
 	{
@@ -417,6 +437,10 @@ const char* crest_error_string( void )
 	return g_error ? g_error : "";
 }
 
+
+/**********************************************************************************************/
+#ifndef NO_AUTH
+
 /**********************************************************************************************/
 crest_http_auth crest_get_auth_kind( void )
 {
@@ -431,6 +455,13 @@ void crest_set_auth_kind( crest_http_auth auth )
 }
 
 /**********************************************************************************************/
+#endif // NO_AUTH
+
+
+/**********************************************************************************************/
+#ifndef NO_LOG
+
+/**********************************************************************************************/
 bool crest_get_log_enabled( void )
 {
 	return g_log_enabled;
@@ -443,6 +474,10 @@ void crest_set_log_enabled( bool value )
 }
 
 /**********************************************************************************************/
+#endif // NO_LOG
+
+
+/**********************************************************************************************/
 size_t crest_request_count( void )
 {
 	return g_request_count;
@@ -451,32 +486,38 @@ size_t crest_request_count( void )
 /**********************************************************************************************/
 bool crest_start(
 	const char*		ports,
-	const char*		auth_file,
-	const char*		log_file,
-	const char*		pem_file,
 	crest_http_auth	auth_kind,
-	bool			log_enabled )
+	const char*		auth_file,
+	bool			log_enabled,
+	const char*		log_file,
+	const char*		pem_file )
 {
 	if( g_time_start )
 	{
 		g_error = crest_strdup( "Server already running" );
 		return false;
 	}
-	
+
 	// Allocate mutexes
 	g_conns_mutex = mg_mutex_create();
-	g_log_mutex   = mg_mutex_create();
 	
 	// Prepare resources
 	for( size_t i = 0 ; i < CREST_METHOD_COUNT ; ++i )
 		sort_resource_array( resources( i ) );
 	
-	// Set global flags
+	// Init authentification
+#ifndef NO_AUTH
+
 	g_auth_kind = auth_file ? auth_kind : CREST_AUTH_NONE;
-	g_log_enabled = log_enabled && log_file;
-	
-	// Prepare and set options
 	the_crest_auth_manager.set_auth_file( auth_file );
+
+#endif // NO_AUTH
+	
+	// Init logging
+#ifndef NO_LOG
+
+	g_log_enabled = log_enabled && log_file;
+	g_log_mutex   = mg_mutex_create();
 	
 	if( log_file && *log_file )
 		g_log_file_path = crest_strdup( log_file );
@@ -493,6 +534,8 @@ bool crest_start(
 		g_log_file = fopen( g_log_file_path, "at" );
 		g_log_size = file_size( g_log_file_path );
 	}
+
+#endif // NO_LOG
 	
 	// Start server
 	mg_context* ctx = mg_start( ports, pem_file );
@@ -513,10 +556,17 @@ bool crest_start(
 	
 	// Clean
 	mg_mutex_destroy( g_conns_mutex );
-	mg_mutex_destroy( g_log_mutex );
+
+#ifndef NO_AUTH
 
 	the_crest_auth_manager.clean();
 
+#endif // NO_AUTH
+
+#ifndef NO_LOG
+
+	mg_mutex_destroy( g_log_mutex );
+	
 	free( g_log_file_path );
 	g_log_file_path = 0;
 
@@ -525,6 +575,8 @@ bool crest_start(
 		fclose( g_log_file );
 		g_log_file = 0;
 	}
+
+#endif // NO_LOG	
 	
 	return ctx != NULL;
 }
