@@ -26,15 +26,6 @@
 
 
 //////////////////////////////////////////////////////////////////////////
-// global data
-//////////////////////////////////////////////////////////////////////////
-
-
-/**********************************************************************************************/
-static mg_mutex g_auth_mutex = mg_mutex_create();
-
-
-//////////////////////////////////////////////////////////////////////////
 // properties
 //////////////////////////////////////////////////////////////////////////
 
@@ -50,9 +41,9 @@ void crest_auth_manager::set_auth_file( const char* file )
 {
 	clean();
 	
-	mg_mutex_lock( g_auth_mutex );
+	mg_mutex_lock( mutex_ );
 	auth_file_ = crest_strdup( file );
-	mg_mutex_unlock( g_auth_mutex );
+	mg_mutex_unlock( mutex_ );
 	
 	load();
 }
@@ -68,13 +59,13 @@ bool crest_auth_manager::get_user_is_admin( const char* name ) const
 {
 	bool res = false;
 	
-	mg_mutex_lock( g_auth_mutex ); // -----------------------------
+	mg_mutex_lock( mutex_ ); // -----------------------------
 	
 	crest_user* user = find_user( name );
 	if( user )
 		res = user->admin_;
 	
-	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
+	mg_mutex_unlock( mutex_ ); // -----------------------------
 	
 	return res;
 }
@@ -84,7 +75,7 @@ void crest_auth_manager::get_users(
 	size_t&		count,
 	char**&		names ) const
 {
-	mg_mutex_lock( g_auth_mutex ); // -----------------------------
+	mg_mutex_lock( mutex_ ); // -----------------------------
 
 	size_t flen = ( users_count_ + 1 ) * sizeof( crest_user* );
 	for( size_t i = 0 ; i < users_count_ ; ++i )
@@ -101,7 +92,7 @@ void crest_auth_manager::get_users(
 		s = add_string( s,users_[ i ].name_, users_[ i ].name_len_ + 1 );
 	}
 
-	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
+	mg_mutex_unlock( mutex_ ); // -----------------------------
 }
 
 
@@ -139,7 +130,7 @@ const char* crest_auth_manager::add_user(
 	char buf[ 16 ];
 	md5( buf, pass, pass_len );	
 
-	mg_mutex_lock( g_auth_mutex ); // -----------------------------
+	mg_mutex_lock( mutex_ ); // -----------------------------
 	
 	crest_user* user = find_user( name );
 	if( !user )
@@ -149,7 +140,7 @@ const char* crest_auth_manager::add_user(
 		new_user->admin_ = admin;
 	}
 	
-	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
+	mg_mutex_unlock( mutex_ ); // -----------------------------
 
 	if( user )
 		return "User already exists";
@@ -166,7 +157,7 @@ bool crest_auth_manager::auth(
 {
 	bool res = false;
 	
-	mg_mutex_lock( g_auth_mutex ); // -----------------------------
+	mg_mutex_lock( mutex_ ); // -----------------------------
 	
 	crest_user* user = find_user( name );
 	if( user )
@@ -178,7 +169,7 @@ bool crest_auth_manager::auth(
 			res = !admin || user->admin_;
 	}
 	
-	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
+	mg_mutex_unlock( mutex_ ); // -----------------------------
 	
 	return res;
 }
@@ -186,7 +177,7 @@ bool crest_auth_manager::auth(
 /**********************************************************************************************/
 void crest_auth_manager::clean( void )
 {
-	mg_mutex_lock( g_auth_mutex ); // -----------------------------
+	mg_mutex_lock( mutex_ ); // -----------------------------
 	
 	for( size_t i = 0 ; i < users_count_ ; ++i )
 		free( users_[ i ].name_ );
@@ -198,7 +189,7 @@ void crest_auth_manager::clean( void )
 	free( auth_file_ );
 	auth_file_ = 0;
 	
-	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
+	mg_mutex_unlock( mutex_ ); // -----------------------------
 }
 
 /**********************************************************************************************/
@@ -213,7 +204,7 @@ const char* crest_auth_manager::delete_user( const char* name )
 			
 	bool deleted = false;
 	
-	mg_mutex_lock( g_auth_mutex ); // -----------------------------
+	mg_mutex_lock( mutex_ ); // -----------------------------
 	
 	for( size_t i = 0 ; i < users_count_ ; ++i )
 	{
@@ -226,7 +217,7 @@ const char* crest_auth_manager::delete_user( const char* name )
 			--users_count_;
 		}
 	}
-	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
+	mg_mutex_unlock( mutex_ ); // -----------------------------
 
 	if( !deleted )
 		return "User not found";
@@ -254,13 +245,13 @@ const char* crest_auth_manager::update_user_is_admin(
 	
 	// Update flags
 			
-	mg_mutex_lock( g_auth_mutex ); // -----------------------------
+	mg_mutex_lock( mutex_ ); // -----------------------------
 	
 	crest_user* user = find_user( name );
 	if( user )
 		user->admin_ = value;
 	
-	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
+	mg_mutex_unlock( mutex_ ); // -----------------------------
 	
 	if( !user )
 		return "User not found";
@@ -287,13 +278,13 @@ const char* crest_auth_manager::update_user_password(
 	char buf[ 16 ];
 	md5( buf, pass, pass_len );	
 	
-	mg_mutex_lock( g_auth_mutex ); // -----------------------------
+	mg_mutex_lock( mutex_ ); // -----------------------------
 	
 	crest_user* user = find_user( name );
 	if( user )
 		memcpy( user->password_, buf, 16 );
 	
-	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
+	mg_mutex_unlock( mutex_ ); // -----------------------------
 	
 	if( !user )
 		return "User not found";
@@ -311,9 +302,10 @@ const char* crest_auth_manager::update_user_password(
 /**********************************************************************************************/
 crest_auth_manager_internal::crest_auth_manager_internal( void )
 {
-	auth_file_	= 0;
+	auth_file_		= 0;
+	mutex_			= mg_mutex_create();
 	users_count_	= 0;
-	users_		= 0;
+	users_			= 0;
 }
 
 /**********************************************************************************************/
@@ -353,7 +345,7 @@ crest_user* crest_auth_manager_internal::find_user( const char* name ) const
 /**********************************************************************************************/
 void crest_auth_manager_internal::flush( void )
 {
-	mg_mutex_lock( g_auth_mutex ); // -----------------------------
+	mg_mutex_lock( mutex_ ); // -----------------------------
 
 	if( auth_file_ )
 	{
@@ -384,7 +376,7 @@ void crest_auth_manager_internal::flush( void )
 		}
 	}
 	
-	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
+	mg_mutex_unlock( mutex_ ); // -----------------------------
 }
 
 /**********************************************************************************************/
@@ -392,7 +384,7 @@ void crest_auth_manager_internal::load( void )
 {
 	bool need_flush = false;
 	
-	mg_mutex_lock( g_auth_mutex ); // -----------------------------
+	mg_mutex_lock( mutex_ ); // -----------------------------
 	
 	if( auth_file_ )
 	{
@@ -450,7 +442,7 @@ void crest_auth_manager_internal::load( void )
 		}
 	}
 
-	mg_mutex_unlock( g_auth_mutex ); // -----------------------------
+	mg_mutex_unlock( mutex_ ); // -----------------------------
 	
 	if( need_flush )
 		flush();

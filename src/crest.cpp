@@ -31,7 +31,7 @@
 
 
 /**********************************************************************************************/
-static bool					g_auth_enabled;
+static crest_http_auth		g_auth_kind;
 static crest_connection*	g_conns[ 20 ];
 static mg_mutex				g_conns_mutex;
 static const char*			g_error;
@@ -337,7 +337,7 @@ void event_handler( mg_connection* conn )
 	
 	if( it && it->handler_ )
 	{
-		if( !it->public_ && g_auth_enabled )
+		if( !it->public_ && g_auth_kind == CREST_AUTH_BASIC )
 		{
 			const char* auth = mg_get_header( conn, "Authorization" );
 			size_t auth_len = auth ? strlen( auth ) : 0;
@@ -418,15 +418,16 @@ const char* crest_error_string( void )
 }
 
 /**********************************************************************************************/
-bool crest_get_auth_enabled( void )
+crest_http_auth crest_get_auth_kind( void )
 {
-	return g_auth_enabled;
+	return g_auth_kind;
 }
 
 /**********************************************************************************************/
-void crest_set_auth_enabled( bool value )
+void crest_set_auth_kind( crest_http_auth auth )
 {
-	g_auth_enabled = value && the_crest_auth_manager.get_auth_file();
+	if( the_crest_auth_manager.get_auth_file() )
+		g_auth_kind = auth;
 }
 
 /**********************************************************************************************/
@@ -449,12 +450,12 @@ size_t crest_request_count( void )
 
 /**********************************************************************************************/
 bool crest_start(
-	const char*	ports,
-	const char*	auth_file,
-	const char*	log_file,
-	const char*	pem_file,
-	bool		auth_enabled,
-	bool		log_enabled )
+	const char*		ports,
+	const char*		auth_file,
+	const char*		log_file,
+	const char*		pem_file,
+	crest_http_auth	auth_kind,
+	bool			log_enabled )
 {
 	if( g_time_start )
 	{
@@ -471,7 +472,7 @@ bool crest_start(
 		sort_resource_array( resources( i ) );
 	
 	// Set global flags
-	g_auth_enabled = auth_enabled && auth_file;
+	g_auth_kind = auth_file ? auth_kind : CREST_AUTH_NONE;
 	g_log_enabled = log_enabled && log_file;
 	
 	// Prepare and set options

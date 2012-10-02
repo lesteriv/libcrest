@@ -48,6 +48,7 @@ class crest_auth_manager_internal
 // Properties		
 		
 		char*				auth_file_;
+		void*				mutex_;
 		size_t				users_count_;
 		crest_user*			users_;
 };

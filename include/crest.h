@@ -43,9 +43,9 @@
 				 *  empty string otherwise. */
 const char*		crest_error_string( void );
 
-				/** Returns TRUE if authorization is required for each request. */
-bool			crest_get_auth_enabled( void );
-void			crest_set_auth_enabled( bool value );
+				/** Returns kind of authorization is required for each request. */
+crest_http_auth	crest_get_auth_kind( void );
+void			crest_set_auth_kind( crest_http_auth auth );
 
 				/** Returns TRUE if all requests are logging into file. */
 bool			crest_get_log_enabled( void );
@@ -58,12 +58,12 @@ size_t			crest_request_count( void );
 				 *  @ports is comma separated list of [ip_address:]port[s] values,
 				 *  examples: 80, 443s, 127.0.0.1:3128, 1.2.3.4:8080s. */
 bool			crest_start(
-					const char*	ports			= "8080",
-					const char*	auth_file		= "",
-					const char*	log_file		= "",
-					const char*	pem_file		= "",
-					bool		auth_enabled	= true,
-					bool		log_enabled		= true );
+					const char*		ports			= "8080",
+					const char*		auth_file		= "",
+					const char*		log_file		= "",
+					const char*		pem_file		= "",
+					crest_http_auth	auth_kind		= CREST_AUTH_BASIC,
+					bool			log_enabled		= true );
 
 				/** Stops running server. */
 void			crest_stop( void );
