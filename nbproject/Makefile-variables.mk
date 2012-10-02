@@ -54,6 +54,14 @@ CND_ARTIFACT_PATH_examples_debug=dist/examples_debug/GNU-Linux-x86/proc
 CND_PACKAGE_DIR_examples_debug=dist/examples_debug/GNU-Linux-x86/package
 CND_PACKAGE_NAME_examples_debug=libcrest.tar
 CND_PACKAGE_PATH_examples_debug=dist/examples_debug/GNU-Linux-x86/package/libcrest.tar
+# examples_dietlibc configuration
+CND_PLATFORM_examples_dietlibc=GNU-Linux-x86
+CND_ARTIFACT_DIR_examples_dietlibc=dist/examples_dietlibc/GNU-Linux-x86
+CND_ARTIFACT_NAME_examples_dietlibc=proc
+CND_ARTIFACT_PATH_examples_dietlibc=dist/examples_dietlibc/GNU-Linux-x86/proc
+CND_PACKAGE_DIR_examples_dietlibc=dist/examples_dietlibc/GNU-Linux-x86/package
+CND_PACKAGE_NAME_examples_dietlibc=libcrest.tar
+CND_PACKAGE_PATH_examples_dietlibc=dist/examples_dietlibc/GNU-Linux-x86/package/libcrest.tar
 # tests configuration
 CND_PLATFORM_tests=GNU-Linux-x86
 CND_ARTIFACT_DIR_tests=dist/tests/GNU-Linux-x86
