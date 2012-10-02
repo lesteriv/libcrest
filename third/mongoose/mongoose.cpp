@@ -143,6 +143,7 @@ typedef int socklen_t;
 #define PATH_MAX 4096
 #endif
 
+#ifndef NO_SSL
 // Snatched from OpenSSL includes. I put the prototypes here to be independent
 // from the OpenSSL source installation. Having this, mongoose + SSL can be
 // built on any system with binary SSL libraries installed.
@@ -154,7 +155,6 @@ typedef struct ssl_ctx_st SSL_CTX;
 #define SSL_ERROR_WANT_WRITE	3
 #define SSL_FILETYPE_PEM		1
 #define CRYPTO_LOCK				1
-
 
 // Dynamically loaded SSL functionality
 struct ssl_func
@@ -220,6 +220,7 @@ static struct ssl_func crypto_sw[] =
 	{ "CRYPTO_set_id_callback"				, NULL },
 	{ NULL									, NULL }
 };
+#endif // NO_SSL
 
 // Unified socket address. For IPv6 support, add IPv6 address structure
 // in the union u.
@@ -247,14 +248,20 @@ struct mg_socket
 	SOCKET		sock;   // Listening socket
 	union usa	lsa;	// Local socket address
 	union usa	rsa;	// Remote socket address
+	
+#ifndef NO_SSL	
 	bool		is_ssl; // Is socket SSL-ed
+#endif // NO_SSL
 };
 
 static const char* error_string;
 
 struct mg_context
 {
+#ifndef NO_SSL
 	SSL_CTX*		client_ssl_ctx;		// Client SSL context
+	SSL_CTX*		ssl_ctx;			// SSL context
+#endif // NO_SLL
 	mg_socket*		listening_sockets;
 	volatile int	num_threads;		// Number of threads
 	mg_socket		queue[ 20 ];		// Accepted sockets
@@ -262,7 +269,6 @@ struct mg_context
 	pthread_cond_t	sq_full;			// Signaled when socket is produced
 	volatile int	sq_head;			// Head of the socket queue
 	volatile int	sq_tail;			// Tail of the socket queue
-	SSL_CTX*		ssl_ctx;			// SSL context
 	volatile int	stop_flag;			// Should we stop event loop
 
 	pthread_mutex_t mutex;				// Protects (max|num)_threads
@@ -276,7 +282,9 @@ struct mg_connection
 	mg_socket		client;				// Connected client
 	mg_context*		ctx;
 	mg_request_info	request_info;
+#ifndef NO_SSL	
 	void*			ssl;				// SSL descriptor
+#endif // NO_SSL
 	int				content_len;		// Content-Length header value
 	int				consumed_content;   // How many bytes of content have been read
 	char*			buf;				// Buffer for received data
@@ -456,10 +464,12 @@ static int mg_start_thread(mg_thread_func_t f, void *p) {
   return _beginthread((void (__cdecl *)(void *)) f, 0, p) == -1L ? -1 : 0;
 }
 
+#ifndef NO_SSL
 static HANDLE dlopen(const char *dll_name, int flags) {
   flags = 0; // Unused
   return LoadLibraryA(dll_name);
 }
+#endif // NO_SSL
 
 static int set_non_blocking_mode(SOCKET sock) {
   unsigned long on = 1;
@@ -523,8 +533,10 @@ static int pull(mg_connection *conn, char *buf, int len) {
 
   if (!wait_until_socket_is_readable(conn)) {
 	nread = -1;
+#ifndef NO_SSL	
   } else if (conn->ssl != NULL) {
 	nread = SSL_read((SSL*)conn->ssl, buf, len);
+#endif // NO_SSL	
   } else {
 	nread = recv(conn->client.sock, buf, (size_t) len, 0);
   }
@@ -588,11 +600,12 @@ int mg_write( mg_connection* conn, const char* buf, size_t len )
 	// How many bytes we send in this iteration
 	k = (int) (len - sent);
 
-	if (conn->ssl) {
+#ifndef NO_SSL	
+	if (conn->ssl)
 	  n = SSL_write((SSL*) conn->ssl, buf + sent, k);
-	} else {
+	else
+#endif // NO_SSL		
 	  n = send(conn->client.sock, buf + sent, (size_t) k, MSG_NOSIGNAL);
-	}
 
 	if (n < 0)
 	  break;
@@ -632,6 +645,7 @@ static size_t url_decode(char* buf, size_t len)
   return j;
 }
 
+#ifndef NO_SSL
 static int sslize( mg_connection* conn, SSL_CTX* s, int (*func)(SSL *) )
 {
 	return 
@@ -639,6 +653,7 @@ static int sslize( mg_connection* conn, SSL_CTX* s, int (*func)(SSL *) )
 		SSL_set_fd((SSL*)conn->ssl, conn->client.sock) == 1 &&
 		func((SSL*)conn->ssl) == 1;
 }
+#endif // NO_SSL
 
 // Check whether full request is buffered. Return:
 //   -1  if request is malformed
@@ -776,7 +791,10 @@ static int parse_port_string(const vec *vec, mg_socket *so) {
 	return 0;
   }
 
+#ifndef NO_SSL  
   so->is_ssl = vec->ptr[len] == 's';
+#endif // NO_SSL
+  
 #if defined(USE_IPV6)
   so->lsa.sin6.sin6_family = AF_INET6;
   so->lsa.sin6.sin6_port = htons((uint16_t) port);
@@ -806,14 +824,20 @@ static int set_ports_option(mg_context* ctx, const char* list, const char* pem_f
   vec vc;
   mg_socket so, *listener;
 
+#ifdef NO_SSL
+  (void) pem_file;
+#endif // NO_SSL
+  
   while (success && (list = next_option(list, vc)) != NULL) {
 	if (!parse_port_string(&vc, &so)) {
 	  error_string = "Invalid port spec. Expecting list of: [IP_ADDRESS:]PORT[s|p]";
 	  success = 0;
+#ifndef NO_SSL	  
 	} else if (so.is_ssl &&
 			   (ctx->ssl_ctx == NULL || pem_file == NULL)) {
 	  error_string = "Cannot add SSL socket, is ssl certificate option set?";
 	  success = 0;
+#endif // NO_SSL	  
 	} else if ((sock = socket(so.lsa.sa.sa_family, SOCK_STREAM, 6)) ==
 			   INVALID_SOCKET ||
 			   // On Windows, SO_REUSEADDR is recommended only for
@@ -857,6 +881,7 @@ static void add_to_set(SOCKET fd, fd_set *set, int *max_fd) {
 	*max_fd = (int) fd;
 }
 
+#ifndef NO_SSL
 static pthread_mutex_t *ssl_mutexes;
 
 static void ssl_locking_callback(int mode, int mutex_num, const char *file,
@@ -970,6 +995,7 @@ static void uninitialize_ssl(mg_context *ctx) {
 	CRYPTO_set_id_callback(NULL);
   }
 }
+#endif // NO_SSL
 
 static void reset_per_request_attributes(mg_connection *conn) {
   conn->consumed_content = 0;
@@ -1005,11 +1031,13 @@ static void close_socket_gracefully(mg_connection *conn) {
 }
 
 static void close_connection(mg_connection *conn) {
+#ifndef NO_SSL	
   if (conn->ssl) {
 	SSL_free((SSL*)conn->ssl);
 	conn->ssl = NULL;
   }
-
+#endif // NO_SSL
+ 
   if (conn->client.sock != INVALID_SOCKET) {
 	close_socket_gracefully(conn);
   }
@@ -1118,13 +1146,15 @@ static void worker_thread(mg_context *ctx) {
 	memcpy(&conn.request_info.remote_ip_,
 		   &conn.client.rsa.sin.sin_addr.s_addr, 4);
 	conn.request_info.remote_ip_ = ntohl(conn.request_info.remote_ip_);
+	
+#ifndef NO_SSL	
 	conn.request_info.is_ssl_ = conn.client.is_ssl;
 
 	if (!conn.client.is_ssl ||
 		(conn.client.is_ssl &&
-		 sslize(&conn, conn.ctx->ssl_ctx, SSL_accept))) {
+		 sslize(&conn, conn.ctx->ssl_ctx, SSL_accept)))
+#endif // NO_SSL		
 	  process_new_connection(&conn);
-	}
 
 	close_connection(&conn);
   }
@@ -1166,7 +1196,9 @@ static void accept_new_connection(const mg_socket *listener,
   accepted.sock = accept(listener->sock, &accepted.rsa.sa, &len);
   if (accepted.sock != INVALID_SOCKET) {
 	// Put accepted socket structure into the queue
+#ifndef NO_SSL	  
 	accepted.is_ssl = listener->is_ssl;
+#endif // NO_SSL
 	produce_socket(ctx, &accepted);
   }
 }
@@ -1229,7 +1261,9 @@ static void master_thread(mg_context *ctx) {
   (void) pthread_cond_destroy(&ctx->sq_empty);
   (void) pthread_cond_destroy(&ctx->sq_full);
 
+#ifndef NO_SSL
   uninitialize_ssl(ctx);
+#endif // NO_SSL
 
   // Signal mg_stop() that we're done.
   // WARNING: This must be the very last thing this
@@ -1239,6 +1273,7 @@ static void master_thread(mg_context *ctx) {
 
 static void free_context(mg_context *ctx) {
   // Deallocate SSL context
+#ifndef NO_SSL	
   if (ctx->ssl_ctx != NULL) {
 	SSL_CTX_free(ctx->ssl_ctx);
   }
@@ -1249,7 +1284,8 @@ static void free_context(mg_context *ctx) {
 	free(ssl_mutexes);
 	ssl_mutexes = NULL;
   }
-
+#endif // NO_SSL
+  
   // Deallocate context itself
   free(ctx);
 }
@@ -1287,7 +1323,9 @@ mg_context *mg_start(
   // NOTE(lsm): order is important here. SSL certificates must
   // be initialized before listening ports. UID must be set last.
   if (
+#ifndef NO_SSL	  
 	  !set_ssl_option(ctx,pem_file) ||
+#endif // NO_SSL
 	  !set_ports_option(ctx,ports,pem_file)
 	  ) {
 	free_context(ctx);
@@ -1329,7 +1367,7 @@ mg_mutex mg_mutex_create(void)
 void mg_mutex_destroy(mg_mutex m)
 {
 	pthread_mutex_destroy((pthread_mutex_t*) m);
-	free(m);
+	free( m );
 }
 
 void mg_mutex_lock(mg_mutex m)
