@@ -34,8 +34,8 @@ void			create_responce_header(
 
 				/** The same as strdup. */
 char*			crest_strdup(
-					const char*			str,
-					int					len = -1 );
+					const char*	str,
+					int			en = -1 );
 
 				/** Returns TRUE if this file exists. */
 bool			file_exists( const char* path );
@@ -59,10 +59,10 @@ bool			parse_basic_auth(
 
 				/** Parse string with query parameters */
 void			parse_query_parameters(
-					size_t&				count,
-					char**				names,
-					char**				values,
-					char*				str );
+					size_t&		count,
+					char**		names,
+					char**		values,
+					char*		str );
 
 				/** Converts integer value to string. */
 				template< typename T >
