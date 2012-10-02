@@ -40,6 +40,10 @@
                     <type>1</type>
                 </confElem>
                 <confElem>
+                    <name>exampes_minimal</name>
+                    <type>1</type>
+                </confElem>
+                <confElem>
                     <name>tests</name>
                     <type>1</type>
                 </confElem>

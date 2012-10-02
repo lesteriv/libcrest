@@ -22,7 +22,7 @@ AS=as
 
 # Macros
 CND_PLATFORM=GNU-Linux-x86
-CND_CONF=examples
+CND_CONF=exampes_minimal
 CND_DISTDIR=dist
 CND_BUILDDIR=build
 
@@ -64,37 +64,37 @@ LDLIBSOPTIONS=-lpthread -ldl
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	g++ -fvisibility=hidden -static-libstdc++ -Os -fno-threadsafe-statics -Wl,--gc-sections -flto -m32 -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc -s ${OBJECTFILES} ${LDLIBSOPTIONS} 
+	g++ -ffast-math -fno-rtti -fno-exceptions -fvisibility=hidden -static-libstdc++ -Os -fno-threadsafe-statics -Wl,--gc-sections -flto -m32 -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc -s ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
 ${OBJECTDIR}/src/utils.o: src/utils.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/utils.o src/utils.cpp
+	$(COMPILE.cc) -s -DNO_AUTH -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/utils.o src/utils.cpp
 
 ${OBJECTDIR}/src/crest.o: src/crest.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest.o src/crest.cpp
+	$(COMPILE.cc) -s -DNO_AUTH -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest.o src/crest.cpp
 
 ${OBJECTDIR}/examples/proc.o: examples/proc.cpp 
 	${MKDIR} -p ${OBJECTDIR}/examples
 	${RM} $@.d
-	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/proc.o examples/proc.cpp
+	$(COMPILE.cc) -s -DNO_AUTH -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/proc.o examples/proc.cpp
 
 ${OBJECTDIR}/third/mongoose/mongoose.o: third/mongoose/mongoose.cpp 
 	${MKDIR} -p ${OBJECTDIR}/third/mongoose
 	${RM} $@.d
-	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.cpp
+	$(COMPILE.cc) -s -DNO_AUTH -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.cpp
 
 ${OBJECTDIR}/src/crest_connection.o: src/crest_connection.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_connection.o src/crest_connection.cpp
+	$(COMPILE.cc) -s -DNO_AUTH -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_connection.o src/crest_connection.cpp
 
 ${OBJECTDIR}/src/crest_auth_manager.o: src/crest_auth_manager.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_auth_manager.o src/crest_auth_manager.cpp
+	$(COMPILE.cc) -s -DNO_AUTH -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_auth_manager.o src/crest_auth_manager.cpp
 
 # Subprojects
 .build-subprojects:

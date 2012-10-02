@@ -15,8 +15,8 @@ NM=nm
 CCADMIN=CCadmin
 RANLIB=ranlib
 CC=gcc
-CCC=diet g++
-CXX=diet g++
+CCC=diet -Os g++
+CXX=diet -Os g++
 FC=gfortran
 AS=as
 
@@ -46,8 +46,8 @@ OBJECTFILES= \
 CFLAGS=-fvisibility=hidden -Os -ffast-math -fno-threadsafe-statics
 
 # CC Compiler Flags
-CCFLAGS=-Wall -Wextra -fno-exceptions -fno-rtti -ffast-math -fno-threadsafe-statics
-CXXFLAGS=-Wall -Wextra -fno-exceptions -fno-rtti -ffast-math -fno-threadsafe-statics
+CCFLAGS=-Wall -Wextra -fno-rtti -ffast-math -fno-threadsafe-statics -flto
+CXXFLAGS=-Wall -Wextra -fno-rtti -ffast-math -fno-threadsafe-statics -flto
 
 # Fortran Compiler Flags
 FFLAGS=
@@ -64,37 +64,37 @@ LDLIBSOPTIONS=-lpthread
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	diet gcc -fno-threadsafe-statics -Wl,--gc-sections -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc ${OBJECTFILES} ${LDLIBSOPTIONS} 
+	diet -Os gcc -Wl,--gc-sections -flto -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc -s ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
 ${OBJECTDIR}/src/utils.o: src/utils.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -g -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/utils.o src/utils.cpp
+	$(COMPILE.cc) -s -DNO_AUTH -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/utils.o src/utils.cpp
 
 ${OBJECTDIR}/src/crest.o: src/crest.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -g -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest.o src/crest.cpp
+	$(COMPILE.cc) -s -DNO_AUTH -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest.o src/crest.cpp
 
 ${OBJECTDIR}/examples/proc.o: examples/proc.cpp 
 	${MKDIR} -p ${OBJECTDIR}/examples
 	${RM} $@.d
-	$(COMPILE.cc) -g -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/proc.o examples/proc.cpp
+	$(COMPILE.cc) -s -DNO_AUTH -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/proc.o examples/proc.cpp
 
 ${OBJECTDIR}/third/mongoose/mongoose.o: third/mongoose/mongoose.cpp 
 	${MKDIR} -p ${OBJECTDIR}/third/mongoose
 	${RM} $@.d
-	$(COMPILE.cc) -g -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.cpp
+	$(COMPILE.cc) -s -DNO_AUTH -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.cpp
 
 ${OBJECTDIR}/src/crest_connection.o: src/crest_connection.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -g -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_connection.o src/crest_connection.cpp
+	$(COMPILE.cc) -s -DNO_AUTH -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_connection.o src/crest_connection.cpp
 
 ${OBJECTDIR}/src/crest_auth_manager.o: src/crest_auth_manager.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -g -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_auth_manager.o src/crest_auth_manager.cpp
+	$(COMPILE.cc) -s -DNO_AUTH -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_auth_manager.o src/crest_auth_manager.cpp
 
 # Subprojects
 .build-subprojects:

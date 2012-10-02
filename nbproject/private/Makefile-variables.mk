@@ -10,4 +10,5 @@
 # examples configuration
 # examples_debug configuration
 # examples_dietlibc configuration
+# exampes_minimal configuration
 # tests configuration
