@@ -62,21 +62,11 @@
 #define SHUT_WR 1
 #define mg_sleep_int(x) Sleep(x)
 
-#define pipe(x) _pipe(x, MG_BUF_LEN, _O_BINARY)
-#define popen(x, y) _popen(x, y)
-#define pclose(x) _pclose(x)
 #define close(x) _close(x)
 #define dlsym(x,y) GetProcAddress((HINSTANCE) (x), (y))
 #define RTLD_LAZY  0
-#define fseeko(x, y, z) _lseeki64(_fileno(x), (y), (z))
-#define fdopen(x, y) _fdopen((x), (y))
 #define write(x, y, z) _write((x), (y), (unsigned) z)
 #define read(x, y, z) _read((x), (y), (unsigned) z)
-#define sleep(x) Sleep((x) * 1000)
-
-#if !defined(fileno)
-#define fileno(x) _fileno(x)
-#endif // !fileno MINGW #defines fileno
 
 typedef HANDLE pthread_mutex_t;
 typedef struct {HANDLE signal, broadcast;} pthread_cond_t;
