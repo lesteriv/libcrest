@@ -13,9 +13,9 @@
 
 				/** Adds string to another. */
 inline char*	add_string(
-					char*				dest,
-					const char*			src,
-					size_t				len )
+					char*		dest,
+					const char*	src,
+					size_t		len )
 				{
 					memcpy( dest, src, len + 1 );
 					return dest + len;
@@ -76,5 +76,5 @@ void			parse_query_parameters(
 
 				/** Converts integer value to string, returns end of string - \0 pos. */
 char*			to_string(
-					int			value,
-					char*		buf );
+					char*		buf,
+					int			value );

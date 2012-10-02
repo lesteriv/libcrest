@@ -184,7 +184,7 @@ struct sl_connection : public crest_connection
 					
 					char* str = buf;
 					str = add_string ( str, rfile, glen - 4 );
-					str = to_string  ( index, str );
+					str = to_string  ( str, index );
 					str = add_string ( str, ".log", 5 );
 
 					if( !file_exists( buf ) )
@@ -492,6 +492,11 @@ bool crest_start(
 	const char*		log_file,
 	const char*		pem_file )
 {
+	(void) auth_kind;
+	(void) auth_file;
+	(void) log_enabled;
+	(void) log_file;
+	
 	if( g_time_start )
 	{
 		g_error = crest_strdup( "Server already running" );

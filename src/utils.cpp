@@ -6,7 +6,6 @@
 /**********************************************************************************************/
 
 // STD
-#include <sys/stat.h>
 #include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -137,7 +136,7 @@ void create_responce(
 	
 	char* str = out;
 	str = add_string ( str, RESPONCE_PREFIX[ status ], RESPONCE_PREFIX_SIZE[ status ] );
-	str = to_string	 ( (int) content_len, str );
+	str = to_string	 ( str, (int) content_len );
 	str = add_string ( str, "\r\n\r\n", 4 );
 	str = add_string ( str, content, content_len );
 	
@@ -154,7 +153,7 @@ void create_responce_header(
 {
 	char* str = out;
 	str = add_string ( str, RESPONCE_PREFIX[ status ], RESPONCE_PREFIX_SIZE[ status ] );
-	str = to_string  ( (int) content_len, str );
+	str = to_string  ( str, (int) content_len );
 	str = add_string ( str, "\r\n\r\n", 5 );
 	
 	out_len = str - out - 1;
@@ -455,7 +454,7 @@ final:
 }
 
 /**********************************************************************************************/
-char* to_string( int value, char* buf )
+char* to_string( char* buf, int value )
 {
 	char	ch;
 	char*	ptr1 = buf;
