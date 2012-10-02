@@ -269,48 +269,14 @@ static resource* default_resource( int method )
 }
 
 /**********************************************************************************************/
-crest_handler_register::crest_handler_register(
+crest_auto_handler_register::crest_auto_handler_register(
 	crest_http_method	 method,
 	const char*			 name,
 	crest_api_callback_t func,
 	bool				 for_admin_only,
 	bool			 	 publ )
 {
-	resource* rs;
-	
-	if( *name == '*' )
-	{
-		rs = default_resource( method );
-	}
-	else
-	{
-		resource_array& arr = resources( method );
-		if( !arr.count_ )
-		{
-			arr.count_ = 1;
-			arr.items_ = (resource*) malloc( sizeof( resource ) );
-			rs = arr.items_;
-		}
-		else
-		{
-			arr.count_++;
-			arr.items_ = (resource*) realloc( arr.items_, sizeof( resource ) * arr.count_ );
-			rs = arr.items_ + arr.count_ - 1;
-		}
-
-		rs->keys_ = parse_resource_name( name, strlen( name ) );
-
-		size_t count = rs->keys_.count_;
-		for( size_t i = 0 ; i < count ; ++i )
-		{
-			if( rs->keys_.items_[ i ][ 0 ] == '{' )
-				rs->keys_.items_[ i ] = 0;
-		}
-	}
-	
-	rs->admin_		= for_admin_only;
-	rs->handler_	= func;
-	rs->public_		= publ;
+	crest_register_handler( method, name, func, for_admin_only, publ );
 }
 
 /**********************************************************************************************/
@@ -476,6 +442,51 @@ void crest_set_log_enabled( bool value )
 /**********************************************************************************************/
 #endif // NO_LOG
 
+
+/**********************************************************************************************/
+void crest_register_handler(
+	crest_http_method	 method,
+	const char*			 name,
+	crest_api_callback_t func,
+	bool				 for_admin_only,
+	bool			 	 publ )
+{
+	resource* rs;
+	
+	if( *name == '*' )
+	{
+		rs = default_resource( method );
+	}
+	else
+	{
+		resource_array& arr = resources( method );
+		if( !arr.count_ )
+		{
+			arr.count_ = 1;
+			arr.items_ = (resource*) malloc( sizeof( resource ) );
+			rs = arr.items_;
+		}
+		else
+		{
+			arr.count_++;
+			arr.items_ = (resource*) realloc( arr.items_, sizeof( resource ) * arr.count_ );
+			rs = arr.items_ + arr.count_ - 1;
+		}
+
+		rs->keys_ = parse_resource_name( name, strlen( name ) );
+
+		size_t count = rs->keys_.count_;
+		for( size_t i = 0 ; i < count ; ++i )
+		{
+			if( rs->keys_.items_[ i ][ 0 ] == '{' )
+				rs->keys_.items_[ i ] = 0;
+		}
+	}
+	
+	rs->admin_		= for_admin_only;
+	rs->handler_	= func;
+	rs->public_		= publ;	
+}
 
 /**********************************************************************************************/
 size_t crest_request_count( void )

@@ -50,6 +50,14 @@ void			crest_set_auth_kind( crest_http_auth auth );
 				/** Returns TRUE if all requests are logging into file. */
 bool			crest_get_log_enabled( void );
 void			crest_set_log_enabled( bool value );
+
+				/** Register resource handler. */
+void			crest_register_handler(
+					crest_http_method	 method,
+					const char*			 resource_name,
+					crest_api_callback_t handler,
+					bool				 for_admin_only	 = false,
+					bool			 	 public_resource = false );
 	
 				/** Returns total count of processed requests. */
 size_t			crest_request_count( void );
