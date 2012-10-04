@@ -35,10 +35,12 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/src/utils.o \
+	${OBJECTDIR}/src/crest_user_manager.o \
 	${OBJECTDIR}/src/crest.o \
+	${OBJECTDIR}/src/auth_digest.o \
 	${OBJECTDIR}/third/mongoose/mongoose.o \
 	${OBJECTDIR}/src/crest_connection.o \
-	${OBJECTDIR}/src/crest_auth_manager.o
+	${OBJECTDIR}/src/auth_basic.o
 
 
 # C Compiler Flags
@@ -72,10 +74,20 @@ ${OBJECTDIR}/src/utils.o: src/utils.cpp
 	${RM} $@.d
 	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/utils.o src/utils.cpp
 
+${OBJECTDIR}/src/crest_user_manager.o: src/crest_user_manager.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_user_manager.o src/crest_user_manager.cpp
+
 ${OBJECTDIR}/src/crest.o: src/crest.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest.o src/crest.cpp
+
+${OBJECTDIR}/src/auth_digest.o: src/auth_digest.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/auth_digest.o src/auth_digest.cpp
 
 ${OBJECTDIR}/third/mongoose/mongoose.o: third/mongoose/mongoose.cpp 
 	${MKDIR} -p ${OBJECTDIR}/third/mongoose
@@ -87,10 +99,10 @@ ${OBJECTDIR}/src/crest_connection.o: src/crest_connection.cpp
 	${RM} $@.d
 	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_connection.o src/crest_connection.cpp
 
-${OBJECTDIR}/src/crest_auth_manager.o: src/crest_auth_manager.cpp 
+${OBJECTDIR}/src/auth_basic.o: src/auth_basic.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_auth_manager.o src/crest_auth_manager.cpp
+	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/auth_basic.o src/auth_basic.cpp
 
 # Subprojects
 .build-subprojects:
