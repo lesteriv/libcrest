@@ -9,7 +9,7 @@
 
 // CREST
 #include "internal/crest_handler_register.h"
-#include "crest_auth_manager.h"
+#include "crest_user_manager.h"
 #include "crest_connection.h"
 
 

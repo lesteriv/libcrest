@@ -1,5 +1,5 @@
 /**********************************************************************************************/
-/* auth_manager.h																			  */
+/* user_manager.h																			  */
 /*                                                                       					  */
 /* Igor Nikitin, 2012																		  */
 /* MIT license			                                                  					  */
@@ -8,19 +8,19 @@
 #pragma once
 
 // CREST
-#include "internal/crest_auth_manager_internal.h"
+#include "internal/crest_user_manager_internal.h"
 
 /**********************************************************************************************/
 #ifndef NO_AUTH
 
 /**********************************************************************************************/
-#define the_crest_auth_manager ( crest_auth_manager::instance() )
+#define the_crest_user_manager ( crest_user_manager::instance() )
 
 
 /**********************************************************************************************/
 // Class to manage users and it's passwords
 //
-class crest_auth_manager : public crest_auth_manager_internal
+class crest_user_manager : public crest_user_manager_internal
 {
 	public://////////////////////////////////////////////////////////////////////////
 
@@ -55,13 +55,6 @@ class crest_auth_manager : public crest_auth_manager_internal
 								const char*	name,
 								const char*	password,
 								bool		admin );
-		
-							/** Returns TRUE if user @name exists, has password
-							 *  @password and match flags. */
-		bool				auth(
-								const char*	name,
-								const char*	password,
-								bool		admin );								
 
 							/** Reset all info and free used memory. */
 		void				clean( void );
@@ -70,8 +63,13 @@ class crest_auth_manager : public crest_auth_manager_internal
 							 *  and NULL on success. */
 		const char*			delete_user( const char* name );
 		
+							/** Returns hash of password for user and TRUE if such user exists. */
+		bool				get_password(
+								const char*	user,
+								char*		pass );
+		
 							/** Returns singleton. */
-static	crest_auth_manager&	instance( void );
+static	crest_user_manager&	instance( void );
 		
 							/** Changes user's flags, returns error's description on fail,
 							 *  and NULL on success. */

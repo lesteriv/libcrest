@@ -10,6 +10,9 @@
 // STD
 #include <stddef.h>
 
+// CREST
+#include "../crest_types.h"
+
 /**********************************************************************************************/
 struct mg_connection;
 

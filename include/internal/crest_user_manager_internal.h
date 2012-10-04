@@ -1,5 +1,5 @@
 /**********************************************************************************************/
-/* auth_manager_internal.h  		                                               			  */
+/* user_manager_internal.h  		                                               			  */
 /*                                                                       					  */
 /* Igor Nikitin, 2012																		  */
 /* MIT license			                                                  					  */
@@ -27,13 +27,13 @@ struct crest_user
 
 
 /**********************************************************************************************/
-// Internal members for auth_manager
+// Internal members for user_manager
 //
-class crest_auth_manager_internal
+class crest_user_manager_internal
 {
 	protected://////////////////////////////////////////////////////////////////////////
 	
-							crest_auth_manager_internal( void );
+							crest_user_manager_internal( void );
 
 	protected://////////////////////////////////////////////////////////////////////////
 		

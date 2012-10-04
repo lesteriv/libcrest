@@ -35,6 +35,9 @@ class crest_connection : public crest_connection_internal
 								/** Returns value of request header by name. */
 		const char*				get_http_header( const char* name ) const;
 
+								/** Returns request's method. */
+		const char*				get_http_method( void ) const;
+		
 								/** Returns value of parameter passed via url,
 								 *  see examples. */
 		const char*				get_path_parameter( size_t index ) const;
