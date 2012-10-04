@@ -47,6 +47,12 @@ const char* crest_connection::get_http_header( const char* name ) const
 }
 
 /**********************************************************************************************/
+const char*	crest_connection::get_http_method( void ) const
+{
+	return mg_get_request_info( conn_ )->method_;
+}
+
+/**********************************************************************************************/
 const char* crest_connection::get_path_parameter( size_t index ) const
 {
 	return path_params_.count_ > index ?

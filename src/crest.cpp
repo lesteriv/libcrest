@@ -16,6 +16,8 @@
 
 // CREST
 #include "../include/crest.h"
+#include "auth_basic.h"
+#include "auth_digest.h"
 #include "utils.h"
 
 /**********************************************************************************************/
@@ -315,28 +317,21 @@ void event_handler( mg_connection* conn )
 	
 	if( it && it->handler_ )
 	{
+		sl_connection sconn( conn, key.keys_ );
+		
 #ifndef NO_AUTH
 		
-		if( !it->public_ && g_auth_kind == CREST_AUTH_BASIC )
+		if( !it->public_ )
 		{
-			const char* auth = mg_get_header( conn, "Authorization" );
-			size_t auth_len = auth ? strlen( auth ) : 0;
-			char* buf = (char*) alloca( auth_len + 1 );
-			char *user, *pass;
-			
-			if( !auth ||
-				!parse_basic_auth( auth, auth_len, buf, user, pass ) ||
-				!the_crest_auth_manager.auth( user, pass, it->admin_ ) )
-			{
-				mg_write( conn, "HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\nWWW-Authenticate: Basic\r\n\r\n", 73 );
+			if( g_auth_kind == CREST_AUTH_BASIC && !auth_basic( sconn, it->admin_ ) )
 				return;
-			}
+
+			if( g_auth_kind == CREST_AUTH_DIGEST && !auth_digest( sconn, it->admin_ ) )
+				return;
 		}
 		
 #endif // NO_AUTH
 		
-		sl_connection sconn( conn, key.keys_ );
-
 		mg_mutex_lock( g_conns_mutex );
 		
 		for( size_t i = 0 ; i < 20 ; ++i )
@@ -416,7 +411,7 @@ crest_http_auth crest_get_auth_kind( void )
 /**********************************************************************************************/
 void crest_set_auth_kind( crest_http_auth auth )
 {
-	if( the_crest_auth_manager.get_auth_file() )
+	if( the_crest_user_manager.get_auth_file() )
 		g_auth_kind = auth;
 }
 
@@ -525,7 +520,7 @@ bool crest_start(
 #ifndef NO_AUTH
 
 	g_auth_kind = auth_file ? auth_kind : CREST_AUTH_NONE;
-	the_crest_auth_manager.set_auth_file( auth_file );
+	the_crest_user_manager.set_auth_file( auth_file );
 
 #endif // NO_AUTH
 	
@@ -575,7 +570,7 @@ bool crest_start(
 
 #ifndef NO_AUTH
 
-	the_crest_auth_manager.clean();
+	the_crest_user_manager.clean();
 
 #endif // NO_AUTH
 

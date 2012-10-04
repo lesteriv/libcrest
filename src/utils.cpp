@@ -204,35 +204,6 @@ size_t file_size( const char* path )
 }
 
 /**********************************************************************************************/
-bool parse_basic_auth(
-	const char*	auth,
-	size_t		auth_len,
-	char*		buf,
-	char*&		user,
-	char*&		password )
-{
-	if( !auth )
-		return false;
-
-	if( strncmp( "Basic ", auth, 6 ) )
-		return false;
-	
-	auth += 6;
-	size_t len = base64_decode( buf, auth, auth_len - 6 );
-	buf[ len ] = 0;
-
-	char* sp = strchr( buf, ':' );
-	if( !sp )
-		return false;
-	
-	*sp = 0;
-	user = buf;
-	password = sp + 1;
-	
-	return true;
-}
-
-/**********************************************************************************************/
 void parse_query_parameters(
 	size_t&	count,
 	char**	names,
@@ -386,49 +357,55 @@ static void md5_transform(
 
 /**********************************************************************************************/
 void md5(
-	char		hash[ 16 ],
-	const char* data,
-	size_t		len )
+	char			hash[ 16 ],
+	size_t			data_count,
+	const char**	adata,
+	size_t*			alen )
 {
 	uint32_t		bits [ 2  ] = { 0, 0 };
 	uint32_t		buf  [ 4  ] = { 0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476 };
 	unsigned char	in	 [ 64 ];
   
-	uint32_t t = bits[ 0 ];
-	if( ( bits[ 0 ] = t + ((uint32_t) len << 3) ) < t )
-		bits[ 1 ]++;
-	
-	bits[ 1 ] += len >> 29;
-
-	t = ( t >> 3 ) & 0x3F;
-	if( t )
+	for( size_t i = 0 ; i < data_count ; ++i )
 	{
-		unsigned char* p = (unsigned char*) in + t;
-
-		t = 64 - t;
-		if( len < t )
-		{
-			memcpy( p, data, len );
-			goto final;
-		}
+		const char*	data = adata[ i ];
+		size_t		len	 = alen[ i ];
 		
-		memcpy( p, data, t );
-		md5_transform( buf, (uint32_t*) in );
-		data += t;
-		len -= t;
+		uint32_t t = bits[ 0 ];
+		if( ( bits[ 0 ] = t + ((uint32_t) len << 3) ) < t )
+			bits[ 1 ]++;
+
+		bits[ 1 ] += len >> 29;
+
+		t = ( t >> 3 ) & 0x3F;
+		if( t )
+		{
+			unsigned char* p = (unsigned char*) in + t;
+
+			t = 64 - t;
+			if( len < t )
+			{
+				memcpy( p, data, len );
+				continue;
+			}
+
+			memcpy( p, data, t );
+			md5_transform( buf, (uint32_t*) in );
+			data += t;
+			len -= t;
+		}
+
+		while( len >= 64 )
+		{
+			memcpy( in, data, 64 );
+			md5_transform( buf, (uint32_t*) in );
+			data += 64;
+			len -= 64;
+		}
+
+		memcpy( in, data, len );	
 	}
 
-	while( len >= 64 )
-	{
-		memcpy( in, data, 64 );
-		md5_transform( buf, (uint32_t*) in );
-		data += 64;
-		len -= 64;
-	}
-
-	memcpy( in, data, len );	
-
-final:
 	unsigned count = ( bits[ 0 ] >> 3 ) & 0x3F;
 	unsigned char* p = in + count;
 	

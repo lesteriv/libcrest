@@ -7,6 +7,12 @@
 
 #pragma once
 
+// STD
+#include <stddef.h>
+
+// CREST
+#include "../include/crest_types.h"
+
 
 /**********************************************************************************************/
 // Functions
@@ -55,26 +61,19 @@ size_t			file_size( const char* path );
 
 				/** Calculate md5 hash. */
 void			md5(
-					char		hash[ 16 ],
-					const char* data,
-					size_t		len );
-
-				/** Parse basic auth HTTP header. */
-bool			parse_basic_auth(
-					const char*	auth,
-					size_t		auth_len,
-					char*		buf,
-					char*&		user,
-					char*&		password );
+					char			hash[ 16 ],
+					size_t			data_count,
+					const char**	data,
+					size_t*			len );
 
 				/** Parse string with query parameters */
 void			parse_query_parameters(
-					size_t&		count,
-					char**		names,
-					char**		values,
-					char*		str );
+					size_t&			count,
+					char**			names,
+					char**			values,
+					char*			str );
 
 				/** Converts integer value to string, returns end of string - \0 pos. */
 char*			to_string(
-					char*		buf,
-					int			value );
+					char*	buf,
+					int		value );
