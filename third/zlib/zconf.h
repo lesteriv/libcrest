@@ -269,7 +269,6 @@ typedef uLong FAR uLongf;
   #pragma map(inflateEnd,"INEND")
   #pragma map(inflateSync,"INSY")
   #pragma map(inflateSetDictionary,"INSEDI")
-  #pragma map(compressBound,"CMBND")
   #pragma map(inflate_table,"INTABL")
   #pragma map(inflate_fast,"INFA")
   #pragma map(inflate_copyright,"INCOPY")

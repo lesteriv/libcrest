@@ -186,11 +186,11 @@ ZEXTERN int ZEXPORT inflateBackEnd OF((z_streamp strm));
 ZEXTERN int ZEXPORT compress OF((Bytef *dest,   uLongf *destLen,
                                  const Bytef *source, uLong sourceLen));
 
-ZEXTERN int ZEXPORT compress2 OF((Bytef *dest,   uLongf *destLen,
-                                  const Bytef *source, uLong sourceLen,
-                                  int level));
-
-ZEXTERN uLong ZEXPORT compressBound OF((uLong sourceLen));
+static inline uLong compressBound(uLong sourceLen)
+{
+    return sourceLen + (sourceLen >> 12) + (sourceLen >> 14) +
+           (sourceLen >> 25) + 13;	
+}
 
 ZEXTERN int ZEXPORT uncompress OF((Bytef *dest,   uLongf *destLen,
                                    const Bytef *source, uLong sourceLen));
