@@ -116,25 +116,12 @@ typedef struct internal_state {
 
     uInt prev_length;
     
-
-    uInt max_chain_length;
-    
-
-    uInt max_lazy_match;
-    
 #   define max_insert_length  max_lazy_match
     
 
     int level;    
     int strategy; 
 
-    uInt good_match;
-    
-
-    int nice_match; 
-
-                
-    
     struct ct_data_s dyn_ltree[HEAP_SIZE];   
     struct ct_data_s dyn_dtree[2*D_CODES+1]; 
     struct ct_data_s bl_tree[2*BL_CODES+1];  

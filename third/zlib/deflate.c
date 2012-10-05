@@ -10,7 +10,6 @@ typedef enum {
 typedef block_state (*compress_func) OF((deflate_state *s, int flush));
 
 local void fill_window    OF((deflate_state *s));
-local block_state deflate_stored OF((deflate_state *s, int flush));
 local block_state deflate_fast   OF((deflate_state *s, int flush));
 local block_state deflate_rle    OF((deflate_state *s, int flush));
 local block_state deflate_huff   OF((deflate_state *s, int flush));
@@ -43,11 +42,6 @@ typedef struct config_s {
    compress_func func;
 } config;
 
-local const config configuration_table[2] = {
-
- {0,    0,  0,    0, deflate_stored},  
- {4,    4,  8,    4, deflate_fast}}; 
-
 #ifndef NO_DUMMY_DECL
 struct static_tree_desc_s {int dummy;}; 
 #endif
@@ -69,18 +63,46 @@ struct static_tree_desc_s {int dummy;};
     s->head[s->hash_size-1] = NIL; \
     zmemzero((Bytef *)s->head, (unsigned)(s->hash_size-1)*sizeof(*s->head));
 
-
-int deflateInit_(strm, level, version, stream_size)
+local int deflateResetKeep (strm)
     z_streamp strm;
-    int level;
-    const char *version;
-    int stream_size;
 {
-    return deflateInit2_(strm, level, Z_DEFLATED, MAX_WBITS, DEF_MEM_LEVEL,
-                         Z_DEFAULT_STRATEGY, version, stream_size);
-    
+    deflate_state *s;
+
+    if (strm == Z_NULL || strm->state == Z_NULL ) {
+        return Z_STREAM_ERROR;
+    }
+
+    strm->total_in = strm->total_out = 0;
+    strm->data_type = Z_UNKNOWN;
+
+    s = (deflate_state *)strm->state;
+    s->pending = 0;
+    s->pending_out = s->pending_buf;
+
+    if (s->wrap < 0) {
+        s->wrap = -s->wrap; 
+    }
+    s->status = s->wrap ? INIT_STATE : BUSY_STATE;
+    strm->adler =
+        adler32(0L, Z_NULL, 0);
+    s->last_flush = Z_NO_FLUSH;
+
+    _tr_init(s);
+
+    return Z_OK;
 }
 
+
+local int deflateReset (strm)
+    z_streamp strm;
+{
+    int ret;
+
+    ret = deflateResetKeep(strm);
+    if (ret == Z_OK)
+        lm_init(strm->state);
+    return ret;
+}
 
 int deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
                   version, stream_size)
@@ -161,45 +183,15 @@ int deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
     return deflateReset(strm);
 }
 
-int deflateResetKeep (strm)
+int deflateInit_(strm, level, version, stream_size)
     z_streamp strm;
+    int level;
+    const char *version;
+    int stream_size;
 {
-    deflate_state *s;
-
-    if (strm == Z_NULL || strm->state == Z_NULL ) {
-        return Z_STREAM_ERROR;
-    }
-
-    strm->total_in = strm->total_out = 0;
-    strm->data_type = Z_UNKNOWN;
-
-    s = (deflate_state *)strm->state;
-    s->pending = 0;
-    s->pending_out = s->pending_buf;
-
-    if (s->wrap < 0) {
-        s->wrap = -s->wrap; 
-    }
-    s->status = s->wrap ? INIT_STATE : BUSY_STATE;
-    strm->adler =
-        adler32(0L, Z_NULL, 0);
-    s->last_flush = Z_NO_FLUSH;
-
-    _tr_init(s);
-
-    return Z_OK;
-}
-
-
-int deflateReset (strm)
-    z_streamp strm;
-{
-    int ret;
-
-    ret = deflateResetKeep(strm);
-    if (ret == Z_OK)
-        lm_init(strm->state);
-    return ret;
+    return deflateInit2_(strm, level, Z_DEFLATED, MAX_WBITS, DEF_MEM_LEVEL,
+                         Z_DEFAULT_STRATEGY, version, stream_size);
+    
 }
 
 local void putShortMSB (s, b)
@@ -314,7 +306,7 @@ int deflate (strm, flush)
 
         bstate = s->strategy == Z_HUFFMAN_ONLY ? deflate_huff(s, flush) :
                     (s->strategy == Z_RLE ? deflate_rle(s, flush) :
-                        (*(configuration_table[s->level].func))(s, flush));
+                        deflate_fast(s, flush));
 
         if (bstate == finish_started || bstate == finish_done) {
             s->status = FINISH_STATE;
@@ -480,12 +472,6 @@ local void lm_init (s)
 
     CLEAR_HASH(s);
 
-    
-    s->max_lazy_match   = configuration_table[s->level].max_lazy;
-    s->good_match       = configuration_table[s->level].good_length;
-    s->nice_match       = configuration_table[s->level].nice_length;
-    s->max_chain_length = configuration_table[s->level].max_chain;
-
     s->strstart = 0;
     s->block_start = 0L;
     s->lookahead = 0;
@@ -635,56 +621,6 @@ local void fill_window(s)
 #define FLUSH_BLOCK(s, last) { \
    FLUSH_BLOCK_ONLY(s, last); \
    if (s->strm->avail_out == 0) return (last) ? finish_started : need_more; \
-}
-
-
-local block_state deflate_stored(s, flush)
-    deflate_state *s;
-    int flush;
-{
-    
-    ulg max_block_size = 0xffff;
-    ulg max_start;
-
-    if (max_block_size > s->pending_buf_size - 5) {
-        max_block_size = s->pending_buf_size - 5;
-    }
-
-    
-    for (;;) {
-        
-        if (s->lookahead <= 1) {
-
-            fill_window(s);
-            if (s->lookahead == 0 && flush == Z_NO_FLUSH) return need_more;
-
-            if (s->lookahead == 0) break; 
-        }
-
-        s->strstart += s->lookahead;
-        s->lookahead = 0;
-
-        
-        max_start = s->block_start + max_block_size;
-        if (s->strstart == 0 || (ulg)s->strstart >= max_start) {
-            
-            s->lookahead = (uInt)(s->strstart - max_start);
-            s->strstart = (uInt)max_start;
-            FLUSH_BLOCK(s, 0);
-        }
-        
-        if (s->strstart - (uInt)s->block_start >= MAX_DIST(s)) {
-            FLUSH_BLOCK(s, 0);
-        }
-    }
-    s->insert = 0;
-    if (flush == Z_FINISH) {
-        FLUSH_BLOCK(s, 1);
-        return finish_done;
-    }
-    if ((long)s->strstart > s->block_start)
-        FLUSH_BLOCK(s, 0);
-    return block_done;
 }
 
 
