@@ -5,19 +5,12 @@
 #include <string.h>
 #include "zlib.h"
 
-#ifndef local
-#  define local static
-#endif
 
 typedef unsigned char  uch;
 typedef uch FAR uchf;
 typedef unsigned short ush;
 typedef ush FAR ushf;
 typedef unsigned long  ulg;
-
-#ifndef DEF_WBITS
-#  define DEF_WBITS MAX_WBITS
-#endif
 
 
 #if MAX_MEM_LEVEL >= 8
@@ -32,9 +25,8 @@ typedef unsigned long  ulg;
 #define DYN_TREES    2
 
 
-#define MIN_MATCH  3
 #define MAX_MATCH  258
-
+#define MIN_MATCH  3
 #define PRESET_DICT 0x20 
 
 
