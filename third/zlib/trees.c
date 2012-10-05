@@ -89,8 +89,7 @@ static void copy_block     (deflate_state *s, charf *buf, unsigned len,
   }\
 }
 
-void _tr_init(s)
-    deflate_state *s;
+void _tr_init( deflate_state* s )
 {
     s->l_desc.dyn_tree = s->dyn_ltree;
     s->l_desc.stat_desc = &static_l_desc;
@@ -108,8 +107,7 @@ void _tr_init(s)
 }
 
 
-static void init_block(s)
-    deflate_state *s;
+static void init_block( deflate_state* s)
 {
     int n; 
 
@@ -141,10 +139,10 @@ static void init_block(s)
    (tree[n].Freq == tree[m].Freq && depth[n] <= depth[m]))
 
 
-static void pqdownheap(s, tree, k)
-    deflate_state *s;
-    ct_data *tree;  
-    int k;               
+static void pqdownheap(
+    deflate_state *s,
+    ct_data *tree,
+    int k )       
 {
     int v = s->heap[k];
     int j = k << 1;  
@@ -167,9 +165,9 @@ static void pqdownheap(s, tree, k)
 }
 
 
-static void gen_bitlen(s, desc)
-    deflate_state *s;
-    tree_desc *desc;    
+static void gen_bitlen(
+    deflate_state *s,
+    tree_desc *desc )   
 {
     ct_data *tree        = desc->dyn_tree;
     int max_code         = desc->max_code;
@@ -234,10 +232,10 @@ static void gen_bitlen(s, desc)
 }
 
 
-static void gen_codes (tree, max_code, bl_count)
-    ct_data *tree;             
-    int max_code;              
-    unsigned short *bl_count;            
+static void gen_codes(
+    ct_data *tree,          
+    int max_code,             
+    unsigned short *bl_count )
 {
     unsigned short next_code[MAX_BITS+1]; 
     unsigned short code = 0;              
@@ -258,9 +256,9 @@ static void gen_codes (tree, max_code, bl_count)
 }
 
 
-static void build_tree(s, desc)
-    deflate_state *s;
-    tree_desc *desc; 
+static void build_tree(
+    deflate_state *s,
+    tree_desc *desc )
 {
     ct_data *tree         = desc->dyn_tree;
     const ct_data *stree  = desc->stat_desc->static_tree;
@@ -330,10 +328,10 @@ static void build_tree(s, desc)
 }
 
 
-static void scan_tree (s, tree, max_code)
-    deflate_state *s;
-    ct_data *tree;   
-    int max_code;    
+static void scan_tree (
+    deflate_state *s,
+    ct_data *tree,
+    int max_code )   
 {
     int n;                     
     int prevlen = -1;          
@@ -372,10 +370,10 @@ static void scan_tree (s, tree, max_code)
 }
 
 
-static void send_tree (s, tree, max_code)
-    deflate_state *s;
-    ct_data *tree; 
-    int max_code;       
+static void send_tree (
+    deflate_state *s,
+    ct_data *tree,
+    int max_code )      
 {
     int n;                     
     int prevlen = -1;          
@@ -419,8 +417,8 @@ static void send_tree (s, tree, max_code)
 }
 
 
-static int build_bl_tree(s)
-    deflate_state *s;
+static int build_bl_tree(
+    deflate_state *s )
 {
     int max_blindex;  
 
@@ -443,9 +441,9 @@ static int build_bl_tree(s)
 }
 
 
-static void send_all_trees(s, lcodes, dcodes, blcodes)
-    deflate_state *s;
-    int lcodes, dcodes, blcodes; 
+static void send_all_trees(
+    deflate_state *s,
+    int lcodes, int dcodes, int blcodes )
 {
     int rank;                    
 
@@ -461,26 +459,26 @@ static void send_all_trees(s, lcodes, dcodes, blcodes)
 }
 
 
-void _tr_stored_block(s, buf, stored_len, last)
-    deflate_state *s;
-    charf *buf;       
-    unsigned long stored_len;   
-    int last;         
+void _tr_stored_block(
+    deflate_state *s,
+    charf *buf, 
+    unsigned long stored_len,
+    int last )
 {
     send_bits(s, (STORED_BLOCK<<1)+last, 3);    
     copy_block(s, buf, (unsigned)stored_len, 1); 
 }
 
 
-void _tr_flush_bits(s)
-    deflate_state *s;
+void _tr_flush_bits(
+    deflate_state *s )
 {
     bi_flush(s);
 }
 
 
-void _tr_align(s)
-    deflate_state *s;
+void _tr_align(
+    deflate_state *s )
 {
     send_bits(s, STATIC_TREES<<1, 3);
     send_code(s, END_BLOCK, static_ltree);
@@ -488,11 +486,11 @@ void _tr_align(s)
 }
 
 
-void _tr_flush_block(s, buf, stored_len, last)
-    deflate_state *s;
-    charf *buf;       
-    unsigned long stored_len;   
-    int last;         
+void _tr_flush_block(
+    deflate_state *s,
+    charf *buf, 
+    unsigned long stored_len,
+    int last )
 {
     unsigned long opt_lenb, static_lenb; 
     int max_blindex = 0;  
@@ -539,10 +537,10 @@ void _tr_flush_block(s, buf, stored_len, last)
 }
 
 
-int _tr_tally (s, dist, lc)
-    deflate_state *s;
-    unsigned dist;  
-    unsigned lc;    
+int _tr_tally(
+    deflate_state *s,
+    unsigned dist,
+    unsigned lc )  
 {
     s->d_buf[s->last_lit] = (unsigned short)dist;
     s->l_buf[s->last_lit++] = (unsigned char)lc;
@@ -563,10 +561,10 @@ int _tr_tally (s, dist, lc)
 }
 
 
-static void compress_block(s, ltree, dtree)
-    deflate_state *s;
-    ct_data *ltree; 
-    ct_data *dtree; 
+static void compress_block(
+    deflate_state *s,
+    ct_data *ltree,
+    ct_data *dtree ) 
 {
     unsigned dist;      
     int lc;             
@@ -604,9 +602,9 @@ static void compress_block(s, ltree, dtree)
 }
 
 
-static unsigned bi_reverse(code, len)
-    unsigned code; 
-    int len;       
+static unsigned bi_reverse(
+    unsigned code,
+    int len ) 
 {
     register unsigned res = 0;
     do {
@@ -617,8 +615,8 @@ static unsigned bi_reverse(code, len)
 }
 
 
-static void bi_flush(s)
-    deflate_state *s;
+static void bi_flush(
+    deflate_state *s )
 {
     if (s->bi_valid == 16) {
         put_short(s, s->bi_buf);
@@ -632,8 +630,8 @@ static void bi_flush(s)
 }
 
 
-static void bi_windup(s)
-    deflate_state *s;
+static void bi_windup(
+    deflate_state *s )
 {
     if (s->bi_valid > 8) {
         put_short(s, s->bi_buf);
@@ -645,11 +643,11 @@ static void bi_windup(s)
 }
 
 
-static void copy_block(s, buf, len, header)
-    deflate_state *s;
-    charf    *buf;    
-    unsigned len;     
-    int      header;  
+static void copy_block(
+    deflate_state *s,
+    charf    *buf, 
+    unsigned len,
+    int      header )
 {
     bi_windup(s);        
 

@@ -3,6 +3,93 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+#define BASE 65521      /* largest prime smaller than 65536 */
+#define NMAX 5552
+/* NMAX is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1 */
+
+#define DO1(buf,i)  {adler += (buf)[i]; sum2 += adler;}
+#define DO2(buf,i)  DO1(buf,i); DO1(buf,i+1);
+#define DO4(buf,i)  DO2(buf,i); DO2(buf,i+2);
+#define DO8(buf,i)  DO4(buf,i); DO4(buf,i+4);
+#define DO16(buf)   DO8(buf,0); DO8(buf,8);
+
+#define MOD(a) a %= BASE
+#define MOD28(a) a %= BASE
+#define MOD63(a) a %= BASE
+
+/* ========================================================================= */
+uLong adler32(
+    uLong adler,
+    const Bytef *buf,
+    uInt len )
+{
+    unsigned long sum2;
+    unsigned n;
+
+    /* split Adler-32 into component sums */
+    sum2 = (adler >> 16) & 0xffff;
+    adler &= 0xffff;
+
+    /* in case user likes doing a byte at a time, keep it fast */
+    if (len == 1) {
+        adler += buf[0];
+        if (adler >= BASE)
+            adler -= BASE;
+        sum2 += adler;
+        if (sum2 >= BASE)
+            sum2 -= BASE;
+        return adler | (sum2 << 16);
+    }
+
+    /* initial Adler-32 value (deferred check for len == 1 speed) */
+    if (buf == Z_NULL)
+        return 1L;
+
+    /* in case short lengths are provided, keep it somewhat fast */
+    if (len < 16) {
+        while (len--) {
+            adler += *buf++;
+            sum2 += adler;
+        }
+        if (adler >= BASE)
+            adler -= BASE;
+        MOD28(sum2);            /* only added so many BASE's */
+        return adler | (sum2 << 16);
+    }
+
+    /* do length NMAX blocks -- requires just one modulo operation */
+    while (len >= NMAX) {
+        len -= NMAX;
+        n = NMAX / 16;          /* NMAX is divisible by 16 */
+        do {
+            DO16(buf);          /* 16 sums unrolled */
+            buf += 16;
+        } while (--n);
+        MOD(adler);
+        MOD(sum2);
+    }
+
+    /* do remaining bytes (less than NMAX, still just one modulo) */
+    if (len) {                  /* avoid modulos if none remaining */
+        while (len >= 16) {
+            len -= 16;
+            DO16(buf);
+            buf += 16;
+        }
+        while (len--) {
+            adler += *buf++;
+            sum2 += adler;
+        }
+        MOD(adler);
+        MOD(sum2);
+    }
+
+    /* return recombined sums */
+    return adler | (sum2 << 16);
+}
+
+
 typedef enum {
     need_more,      
     block_done,     
@@ -48,8 +135,8 @@ typedef struct config_s {
     s->head[s->hash_size-1] = NIL; \
     memset(s->head, 0, (unsigned)(s->hash_size-1)*sizeof(*s->head));
 
-static int deflateResetKeep (strm)
-    z_streamp strm;
+static int deflateResetKeep(
+    z_streamp strm )
 {
     deflate_state *s;
 
@@ -73,8 +160,8 @@ static int deflateResetKeep (strm)
     return Z_OK;
 }
 
-static int deflateReset (strm)
-    z_streamp strm;
+static int deflateReset(
+    z_streamp strm )
 {
     int ret;
 
@@ -84,14 +171,13 @@ static int deflateReset (strm)
     return ret;
 }
 	
-static int deflateInit2_(strm, method, windowBits, memLevel,
-                  version, stream_size)
-    z_streamp strm;
-    int  method;
-    int  windowBits;
-    int  memLevel;
-    const char *version;
-    int stream_size;
+static int deflateInit2_(
+    z_streamp strm,
+    int  method,
+    int  windowBits,
+    int  memLevel,
+    const char *version,
+    int stream_size )
 {
     deflate_state *s;
     int wrap = 1;
@@ -153,27 +239,27 @@ static int deflateInit2_(strm, method, windowBits, memLevel,
     return deflateReset(strm);
 }
 
-int deflateInit_(strm, version, stream_size)
-    z_streamp strm;
-    const char *version;
-    int stream_size;
+int deflateInit_(
+    z_streamp strm,
+    const char *version,
+    int stream_size )
 {
     return deflateInit2_(strm, Z_DEFLATED, 15, 8,
                          version, stream_size);
     
 }
 
-static void putShortMSB (s, b)
-    deflate_state *s;
-    uInt b;
+static void putShortMSB(
+    deflate_state *s,
+    uInt b )
 {
     put_byte(s, (Byte)(b >> 8));
     put_byte(s, (Byte)(b & 0xff));
 }
 
 
-static void flush_pending(strm)
-    z_streamp strm;
+static void flush_pending(
+    z_streamp strm )
 {
     unsigned len;
     deflate_state *s = strm->state;
@@ -194,8 +280,8 @@ static void flush_pending(strm)
 }
 
 
-int deflate (strm)
-    z_streamp strm;
+int deflate (
+    z_streamp strm )
 {
     deflate_state *s;
 
@@ -277,8 +363,8 @@ int deflate (strm)
 }
 
 
-int deflateEnd (strm)
-    z_streamp strm;
+int deflateEnd (
+    z_streamp strm )
 {
     int status;
 
@@ -306,10 +392,10 @@ int deflateEnd (strm)
     return status == BUSY_STATE ? Z_DATA_ERROR : Z_OK;
 }
 
-static int read_buf(strm, buf, size)
-    z_streamp strm;
-    Bytef *buf;
-    unsigned size;
+static int read_buf(
+    z_streamp strm,
+    Bytef *buf,
+    unsigned size )
 {
     unsigned len = strm->avail_in;
 
@@ -328,8 +414,8 @@ static int read_buf(strm, buf, size)
 }
 
 
-static void lm_init (s)
-    deflate_state *s;
+static void lm_init (
+    deflate_state *s )
 {
     s->window_size = (unsigned long)2L*s->w_size;
 
@@ -345,9 +431,9 @@ static void lm_init (s)
 
 #define check_match(s, start, match, length)
 
-static uInt longest_match(s, cur_match)
-    deflate_state *s;
-    IPos cur_match;                             
+static uInt longest_match(
+    deflate_state *s,
+    IPos cur_match )                           
 {
     register Bytef *scan = s->window + s->strstart; 
     register Bytef *match;                       
@@ -377,8 +463,8 @@ static uInt longest_match(s, cur_match)
     return (uInt)len <= s->lookahead ? (uInt)len : s->lookahead;
 }
 
-static void fill_window(s)
-    deflate_state *s;
+static void fill_window(
+    deflate_state *s )
 {
     register unsigned n, m;
     register Posf *p;
@@ -483,9 +569,9 @@ static void fill_window(s)
 }
 
 
-static block_state deflate_fast(s, flush)
-    deflate_state *s;
-    int flush;
+static block_state deflate_fast(
+    deflate_state *s,
+    int flush )
 {
     IPos hash_head;       
     int bflush;           

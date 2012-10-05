@@ -76,8 +76,6 @@ extern int deflateEnd (z_streamp strm);
 extern int deflateInit_ (z_streamp strm,
                                      const char *version, int stream_size);
 
-extern uLong adler32 (uLong adler, const Bytef *buf, uInt len);
-
 #define deflateInit(strm) \
         deflateInit_((strm), ZLIB_VERSION, (int)sizeof(z_stream))
 
