@@ -17,14 +17,11 @@ static void flush_pending  (z_streamp strm);
 static int read_buf        (z_streamp strm, Bytef *buf, unsigned size);
 static uInt longest_match  (deflate_state *s, IPos cur_match);
 
-
 #define NIL 0
-
 
 #ifndef TOO_FAR
 #  define TOO_FAR 4096
 #endif
-
 
 
 typedef struct config_s {
@@ -35,17 +32,9 @@ typedef struct config_s {
    compress_func func;
 } config;
 
-#ifndef NO_DUMMY_DECL
-struct static_tree_desc_s {int dummy;}; 
-#endif
-
 
 #define RANK(f) (((f) << 1) - ((f) > 4 ? 9 : 0))
-
-
 #define UPDATE_HASH(s,h,c) (h = (((h)<<s->hash_shift) ^ (c)) & s->hash_mask)
-
-
 
 #define INSERT_STRING(s, str, match_head) \
    (UPDATE_HASH(s, s->ins_h, s->window[(str) + (MIN_MATCH-1)]), \
@@ -81,7 +70,6 @@ static int deflateResetKeep (strm)
     return Z_OK;
 }
 
-
 static int deflateReset (strm)
     z_streamp strm;
 {
@@ -92,6 +80,7 @@ static int deflateReset (strm)
         lm_init(strm->state);
     return ret;
 }
+	
 static int deflateInit2_(strm, method, windowBits, memLevel,
                   version, stream_size)
     z_streamp strm;
@@ -302,7 +291,6 @@ int deflateEnd (strm)
         status != FINISH_STATE) {
       return Z_STREAM_ERROR;
     }
-
     
     free(strm->state->pending_buf);
     free(strm->state->head);
@@ -437,9 +425,6 @@ static void fill_window(s)
             uInt str = s->strstart - s->insert;
             s->ins_h = s->window[str];
             UPDATE_HASH(s, s->ins_h, s->window[str + 1]);
-#if MIN_MATCH != 3
-            Call UPDATE_HASH() MIN_MATCH-3 more times
-#endif
             while (s->insert) {
                 UPDATE_HASH(s, s->ins_h, s->window[str + MIN_MATCH-1]);
                 s->head[s->ins_h] = (Pos)str;
@@ -537,10 +522,6 @@ static block_state deflate_fast(s, flush)
                 s->match_length = 0;
                 s->ins_h = s->window[s->strstart];
                 UPDATE_HASH(s, s->ins_h, s->window[s->strstart+1]);
-#if MIN_MATCH != 3
-                Call UPDATE_HASH() MIN_MATCH-3 more times
-#endif
-                
             }
         } else {
             
