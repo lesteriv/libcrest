@@ -94,12 +94,9 @@ typedef struct internal_state {
     uInt strstart;               
     uInt match_start;            
     uInt lookahead;              
-
-    uInt prev_length;
     
 #   define max_insert_length  max_lazy_match
     
-
     struct ct_data_s dyn_ltree[HEAP_SIZE];   
     struct ct_data_s dyn_dtree[2*D_CODES+1]; 
     struct ct_data_s bl_tree[2*BL_CODES+1];  
@@ -110,37 +107,22 @@ typedef struct internal_state {
 
     ush bl_count[MAX_BITS+1];
     
-
     int heap[2*L_CODES+1];      
     int heap_len;               
     int heap_max;               
     
-
     uch depth[2*L_CODES+1];
-    
-
     uchf *l_buf;          
-
-    uInt  lit_bufsize;
-    
-
+    uInt lit_bufsize;
     uInt last_lit;      
-
     ushf *d_buf;
-    
-
     ulg opt_len;        
-    ulg static_len;     
-    uInt matches;       
-    uInt insert;        
+	ulg static_len;     
+	uInt matches;       
+	uInt insert;        
     ush bi_buf;
-    
     int bi_valid;
-    
-
     ulg high_water;
-    
-
 } deflate_state;
 
 

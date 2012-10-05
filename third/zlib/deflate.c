@@ -351,7 +351,7 @@ static void lm_init (s)
     s->block_start = 0L;
     s->lookahead = 0;
     s->insert = 0;
-    s->match_length = s->prev_length = MIN_MATCH-1;
+    s->match_length = MIN_MATCH-1;
     s->match_available = 0;
     s->ins_h = 0;
 }
