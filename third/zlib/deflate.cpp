@@ -136,7 +136,7 @@ typedef struct config_s {
     s->head[s->hash_size-1] = NIL; \
     memset(s->head, 0, (unsigned)(s->hash_size-1)*sizeof(*s->head));
 
-static int deflateResetKeep(
+static void deflateResetKeep(
     z_streamp strm )
 {
     deflate_state *s;
@@ -153,22 +153,16 @@ static int deflateResetKeep(
         adler32(0L, 0, 0);
 
     _tr_init(s);
-
-    return Z_OK;
 }
 
-static int deflateReset(
+static void deflateReset(
     z_streamp strm )
 {
-    int ret;
-
-    ret = deflateResetKeep(strm);
-    if (ret == Z_OK)
-        lm_init(strm->state);
-    return ret;
+    deflateResetKeep(strm);
+    lm_init(strm->state);
 }
 	
-int deflateInit( z_streamp strm )
+void deflateInit( z_streamp strm )
 {
     deflate_state *s;
     int wrap = 1;
@@ -202,7 +196,7 @@ int deflateInit( z_streamp strm )
     s->d_buf = overlay + s->lit_bufsize/sizeof(unsigned short);
     s->l_buf = s->pending_buf + (1+sizeof(unsigned short))*s->lit_bufsize;
 
-    return deflateReset(strm);
+    deflateReset(strm);
 }
 
 static void putShortMSB(
@@ -235,8 +229,7 @@ static void flush_pending(
     }
 }
 
-
-int deflate (
+void deflate (
     z_streamp strm )
 {
     deflate_state *s;
@@ -263,14 +256,9 @@ int deflate (
     if (s->pending != 0) {
         flush_pending(strm);
         if (strm->avail_out == 0) {
-            return Z_OK;
+            return;
         }
     }
-    
-    if (s->status == FINISH_STATE && strm->avail_in != 0) {
-        return Z_BUF_ERROR;
-    }
-
     
     if (strm->avail_in != 0 || s->lookahead != 0 ||
         s->status != FINISH_STATE) {
@@ -282,28 +270,23 @@ int deflate (
             s->status = FINISH_STATE;
         }
         if (bstate == need_more || bstate == finish_started) {
-            return Z_OK;
+            return;
         }
         if (bstate == block_done) {
 			_tr_stored_block(s, (char*)0, 0L, 0);
 
             flush_pending(strm);
             if (strm->avail_out == 0) {
-              return Z_OK;
+              return;
             }
         }
     }
 
-    if (s->wrap <= 0) return Z_STREAM_END;
-
-    {
-        putShortMSB(s, (uInt)(strm->adler >> 16));
-        putShortMSB(s, (uInt)(strm->adler & 0xffff));
-    }
+	putShortMSB(s, (uInt)(strm->adler >> 16));
+	putShortMSB(s, (uInt)(strm->adler & 0xffff));
     flush_pending(strm);
     
     if (s->wrap > 0) s->wrap = -s->wrap; 
-    return s->pending != 0 ? Z_OK : Z_STREAM_END;
 }
 
 void deflateEnd( z_streamp strm )

@@ -51,15 +51,12 @@ typedef z_stream *z_streamp;
 
 #define Z_OK            0
 #define Z_STREAM_END    1
-#define Z_ERRNO        (-1)
-#define Z_STREAM_ERROR (-2)
-#define Z_DATA_ERROR   (-3)
 #define Z_BUF_ERROR    (-5)
 
 
-extern int deflate( z_streamp strm );
+extern void deflate( z_streamp strm );
 extern void deflateEnd( z_streamp strm );
-extern int deflateInit( z_streamp strm );
+extern void deflateInit( z_streamp strm );
 
 static inline uLong compressBound( uLong sourceLen )
 {
