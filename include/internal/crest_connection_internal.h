@@ -9,6 +9,7 @@
 
 // STD
 #include <stddef.h>
+#include <time.h>
 
 // CREST
 #include "../crest_types.h"

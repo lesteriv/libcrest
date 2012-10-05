@@ -7,15 +7,12 @@
 
 #pragma once
 
-// STD
-#include <time.h>
-
 // CREST
 #include "internal/crest_connection_internal.h"
 
 
 /**********************************************************************************************/
-// Represents connection for request
+// Connection for single request
 //
 class crest_connection : public crest_connection_internal
 {
@@ -61,11 +58,12 @@ class crest_connection : public crest_connection_internal
 								 *  status code, data-length header and data. */
 		void					respond(
 									crest_http_status	rc,
-									const char*			msg,
-									size_t				msg_len );
+									const char*			data,
+									size_t				data_len );
 
 								/** Sends content of file, or respond HTTP_BAD_REQUEST if
-								 *  file doesn't exist or not readable. */
+								 *  file doesn't exist or not readable. That's very limited method,
+								 *  don't use it for heavy tasks. */
 		void					send_file( const char* path );
 		
 								/** Sends data to the client. Returns
