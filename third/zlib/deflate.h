@@ -33,6 +33,7 @@ typedef struct ct_data_s {
     } dl;
 } ct_data;
 
+
 #define Freq fc.freq
 #define Code fc.code
 #define Dad  dl.dad
@@ -44,12 +45,13 @@ typedef struct tree_desc_s {
     ct_data *dyn_tree;           
     int     max_code;            
     static_tree_desc *stat_desc; 
-} tree_desc;
+}
+tree_desc;
+
 
 typedef ush Pos;
 typedef Pos Posf;
 typedef unsigned IPos;
-
 
 
 typedef struct internal_state {
@@ -116,16 +118,9 @@ typedef struct internal_state {
 
 
 #define put_byte(s, c) {s->pending_buf[s->pending++] = (c);}
-
-
 #define MIN_LOOKAHEAD (MAX_MATCH+MIN_MATCH+1)
-
-
 #define MAX_DIST(s)  ((s)->w_size-MIN_LOOKAHEAD)
-
-
 #define WIN_INIT MAX_MATCH
-
 
         
 void _tr_init (deflate_state *s);
@@ -150,6 +145,7 @@ extern const uch _dist_code[];
     s->dyn_ltree[cc].Freq++; \
     flush = (s->last_lit == s->lit_bufsize-1); \
    }
+
 # define _tr_tally_dist(s, distance, length, flush) \
   { uch len = (length); \
     ush dist = (distance); \
