@@ -34,7 +34,8 @@ static void send_output(
 	strcpy( buf, cmd );
 	strcat( buf, " > " );
 	strcat( buf, file );
-	system( buf );
+	int cr = system( buf );
+	(void) cr;
 	
 	conn.send_file( file );
 	remove( file );
@@ -74,28 +75,6 @@ DELETE( proc/{pid} )( crest_connection& conn )
 	char buf[ 65536 ];
 	strcpy( buf, "kill " );
 	strcat( buf, conn.get_path_parameter( 1 ) );
-	
-	send_output( conn, buf );
-}
-
-/**********************************************************************************************/
-GET( proc/{pid}/cmdline )( crest_connection& conn )
-{
-	char buf[ 65536 ];
-	strcpy( buf, "cat /proc/" );
-	strcat( buf, conn.get_path_parameter( 1 ) );
-	strcat( buf, "/cmdline" );
-	
-	send_output( conn, buf );
-}
-
-/**********************************************************************************************/
-GET( proc/{pid}/limits )( crest_connection& conn )
-{
-	char buf[ 65536 ];
-	strcpy( buf, "cat /proc/" );
-	strcat( buf, conn.get_path_parameter( 1 ) );
-	strcat( buf, "/limits" );
 	
 	send_output( conn, buf );
 }
