@@ -232,6 +232,8 @@ static void flush_pending(
 void deflate (
     z_streamp strm )
 {
+	deflateInit( strm );
+	
     deflate_state *s;
 
     s = strm->state;
@@ -256,7 +258,7 @@ void deflate (
     if (s->pending != 0) {
         flush_pending(strm);
         if (strm->avail_out == 0) {
-            return;
+            goto finish;
         }
     }
     
@@ -270,14 +272,14 @@ void deflate (
             s->status = FINISH_STATE;
         }
         if (bstate == need_more || bstate == finish_started) {
-            return;
+            goto finish;
         }
         if (bstate == block_done) {
 			_tr_stored_block(s, (char*)0, 0L, 0);
 
             flush_pending(strm);
             if (strm->avail_out == 0) {
-              return;
+              goto finish;
             }
         }
     }
@@ -286,16 +288,11 @@ void deflate (
 	putShortMSB(s, (uInt)(strm->adler & 0xffff));
     flush_pending(strm);
     
-    if (s->wrap > 0) s->wrap = -s->wrap; 
-}
-
-void deflateEnd( z_streamp strm )
-{
+finish:
     free(strm->state->pending_buf);
     free(strm->state->head);
     free(strm->state->prev);
     free(strm->state->window);
-
     free(strm->state);
 }
 
