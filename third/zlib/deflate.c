@@ -158,8 +158,6 @@ static int deflateInit2_(strm, method, windowBits, memLevel,
     s->d_buf = overlay + s->lit_bufsize/sizeof(ush);
     s->l_buf = s->pending_buf + (1+sizeof(ush))*s->lit_bufsize;
 
-    s->method = (Byte)method;
-
     return deflateReset(strm);
 }
 

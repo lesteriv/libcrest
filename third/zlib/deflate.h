@@ -60,7 +60,6 @@ typedef struct internal_state {
     Bytef *pending_out;  
     uInt   pending;      
     int   wrap;          
-    Byte  method;        
 
     uInt  w_size;        
     uInt  w_bits;        
