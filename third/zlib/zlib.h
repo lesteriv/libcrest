@@ -171,70 +171,6 @@ ZEXTERN int ZEXPORT inflateBack OF((z_streamp strm,
 
 ZEXTERN int ZEXPORT inflateBackEnd OF((z_streamp strm));
 
-#ifndef Z_SOLO
-
-
-
-ZEXTERN int ZEXPORT compress OF((Bytef *dest,   uLongf *destLen,
-                                 const Bytef *source, uLong sourceLen));
-
-static inline uLong compressBound(uLong sourceLen)
-{
-    return sourceLen + (sourceLen >> 12) + (sourceLen >> 14) +
-           (sourceLen >> 25) + 13;	
-}
-
-ZEXTERN int ZEXPORT uncompress OF((Bytef *dest,   uLongf *destLen,
-                                   const Bytef *source, uLong sourceLen));
-
-
-
-typedef struct gzFile_s *gzFile;
-
-ZEXTERN gzFile ZEXPORT gzdopen OF((int fd, const char *mode));
-
-ZEXTERN int ZEXPORT gzbuffer OF((gzFile file, unsigned size));
-
-ZEXTERN int ZEXPORT gzsetparams OF((gzFile file, int level, int strategy));
-
-ZEXTERN int ZEXPORT gzread OF((gzFile file, voidp buf, unsigned len));
-
-ZEXTERN int ZEXPORT gzwrite OF((gzFile file,
-                                voidpc buf, unsigned len));
-
-ZEXTERN int ZEXPORTVA gzprintf Z_ARG((gzFile file, const char *format, ...));
-
-ZEXTERN int ZEXPORT gzputs OF((gzFile file, const char *s));
-
-ZEXTERN char * ZEXPORT gzgets OF((gzFile file, char *buf, int len));
-
-ZEXTERN int ZEXPORT gzputc OF((gzFile file, int c));
-
-ZEXTERN int ZEXPORT gzgetc OF((gzFile file));
-
-ZEXTERN int ZEXPORT gzungetc OF((int c, gzFile file));
-
-ZEXTERN int ZEXPORT gzflush OF((gzFile file, int flush));
-
-ZEXTERN int ZEXPORT    gzrewind OF((gzFile file));
-
-ZEXTERN int ZEXPORT gzeof OF((gzFile file));
-
-ZEXTERN int ZEXPORT gzdirect OF((gzFile file));
-
-ZEXTERN int ZEXPORT    gzclose OF((gzFile file));
-
-ZEXTERN int ZEXPORT gzclose_r OF((gzFile file));
-ZEXTERN int ZEXPORT gzclose_w OF((gzFile file));
-
-ZEXTERN const char * ZEXPORT gzerror OF((gzFile file, int *errnum));
-
-ZEXTERN void ZEXPORT gzclearerr OF((gzFile file));
-
-#endif
-
-
-
 ZEXTERN uLong ZEXPORT adler32 OF((uLong adler, const Bytef *buf, uInt len));
 
 
@@ -266,56 +202,6 @@ ZEXTERN int ZEXPORT inflateBackInit_ OF((z_streamp strm, int windowBits,
         inflateBackInit_((strm), (windowBits), (window), \
                       ZLIB_VERSION, (int)sizeof(z_stream))
 
-#ifndef Z_SOLO
-
-struct gzFile_s {
-    unsigned have;
-    unsigned char *next;
-    z_off64_t pos;
-};
-ZEXTERN int ZEXPORT gzgetc_ OF((gzFile file));
-#ifdef Z_PREFIX_SET
-#  undef z_gzgetc
-#  define z_gzgetc(g) \
-          ((g)->have ? ((g)->have--, (g)->pos++, *((g)->next)++) : gzgetc(g))
-#else
-#  define gzgetc(g) \
-          ((g)->have ? ((g)->have--, (g)->pos++, *((g)->next)++) : gzgetc(g))
-#endif
-
-#if !defined(ZLIB_INTERNAL) && defined(Z_WANT64)
-#  ifdef Z_PREFIX_SET
-#    define z_gzopen z_gzopen64
-#    define z_gzseek z_gzseek64
-#    define z_gztell z_gztell64
-#    define z_gzoffset z_gzoffset64
-#    define z_crc32_combine z_crc32_combine64
-#  else
-#    define gzopen gzopen64
-#    define gzseek gzseek64
-#    define gztell gztell64
-#    define gzoffset gzoffset64
-#  endif
-#  ifndef Z_LARGE64
-     ZEXTERN gzFile ZEXPORT gzopen64 OF((const char *, const char *));
-     ZEXTERN z_off_t ZEXPORT gzseek64 OF((gzFile, z_off_t, int));
-     ZEXTERN z_off_t ZEXPORT gztell64 OF((gzFile));
-     ZEXTERN z_off_t ZEXPORT gzoffset64 OF((gzFile));
-#  endif
-#else
-   ZEXTERN gzFile ZEXPORT gzopen OF((const char *, const char *));
-   ZEXTERN z_off_t ZEXPORT gzseek OF((gzFile, z_off_t, int));
-   ZEXTERN z_off_t ZEXPORT gztell OF((gzFile));
-   ZEXTERN z_off_t ZEXPORT gzoffset OF((gzFile));
-   ZEXTERN uLong ZEXPORT crc32_combine OF((uLong, uLong, z_off_t));
-#endif
-
-#else
-
-   ZEXTERN uLong ZEXPORT crc32_combine OF((uLong, uLong, z_off_t));
-
-#endif
-
 #if !defined(ZUTIL_H) && !defined(NO_DUMMY_DECL)
     struct internal_state {int dummy;};
 #endif
@@ -325,11 +211,13 @@ ZEXTERN const z_crc_t FAR * ZEXPORT get_crc_table    OF((void));
 ZEXTERN int            ZEXPORT inflateUndermine OF((z_streamp, int));
 ZEXTERN int            ZEXPORT inflateResetKeep OF((z_streamp));
 ZEXTERN int            ZEXPORT deflateResetKeep OF((z_streamp));
-#if defined(_WIN32) && !defined(Z_SOLO)
-ZEXTERN gzFile         ZEXPORT gzopen_w OF((const wchar_t *path,
-                                            const char *mode));
-#endif
 
+static inline uLong compressBound (uLong sourceLen)
+{
+    return sourceLen + (sourceLen >> 12) + (sourceLen >> 14) +
+           (sourceLen >> 25) + 13;
+}
+	
 #ifdef __cplusplus
 }
 #endif

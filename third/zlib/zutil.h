@@ -1,29 +1,18 @@
 #ifndef ZUTIL_H
 #define ZUTIL_H
 
+#include <string.h>
 #include "zlib.h"
-
-#if defined(STDC) && !defined(Z_SOLO)
-#  include <stddef.h>
-#  include <string.h>
-#  include <stdlib.h>
-#endif
-
-#ifdef Z_SOLO
-   typedef long ptrdiff_t;  
-#endif
 
 #ifndef local
 #  define local static
 #endif
-
 
 typedef unsigned char  uch;
 typedef uch FAR uchf;
 typedef unsigned short ush;
 typedef ush FAR ushf;
 typedef unsigned long  ulg;
-
 
 #ifndef DEF_WBITS
 #  define DEF_WBITS MAX_WBITS
@@ -50,15 +39,6 @@ typedef unsigned long  ulg;
 
 #if defined(MACOS) || defined(TARGET_OS_MAC)
 #  define OS_CODE  0x07
-#  ifndef Z_SOLO
-#    if defined(__MWERKS__) && __dest_os != __be_os && __dest_os != __win32_os
-#      include <unix.h> 
-#    else
-#      ifndef fdopen
-#        define fdopen(fd,mode) NULL 
-#      endif
-#    endif
-#  endif
 #endif
 
 #ifdef WIN32
@@ -80,25 +60,9 @@ typedef unsigned long  ulg;
 #  define F_OPEN(name, mode) fopen((name), (mode))
 #endif
 
-         
-
-#if defined(pyr) || defined(Z_SOLO)
-#  define NO_MEMCPY
-#endif
-#if defined(SMALL_MEDIUM) && !defined(_MSC_VER) && !defined(__SC__)
- 
-#  define NO_MEMCPY
-#endif
-
 #define zmemcpy memcpy
 #define zmemcmp memcmp
 #define zmemzero(dest, len) memset(dest, 0, len)
-
-#ifndef Z_SOLO
-   voidpf zcalloc OF((voidpf opaque, unsigned items,
-                                    unsigned size));
-   void zcfree  OF((voidpf opaque, voidpf ptr));
-#endif
 
 #define ZALLOC(strm, items, size) \
            (*((strm)->zalloc))((strm)->opaque, (items), (size))

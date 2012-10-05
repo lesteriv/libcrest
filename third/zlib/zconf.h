@@ -169,21 +169,6 @@ typedef uLong FAR uLongf;
    typedef Byte       *voidp;
 #endif
 
-#if !defined(Z_U4) && !defined(Z_SOLO) && defined(STDC)
-#  include <limits.h>
-#  if (UINT_MAX == 0xffffffffUL)
-#    define Z_U4 unsigned
-#  else
-#    if (ULONG_MAX == 0xffffffffUL)
-#      define Z_U4 unsigned long
-#    else
-#      if (USHRT_MAX == 0xffffffffUL)
-#        define Z_U4 unsigned short
-#      endif
-#    endif
-#  endif
-#endif
-
 #ifdef Z_U4
    typedef Z_U4 z_crc_t;
 #else
@@ -199,9 +184,7 @@ typedef uLong FAR uLongf;
 #endif
 
 #ifdef STDC
-#  ifndef Z_SOLO
 #    include <sys/types.h>
-#  endif
 #endif
 
 #ifdef _WIN32
@@ -214,17 +197,6 @@ typedef uLong FAR uLongf;
 
 #if defined(__WATCOMC__) && !defined(Z_HAVE_UNISTD_H)
 #  define Z_HAVE_UNISTD_H
-#endif
-#ifndef Z_SOLO
-#  if defined(Z_HAVE_UNISTD_H) || defined(LARGEFILE64_SOURCE)
-#    include <unistd.h>
-#    ifdef VMS
-#      include <unixio.h>
-#    endif
-#    ifndef z_off_t
-#      define z_off_t off_t
-#    endif
-#  endif
 #endif
 
 #if defined(_LFS64_LARGEFILE) && _LFS64_LARGEFILE-0
@@ -239,12 +211,6 @@ typedef uLong FAR uLongf;
 #  define Z_WANT64
 #endif
 
-#if !defined(SEEK_SET) && !defined(Z_SOLO)
-#  define SEEK_SET        0
-#  define SEEK_CUR        1
-#  define SEEK_END        2
-#endif
-
 #ifndef z_off_t
 #  define z_off_t long
 #endif
@@ -252,11 +218,7 @@ typedef uLong FAR uLongf;
 #if !defined(_WIN32) && defined(Z_LARGE64)
 #  define z_off64_t off64_t
 #else
-#  if defined(_WIN32) && !defined(__GNUC__) && !defined(Z_SOLO)
-#    define z_off64_t __int64
-#  else
 #    define z_off64_t z_off_t
-#  endif
 #endif
 
 #if defined(__MVS__)
