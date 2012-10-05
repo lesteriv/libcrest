@@ -39,14 +39,16 @@ void			create_responce(
 					size_t&				out_len,
 					crest_http_status	status,
 					const char*			content,
-					size_t				content_len );
+					size_t				content_len,
+					bool				deflated = false );
 
 				/** Returns string with status code and 'Content-Length' header. */
 void			create_responce_header(
 					char*				out,
 					size_t&				out_len,
 					crest_http_status	status,
-					size_t				content_len );
+					size_t				content_len,
+					bool				deflated = false );
 
 				/** The same as strdup. */
 char*			crest_strdup( const char* str, int en = -1 );
@@ -55,8 +57,7 @@ char*			crest_strdup( const char* str, int en = -1 );
 size_t			deflate(
 					const char*		buf,
 					size_t			len,
-					char*			out,
-					int				level = 6 );
+					char*			out );
 
 				/** Returns TRUE if this file exists. */
 bool			file_exists( const char* path );

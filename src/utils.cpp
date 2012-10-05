@@ -12,8 +12,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-// CREST
+// ZLIB
 #include "../third/zlib/deflate.h"
+
+// CREST
 #include "../include/crest.h"
 #include "utils.h"
 
@@ -131,13 +133,18 @@ void create_responce(
 	size_t&				out_len,
 	crest_http_status	status,
 	const char*			content,
-	size_t				content_len )
+	size_t				content_len,
+	bool				deflated )
 {
 	out = (char*) malloc( content_len + 85 );
 	
 	char* str = out;
 	str = add_string ( str, RESPONCE_PREFIX[ status ], RESPONCE_PREFIX_SIZE[ status ] );
 	str = to_string	 ( str, (int) content_len );
+	
+	if( deflated )
+		str = add_string ( str, "\r\nContent-Encoding: deflate", 27 );
+	
 	str = add_string ( str, "\r\n\r\n", 4 );
 	str = add_string ( str, content, content_len );
 	
@@ -150,12 +157,16 @@ void create_responce_header(
 	char*				out,
 	size_t&				out_len,
 	crest_http_status	status,
-	size_t				content_len )
+	size_t				content_len,
+	bool				deflated )
 {
 	char* str = out;
 	str = add_string ( str, RESPONCE_PREFIX[ status ], RESPONCE_PREFIX_SIZE[ status ] );
 	str = to_string  ( str, (int) content_len );
-	str = add_string ( str, "\r\nContent-Encoding: deflate", 27 );
+	
+	if( deflated )
+		str = add_string ( str, "\r\nContent-Encoding: deflate", 27 );
+	
 	str = add_string ( str, "\r\n\r\n", 5 );
 	
 	out_len = str - out - 1;
@@ -183,20 +194,16 @@ char* crest_strdup(
 size_t deflate(
 	const char*		buf,
 	size_t			len,
-	char*			out,
-	int				level )
+	char*			out )
 {
 	z_stream zstream;
-	zstream.zalloc		= Z_NULL;
-	zstream.zfree		= Z_NULL;
-	zstream.opaque		= Z_NULL;
 	zstream.avail_in	= (uInt) len;
 	zstream.next_in		= (Bytef*) buf;
 	zstream.avail_out	= (uInt) len + 256;
 	zstream.next_out	= (Bytef*) out;
 
-	deflateInit( &zstream, level );
-	deflate( &zstream, Z_FINISH );
+	deflateInit( &zstream );
+	deflate( &zstream );
 	deflateEnd( &zstream );
 
 	return (char*) zstream.next_out - out;

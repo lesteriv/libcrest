@@ -13,6 +13,9 @@
 // MONGOOSE
 #include "../third/mongoose/mongoose.h"
 
+// ZLIB
+#include "../third/zlib/zlib.h"
+
 // CREST
 #include "../include/crest.h"
 #include "utils.h"
@@ -102,15 +105,35 @@ size_t crest_connection::read( char* buf, size_t len )
 /**********************************************************************************************/
 void crest_connection::respond(
 	crest_http_status	rc,
-	const char*			msg,
-	size_t				msg_len )
+	const char*			data,
+	size_t				data_len )
 {
+	// Compress data if need
+	if( data && data_len > 128 )
+	{
+		const char* aeheader = mg_get_header( conn_, "Accept-Encoding" );
+		if( aeheader && strstr( aeheader, "deflate" ) )
+		{
+			char* out = (char*) alloca( compressBound( data_len ) );
+			data_len = deflate( data, data_len, out );
+
+			char header[ 128 ];
+			size_t header_len;
+			create_responce_header( header, header_len, rc, data_len, true );
+			mg_write( conn_, header, header_len );
+
+			mg_write( conn_, out, data_len );
+			return;
+		}
+	}
+	
+	// Write non-compressed data
 	char header[ 128 ];
 	size_t header_len;
-	create_responce_header( header, header_len, rc, msg_len );
+	create_responce_header( header, header_len, rc, data_len );
 	mg_write( conn_, header, header_len );
 	
-	mg_write( conn_, msg, msg_len );
+	mg_write( conn_, data, data_len );
 }
 
 /**********************************************************************************************/
@@ -119,7 +142,7 @@ void crest_connection::send_file( const char* path )
 	FILE* f = fopen( path, "rb" );
 	if( !f )
 	{
-		mg_write( conn_, "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 19\r\n\r\nUnable to open file", 77 );
+		respond( CREST_HTTP_NOT_FOUND, 0, 0 );
 		return;
 	}
 
