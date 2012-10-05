@@ -50,46 +50,6 @@ typedef unsigned long  ulg;
 
 #define PRESET_DICT 0x20 
 
-        
-
-#if defined(MSDOS) || (defined(WINDOWS) && !defined(WIN32))
-#  define OS_CODE  0x00
-#  ifndef Z_SOLO
-#    if defined(__TURBOC__) || defined(__BORLANDC__)
-#      if (__STDC__ == 1) && (defined(__LARGE__) || defined(__COMPACT__))
-         
-         void _Cdecl farfree( void *block );
-         void *_Cdecl farmalloc( unsigned long nbytes );
-#      else
-#        include <alloc.h>
-#      endif
-#    else 
-#      include <malloc.h>
-#    endif
-#  endif
-#endif
-
-#ifdef AMIGA
-#  define OS_CODE  0x01
-#endif
-
-#if defined(VAXC) || defined(VMS)
-#  define OS_CODE  0x02
-#  define F_OPEN(name, mode) \
-     fopen((name), (mode), "mbc=60", "ctx=stm", "rfm=fix", "mrs=512")
-#endif
-
-#if defined(ATARI) || defined(atarist)
-#  define OS_CODE  0x05
-#endif
-
-#ifdef OS2
-#  define OS_CODE  0x06
-#  if defined(M_I86) && !defined(Z_SOLO)
-#    include <malloc.h>
-#  endif
-#endif
-
 #if defined(MACOS) || defined(TARGET_OS_MAC)
 #  define OS_CODE  0x07
 #  ifndef Z_SOLO
@@ -103,22 +63,10 @@ typedef unsigned long  ulg;
 #  endif
 #endif
 
-#ifdef TOPS20
-#  define OS_CODE  0x0a
-#endif
-
 #ifdef WIN32
 #  ifndef __CYGWIN__  
 #    define OS_CODE  0x0b
 #  endif
-#endif
-
-#ifdef __50SERIES 
-#  define OS_CODE  0x0f
-#endif
-
-#if defined(_BEOS_) || defined(RISCOS)
-#  define fdopen(fd,mode) NULL 
 #endif
 
 #if (defined(_MSC_VER) && (_MSC_VER > 600)) && !defined __INTERIX
@@ -132,20 +80,7 @@ typedef unsigned long  ulg;
 #    define fdopen(fd,type)  _fdopen(fd,type)
 #  endif
 #endif
-
-#if defined(__BORLANDC__) && !defined(MSDOS)
-  #pragma warn -8004
-  #pragma warn -8008
-  #pragma warn -8066
-#endif
-
-
-#if !defined(_WIN32) && (!defined(_LARGEFILE64_SOURCE) || _LFS64_LARGEFILE-0 == 0)
-    ZEXTERN uLong ZEXPORT adler32_combine64 OF((uLong, uLong, z_off_t));
-    ZEXTERN uLong ZEXPORT crc32_combine64 OF((uLong, uLong, z_off_t));
-#endif
-
-        
+      
 
 #ifndef OS_CODE
 #  define OS_CODE  0x03  
