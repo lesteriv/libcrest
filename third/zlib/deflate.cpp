@@ -13,24 +13,29 @@
 #include "deflate.h"
 
 
+/**********************************************************************************************/
 #define BASE 65521      /* largest prime smaller than 65536 */
 #define NMAX 5552		/* NMAX is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1 */
 
+/**********************************************************************************************/
 #define Z_DEFLATED   8
 
+/**********************************************************************************************/
 #define DO1(buf,i)  {adler += (buf)[i]; sum2 += adler;}
 #define DO2(buf,i)  DO1(buf,i); DO1(buf,i+1);
 #define DO4(buf,i)  DO2(buf,i); DO2(buf,i+2);
 #define DO8(buf,i)  DO4(buf,i); DO4(buf,i+4);
 #define DO16(buf)   DO8(buf,0); DO8(buf,8);
 
+/**********************************************************************************************/
 #define MOD(a) a %= BASE
 #define MOD28(a) a %= BASE
 
+/**********************************************************************************************/
 unsigned long adler32(
-    unsigned long adler,
-    const Byte *buf,
-    unsigned int len )
+    unsigned long	adler,
+    const Byte*		buf,
+    unsigned int	len )
 {
     unsigned long sum2;
     unsigned n;
@@ -97,48 +102,45 @@ unsigned long adler32(
     return adler | (sum2 << 16);
 }
 
-
+/**********************************************************************************************/
 typedef enum {
     need_more,      
     block_done,     
     finish_started, 
     finish_done     
-} block_state;
+}
+block_state;
 
-typedef block_state (*compress_func) (deflate_state *s, int flush);
+/**********************************************************************************************/
+typedef block_state (*compress_func)( deflate_state *s, int flush );
 
-static void fill_window    (deflate_state *s);
-static block_state deflate_fast   (deflate_state *s, int flush);
-static void lm_init        (deflate_state *s);
-static void putShortMSB    (deflate_state *s, unsigned int b);
-static void flush_pending  (z_stream* strm);
-static int read_buf        (z_stream* strm, Byte *buf, unsigned size);
+/**********************************************************************************************/
+static void fill_window			(deflate_state *s);
+static block_state deflate_fast (deflate_state *s, int flush);
+static void lm_init				(deflate_state *s);
+static void putShortMSB			(deflate_state *s, unsigned int b);
+static void flush_pending		(z_stream* strm);
+static int read_buf				(z_stream* strm, Byte *buf, unsigned size);
 static unsigned int longest_match  (deflate_state *s, IPos cur_match);
 
-#define NIL 0
 
-typedef struct config_s {
-   unsigned short good_length; 
-   unsigned short max_lazy;    
-   unsigned short nice_length; 
-   unsigned short max_chain;
-   compress_func func;
-} config;
-
-
+/**********************************************************************************************/
 #define UPDATE_HASH(s,h,c) (h = (((h)<<s->hash_shift) ^ (c)) & s->hash_mask)
 
+/**********************************************************************************************/
 #define INSERT_STRING(s, str, match_head) \
    (UPDATE_HASH(s, s->ins_h, s->window[(str) + (MIN_MATCH-1)]), \
     match_head = s->head[s->ins_h], \
     s->head[s->ins_h] = (Pos)(str))
 
+/**********************************************************************************************/
 #define CLEAR_HASH(s) \
-    s->head[s->hash_size-1] = NIL; \
+    s->head[s->hash_size-1] = 0; \
     memset(s->head, 0, (unsigned)(s->hash_size-1)*sizeof(*s->head));
 
-static void deflateResetKeep(
-    z_stream* strm )
+
+/**********************************************************************************************/
+static void deflateResetKeep( z_stream* strm )
 {
     deflate_state *s;
 
@@ -156,13 +158,14 @@ static void deflateResetKeep(
     _tr_init(s);
 }
 
-static void deflateReset(
-    z_stream* strm )
+/**********************************************************************************************/
+static void deflateReset( z_stream* strm )
 {
-    deflateResetKeep(strm);
-    lm_init(strm->state);
+    deflateResetKeep( strm );
+    lm_init( strm->state );
 }
 	
+/**********************************************************************************************/
 void deflateInit( z_stream* strm )
 {
     deflate_state *s;
@@ -170,8 +173,8 @@ void deflateInit( z_stream* strm )
 
     unsigned short *overlay;
 
-    s = (deflate_state *) malloc(sizeof(deflate_state));
-    strm->state = (struct internal_state *)s;
+    s = (deflate_state*) malloc(sizeof(deflate_state));
+    strm->state = (internal_state*) s;
     s->strm = strm;
 
     s->wrap = wrap;
@@ -183,16 +186,15 @@ void deflateInit( z_stream* strm )
     s->hash_mask = s->hash_size - 1;
     s->hash_shift =  ((s->hash_bits+MIN_MATCH-1)/MIN_MATCH);
 
-    s->window = (Byte *) malloc(s->w_size * 2*sizeof(Byte));
-    s->prev   = (Posf *) malloc(s->w_size * sizeof(Pos));
-    s->head   = (Posf *) malloc(s->hash_size * sizeof(Pos));
+    s->window = (Byte*) malloc(s->w_size * 2*sizeof(Byte));
+    s->prev   = (Posf*) malloc(s->w_size * sizeof(Pos));
+    s->head   = (Posf*) malloc(s->hash_size * sizeof(Pos));
 
     s->high_water = 0;      
-
     s->lit_bufsize = 1 << (8 + 6); 
 
     overlay = (unsigned short*) malloc(s->lit_bufsize * (sizeof(unsigned short)+2));
-    s->pending_buf = (unsigned char *) overlay;
+    s->pending_buf = (unsigned char*) overlay;
     s->pending_buf_size = (unsigned long)s->lit_bufsize * (sizeof(unsigned short)+2L);
     s->d_buf = overlay + s->lit_bufsize/sizeof(unsigned short);
     s->l_buf = s->pending_buf + (1+sizeof(unsigned short))*s->lit_bufsize;
@@ -200,17 +202,17 @@ void deflateInit( z_stream* strm )
     deflateReset(strm);
 }
 
+/**********************************************************************************************/
 static void putShortMSB(
-    deflate_state *s,
-    unsigned int b )
+    deflate_state*	s,
+    unsigned int	b )
 {
     put_byte(s, (Byte)(b >> 8));
     put_byte(s, (Byte)(b & 0xff));
 }
 
-
-static void flush_pending(
-    z_stream* strm )
+/**********************************************************************************************/
+static void flush_pending( z_stream* strm )
 {
     unsigned len;
     deflate_state *s = strm->state;
@@ -223,15 +225,15 @@ static void flush_pending(
     memcpy(strm->next_out, s->pending_out, len);
     strm->next_out  += len;
     s->pending_out  += len;
-    strm->avail_out  -= len;
-    s->pending -= len;
-    if (s->pending == 0) {
+    strm->avail_out -= len;
+    s->pending		-= len;
+	
+    if (s->pending == 0)
         s->pending_out = s->pending_buf;
-    }
 }
 
-void deflate (
-    z_stream* strm )
+/**********************************************************************************************/
+void deflate( z_stream* strm )
 {
 	deflateInit( strm );
 	
@@ -240,7 +242,7 @@ void deflate (
     s = strm->state;
     s->strm = strm; 
     
-    if (s->status == INIT_STATE)
+    if( s->status == INIT_STATE )
 	{
 		unsigned int header = (Z_DEFLATED + ((s->w_bits-8)<<4)) << 8;
 		if (s->strstart != 0) header |= 0x20;
@@ -403,7 +405,7 @@ static void fill_window(
             p = &s->head[n];
             do {
                 m = *--p;
-                *p = (Pos)(m >= wsize ? m-wsize : NIL);
+                *p = (Pos)(m >= wsize ? m-wsize : 0);
             } while (--n);
 
             n = wsize;
@@ -492,13 +494,13 @@ static block_state deflate_fast(
         }
 
         
-        hash_head = NIL;
+        hash_head = 0;
         if (s->lookahead >= MIN_MATCH) {
             INSERT_STRING(s, s->strstart, hash_head);
         }
 
         
-        if (hash_head != NIL && s->strstart - hash_head <= MAX_DIST(s)) {
+        if (hash_head != 0 && s->strstart - hash_head <= MAX_DIST(s)) {
             
             s->match_length = longest_match (s, hash_head);
             

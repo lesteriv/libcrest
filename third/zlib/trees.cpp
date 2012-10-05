@@ -105,8 +105,6 @@ void _tr_init( deflate_state* s )
 #define SMALLEST 1
 
 
-
-
 #define pqremove(s, tree, top) \
 {\
     top = s->heap[SMALLEST]; \
