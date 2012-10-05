@@ -5,8 +5,9 @@
 
 
 #define BASE 65521      /* largest prime smaller than 65536 */
-#define NMAX 5552
-/* NMAX is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1 */
+#define NMAX 5552		/* NMAX is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1 */
+
+#define Z_DEFLATED   8
 
 #define DO1(buf,i)  {adler += (buf)[i]; sum2 += adler;}
 #define DO2(buf,i)  DO1(buf,i); DO1(buf,i+1);
@@ -43,7 +44,7 @@ uLong adler32(
     }
 
     /* initial Adler-32 value (deferred check for len == 1 speed) */
-    if (buf == Z_NULL)
+    if (buf == 0)
         return 1L;
 
     /* in case short lengths are provided, keep it somewhat fast */
@@ -140,10 +141,6 @@ static int deflateResetKeep(
 {
     deflate_state *s;
 
-    if (strm == Z_NULL || strm->state == Z_NULL ) {
-        return Z_STREAM_ERROR;
-    }
-
     s = (deflate_state *)strm->state;
     s->pending = 0;
     s->pending_out = s->pending_buf;
@@ -153,7 +150,7 @@ static int deflateResetKeep(
     }
     s->status = s->wrap ? INIT_STATE : BUSY_STATE;
     strm->adler =
-        adler32(0L, Z_NULL, 0);
+        adler32(0L, 0, 0);
 
     _tr_init(s);
 
@@ -177,11 +174,8 @@ int deflateInit( z_streamp strm )
     int wrap = 1;
 
     unsigned short *overlay;
-    
-    if (strm == Z_NULL) return Z_STREAM_ERROR;
 
     s = (deflate_state *) malloc(sizeof(deflate_state));
-    if (s == Z_NULL) return Z_MEM_ERROR;
     strm->state = (struct internal_state *)s;
     s->strm = strm;
 
@@ -195,8 +189,8 @@ int deflateInit( z_streamp strm )
     s->hash_shift =  ((s->hash_bits+MIN_MATCH-1)/MIN_MATCH);
 
     s->window = (Byte *) malloc(s->w_size * 2*sizeof(Byte));
-    s->prev   = (Posf *)  malloc(s->w_size * sizeof(Pos));
-    s->head   = (Posf *)  malloc(s->hash_size * sizeof(Pos));
+    s->prev   = (Posf *) malloc(s->w_size * sizeof(Pos));
+    s->head   = (Posf *) malloc(s->hash_size * sizeof(Pos));
 
     s->high_water = 0;      
 
@@ -205,13 +199,6 @@ int deflateInit( z_streamp strm )
     overlay = (unsigned short *) malloc(s->lit_bufsize * sizeof(unsigned short)+2);
     s->pending_buf = (unsigned char *) overlay;
     s->pending_buf_size = (unsigned long)s->lit_bufsize * (sizeof(unsigned short)+2L);
-
-    if (s->window == Z_NULL || s->prev == Z_NULL || s->head == Z_NULL ||
-        s->pending_buf == Z_NULL) {
-        s->status = FINISH_STATE;
-        deflateEnd (strm);
-        return Z_MEM_ERROR;
-    }
     s->d_buf = overlay + s->lit_bufsize/sizeof(unsigned short);
     s->l_buf = s->pending_buf + (1+sizeof(unsigned short))*s->lit_bufsize;
 
@@ -254,36 +241,24 @@ int deflate (
 {
     deflate_state *s;
 
-    if (strm == Z_NULL || strm->state == Z_NULL) {
-        return Z_STREAM_ERROR;
-    }
     s = strm->state;
-
-    if (strm->next_out == Z_NULL ||
-        (strm->next_in == Z_NULL && strm->avail_in != 0)) {
-        return Z_STREAM_ERROR;
-    }
-    if (strm->avail_out == 0) return Z_BUF_ERROR;
-
     s->strm = strm; 
     
-    if (s->status == INIT_STATE) {
-        {
-            uInt header = (Z_DEFLATED + ((s->w_bits-8)<<4)) << 8;
-            if (s->strstart != 0) header |= 0x20;
-            header += 31 - (header % 31);
+    if (s->status == INIT_STATE)
+	{
+		uInt header = (Z_DEFLATED + ((s->w_bits-8)<<4)) << 8;
+		if (s->strstart != 0) header |= 0x20;
+		header += 31 - (header % 31);
 
-            s->status = BUSY_STATE;
-            putShortMSB(s, header);
+		s->status = BUSY_STATE;
+		putShortMSB(s, header);
 
-            
-            if (s->strstart != 0) {
-                putShortMSB(s, (uInt)(strm->adler >> 16));
-                putShortMSB(s, (uInt)(strm->adler & 0xffff));
-            }
-            strm->adler = adler32(0L, Z_NULL, 0);
-        }
-    }
+		if (s->strstart != 0) {
+			putShortMSB(s, (uInt)(strm->adler >> 16));
+			putShortMSB(s, (uInt)(strm->adler & 0xffff));
+		}
+		strm->adler = adler32(0L, 0, 0);
+	}
     
     if (s->pending != 0) {
         flush_pending(strm);
@@ -331,34 +306,14 @@ int deflate (
     return s->pending != 0 ? Z_OK : Z_STREAM_END;
 }
 
-
-int deflateEnd (
-    z_streamp strm )
+void deflateEnd( z_streamp strm )
 {
-    int status;
-
-    if (strm == Z_NULL || strm->state == Z_NULL) return Z_STREAM_ERROR;
-
-    status = strm->state->status;
-    if (status != INIT_STATE &&
-        status != EXTRA_STATE &&
-        status != NAME_STATE &&
-        status != COMMENT_STATE &&
-        status != HCRC_STATE &&
-        status != BUSY_STATE &&
-        status != FINISH_STATE) {
-      return Z_STREAM_ERROR;
-    }
-    
     free(strm->state->pending_buf);
     free(strm->state->head);
     free(strm->state->prev);
     free(strm->state->window);
 
     free(strm->state);
-    strm->state = Z_NULL;
-
-    return status == BUSY_STATE ? Z_DATA_ERROR : Z_OK;
 }
 
 static int read_buf(
@@ -524,7 +479,7 @@ static void fill_window(
 #define FLUSH_BLOCK_ONLY(s, last) { \
    _tr_flush_block(s, (s->block_start >= 0L ? \
                    (char *)&s->window[(unsigned)s->block_start] : \
-                   (char *)Z_NULL), \
+                   (char *)0), \
                 (unsigned long)((long)s->strstart - s->block_start), \
                 (last)); \
    s->block_start = s->strstart; \
