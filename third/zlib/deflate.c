@@ -124,7 +124,6 @@ int deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
     s->strm = strm;
 
     s->wrap = wrap;
-    s->gzhead = Z_NULL;
     s->w_bits = windowBits;
     s->w_size = 1 << s->w_bits;
     s->w_mask = s->w_size - 1;
@@ -202,18 +201,6 @@ int deflateReset (strm)
         lm_init(strm->state);
     return ret;
 }
-
-
-int deflateSetHeader (strm, head)
-    z_streamp strm;
-    gz_headerp head;
-{
-    if (strm == Z_NULL || strm->state == Z_NULL) return Z_STREAM_ERROR;
-    if (strm->state->wrap != 2) return Z_STREAM_ERROR;
-    strm->state->gzhead = head;
-    return Z_OK;
-}
-
 
 int deflatePending (strm, pending, bits)
     unsigned *pending;
@@ -336,22 +323,6 @@ uLong deflateBound(strm, sourceLen)
         break;
     case 2:                                 
         wraplen = 18;
-        if (s->gzhead != Z_NULL) {          
-            if (s->gzhead->extra != Z_NULL)
-                wraplen += 2 + s->gzhead->extra_len;
-            str = s->gzhead->name;
-            if (str != Z_NULL)
-                do {
-                    wraplen++;
-                } while (*str++);
-            str = s->gzhead->comment;
-            if (str != Z_NULL)
-                do {
-                    wraplen++;
-                } while (*str++);
-            if (s->gzhead->hcrc)
-                wraplen += 2;
-        }
         break;
     default:                                
         wraplen = 6;

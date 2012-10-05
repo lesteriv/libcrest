@@ -76,8 +76,6 @@ typedef struct internal_state {
     Bytef *pending_out;  
     uInt   pending;      
     int   wrap;          
-    gz_headerp  gzhead;  
-    uInt   gzindex;      
     Byte  method;        
     int   last_flush;    
 
