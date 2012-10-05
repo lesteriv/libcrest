@@ -4,26 +4,12 @@
 
 
 #define LENGTH_CODES 29
-
-
 #define LITERALS  256
-
-
 #define L_CODES (LITERALS+1+LENGTH_CODES)
-
-
 #define D_CODES   30
-
-
 #define BL_CODES  19
-
-
 #define HEAP_SIZE (2*L_CODES+1)
-
-
 #define MAX_BITS 15
-
-
 #define Buf_size 16
 
 
@@ -34,8 +20,6 @@
 #define HCRC_STATE   103
 #define BUSY_STATE   113
 #define FINISH_STATE 666
-
-
 
 
 typedef struct ct_data_s {
@@ -119,7 +103,6 @@ typedef struct internal_state {
 #   define max_insert_length  max_lazy_match
     
 
-    int level;    
     struct ct_data_s dyn_ltree[HEAP_SIZE];   
     struct ct_data_s dyn_dtree[2*D_CODES+1]; 
     struct ct_data_s bl_tree[2*BL_CODES+1];  

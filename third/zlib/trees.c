@@ -45,7 +45,6 @@ local static_tree_desc  static_bl_desc =
 
 
 
-local void tr_static_init OF((void));
 local void init_block     OF((deflate_state *s));
 local void pqdownheap     OF((deflate_state *s, ct_data *tree, int k));
 local void gen_bitlen     OF((deflate_state *s, tree_desc *desc));
@@ -86,15 +85,9 @@ local void copy_block     OF((deflate_state *s, charf *buf, unsigned len,
   }\
 }
 
-local void tr_static_init()
-{
-}
-
 void _tr_init(s)
     deflate_state *s;
 {
-    tr_static_init();
-
     s->l_desc.dyn_tree = s->dyn_ltree;
     s->l_desc.stat_desc = &static_l_desc;
 
@@ -501,28 +494,20 @@ void _tr_flush_block(s, buf, stored_len, last)
     int max_blindex = 0;  
 
     
-    if (s->level > 0) {
+	if (s->strm->data_type == Z_UNKNOWN)
+		s->strm->data_type = detect_data_type(s);
 
-        
-        if (s->strm->data_type == Z_UNKNOWN)
-            s->strm->data_type = detect_data_type(s);
+	build_tree(s, (tree_desc *)(&(s->l_desc)));
+	build_tree(s, (tree_desc *)(&(s->d_desc)));
 
-        
-        build_tree(s, (tree_desc *)(&(s->l_desc)));
-        build_tree(s, (tree_desc *)(&(s->d_desc)));
-        
-        max_blindex = build_bl_tree(s);
+	max_blindex = build_bl_tree(s);
 
-        
-        opt_lenb = (s->opt_len+3+7)>>3;
-        static_lenb = (s->static_len+3+7)>>3;
 
-        if (static_lenb <= opt_lenb) opt_lenb = static_lenb;
+	opt_lenb = (s->opt_len+3+7)>>3;
+	static_lenb = (s->static_len+3+7)>>3;
 
-    } else {
-        opt_lenb = static_lenb = stored_len + 5; 
-    }
-
+	if (static_lenb <= opt_lenb) opt_lenb = static_lenb;
+		
 #ifdef FORCE_STORED
     if (buf != (char*)0) { 
 #else

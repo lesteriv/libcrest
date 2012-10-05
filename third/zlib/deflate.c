@@ -96,11 +96,9 @@ local int deflateReset (strm)
         lm_init(strm->state);
     return ret;
 }
-
-int deflateInit2_(strm, level, method, windowBits, memLevel,
+local int deflateInit2_(strm, method, windowBits, memLevel,
                   version, stream_size)
     z_streamp strm;
-    int  level;
     int  method;
     int  windowBits;
     int  memLevel;
@@ -120,14 +118,12 @@ int deflateInit2_(strm, level, method, windowBits, memLevel,
     }
     if (strm == Z_NULL) return Z_STREAM_ERROR;
 
-    if (level != 0) level = 1;
-
     if (windowBits < 0) { 
         wrap = 0;
         windowBits = -windowBits;
     }
     if (memLevel < 1 || memLevel > MAX_MEM_LEVEL || method != Z_DEFLATED ||
-        windowBits < 8 || windowBits > 15 || level < 0 || level > 9) {
+        windowBits < 8 || windowBits > 15) {
         return Z_STREAM_ERROR;
     }
     if (windowBits == 8) windowBits = 9;  
@@ -167,19 +163,17 @@ int deflateInit2_(strm, level, method, windowBits, memLevel,
     s->d_buf = overlay + s->lit_bufsize/sizeof(ush);
     s->l_buf = s->pending_buf + (1+sizeof(ush))*s->lit_bufsize;
 
-    s->level = level;
     s->method = (Byte)method;
 
     return deflateReset(strm);
 }
 
-int deflateInit_(strm, level, version, stream_size)
+int deflateInit_(strm, version, stream_size)
     z_streamp strm;
-    int level;
     const char *version;
     int stream_size;
 {
-    return deflateInit2_(strm, level, Z_DEFLATED, MAX_WBITS, DEF_MEM_LEVEL,
+    return deflateInit2_(strm, Z_DEFLATED, MAX_WBITS, DEF_MEM_LEVEL,
                          version, stream_size);
     
 }
@@ -204,7 +198,7 @@ local void flush_pending(strm)
     if (len > strm->avail_out) len = strm->avail_out;
     if (len == 0) return;
 
-    zmemcpy(strm->next_out, s->pending_out, len);
+    memcpy(strm->next_out, s->pending_out, len);
     strm->next_out  += len;
     s->pending_out  += len;
     strm->total_out += len;
@@ -244,17 +238,6 @@ int deflate (strm, flush)
     if (s->status == INIT_STATE) {
         {
             uInt header = (Z_DEFLATED + ((s->w_bits-8)<<4)) << 8;
-            uInt level_flags;
-
-            if (s->level < 2)
-                level_flags = 0;
-            else if (s->level < 6)
-                level_flags = 1;
-            else if (s->level == 6)
-                level_flags = 2;
-            else
-                level_flags = 3;
-            header |= (level_flags << 6);
             if (s->strstart != 0) header |= PRESET_DICT;
             header += 31 - (header % 31);
 
@@ -385,7 +368,7 @@ local int read_buf(strm, buf, size)
 
     strm->avail_in  -= len;
 
-    zmemcpy(buf, strm->next_in, len);
+    memcpy(buf, strm->next_in, len);
     if (strm->state->wrap == 1) {
         strm->adler = adler32(strm->adler, buf, len);
     }
@@ -471,7 +454,7 @@ local void fill_window(s)
         
         if (s->strstart >= wsize+MAX_DIST(s)) {
 
-            zmemcpy(s->window, s->window+wsize, (unsigned)wsize);
+            memcpy(s->window, s->window+wsize, (unsigned)wsize);
             s->match_start -= wsize;
             s->strstart    -= wsize; 
             s->block_start -= (long) wsize;

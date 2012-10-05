@@ -69,13 +69,13 @@ typedef z_stream FAR *z_streamp;
 
 ZEXTERN int deflate OF((z_streamp strm, int flush));
 ZEXTERN int deflateEnd OF((z_streamp strm));
-ZEXTERN int deflateInit_ OF((z_streamp strm, int level,
+ZEXTERN int deflateInit_ OF((z_streamp strm,
                                      const char *version, int stream_size));
 
 ZEXTERN uLong adler32 OF((uLong adler, const Bytef *buf, uInt len));
 
-#define deflateInit(strm, level) \
-        deflateInit_((strm), (level), ZLIB_VERSION, (int)sizeof(z_stream))
+#define deflateInit(strm) \
+        deflateInit_((strm), ZLIB_VERSION, (int)sizeof(z_stream))
 
 static inline uLong compressBound (uLong sourceLen)
 {

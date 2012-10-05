@@ -35,38 +35,16 @@ typedef unsigned long  ulg;
 #define MIN_MATCH  3
 #define MAX_MATCH  258
 
-
 #define PRESET_DICT 0x20 
 
-#if defined(MACOS) || defined(TARGET_OS_MAC)
-#  define OS_CODE  0x07
-#endif
-
-#ifdef WIN32
-#  ifndef __CYGWIN__  
-#    define OS_CODE  0x0b
-#  endif
-#endif
-
-#if (defined(_MSC_VER) && (_MSC_VER > 600)) && !defined __INTERIX
-# define fdopen(fd,type)  _fdopen(fd,type)
-#endif
-      
-
-#ifndef OS_CODE
-#  define OS_CODE  0x03  
-#endif
 
 #ifndef F_OPEN
 #  define F_OPEN(name, mode) fopen((name), (mode))
 #endif
 
-#define zmemcpy memcpy
-#define zmemcmp memcmp
 #define zmemzero(dest, len) memset(dest, 0, len)
 
-#define ZALLOC(items, size) \
-           malloc( (items) * (size))
+#define ZALLOC(items, size) malloc( (items) * (size))
 #define ZFREE(addr)  free((voidpf)(addr))
 
 #define ZSWAP32(q) ((((q) >> 24) & 0xff) + (((q) >> 8) & 0xff00) + \
