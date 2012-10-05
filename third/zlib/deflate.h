@@ -57,16 +57,16 @@ typedef unsigned IPos;
 typedef struct internal_state {
     z_streamp strm;      
     int   status;        
-    Bytef *pending_buf;  
+    Byte *pending_buf;  
     unsigned long   pending_buf_size; 
-    Bytef *pending_out;  
+    Byte *pending_out;  
     uInt   pending;      
     int   wrap;          
 
     uInt  w_size;        
     uInt  w_bits;        
 
-    Bytef *window;
+    Byte *window;
     unsigned long window_size;
 
     Posf *prev;
@@ -125,11 +125,11 @@ typedef struct internal_state {
         
 void _tr_init (deflate_state *s);
 int _tr_tally (deflate_state *s, unsigned dist, unsigned lc);
-void _tr_flush_block (deflate_state *s, charf *buf,
+void _tr_flush_block (deflate_state *s, char *buf,
                         unsigned long stored_len, int last);
 void _tr_flush_bits (deflate_state *s);
 void _tr_align (deflate_state *s);
-void _tr_stored_block (deflate_state *s, charf *buf,
+void _tr_stored_block (deflate_state *s, char *buf,
                         unsigned long stored_len, int last);
 
 #define d_code(dist) \

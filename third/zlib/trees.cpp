@@ -32,7 +32,7 @@ static const unsigned char bl_order[BL_CODES]
 
 struct static_tree_desc_s {
     const ct_data *static_tree;  
-    const intf *extra_bits;      
+    const int *extra_bits;      
     int     extra_base;          
     int     elems;               
     int     max_length;          
@@ -65,7 +65,7 @@ static int  detect_data_type (deflate_state *s);
 static unsigned bi_reverse (unsigned value, int length);
 static void bi_windup      (deflate_state *s);
 static void bi_flush       (deflate_state *s);
-static void copy_block     (deflate_state *s, charf *buf, unsigned len,
+static void copy_block     (deflate_state *s, char *buf, unsigned len,
                               int header);
 
 #  define send_code(s, c, tree) send_bits(s, tree[c].Code, tree[c].Len)
@@ -172,7 +172,7 @@ static void gen_bitlen(
     ct_data *tree        = desc->dyn_tree;
     int max_code         = desc->max_code;
     const ct_data *stree = desc->stat_desc->static_tree;
-    const intf *extra    = desc->stat_desc->extra_bits;
+    const int *extra    = desc->stat_desc->extra_bits;
     int base             = desc->stat_desc->extra_base;
     int max_length       = desc->stat_desc->max_length;
     int h;              
@@ -461,7 +461,7 @@ static void send_all_trees(
 
 void _tr_stored_block(
     deflate_state *s,
-    charf *buf, 
+    char *buf, 
     unsigned long stored_len,
     int last )
 {
@@ -488,7 +488,7 @@ void _tr_align(
 
 void _tr_flush_block(
     deflate_state *s,
-    charf *buf, 
+    char *buf, 
     unsigned long stored_len,
     int last )
 {
@@ -645,7 +645,7 @@ static void bi_windup(
 
 static void copy_block(
     deflate_state *s,
-    charf    *buf, 
+    char    *buf, 
     unsigned len,
     int      header )
 {

@@ -21,7 +21,7 @@
 /* ========================================================================= */
 uLong adler32(
     uLong adler,
-    const Bytef *buf,
+    const Byte *buf,
     uInt len )
 {
     unsigned long sum2;
@@ -104,7 +104,7 @@ static block_state deflate_fast   (deflate_state *s, int flush);
 static void lm_init        (deflate_state *s);
 static void putShortMSB    (deflate_state *s, uInt b);
 static void flush_pending  (z_streamp strm);
-static int read_buf        (z_streamp strm, Bytef *buf, unsigned size);
+static int read_buf        (z_streamp strm, Byte *buf, unsigned size);
 static uInt longest_match  (deflate_state *s, IPos cur_match);
 
 #define NIL 0
@@ -171,57 +171,36 @@ static int deflateReset(
     return ret;
 }
 	
-static int deflateInit2_(
-    z_streamp strm,
-    int  method,
-    int  windowBits,
-    int  memLevel,
-    const char *version,
-    int stream_size )
+int deflateInit( z_streamp strm )
 {
     deflate_state *s;
     int wrap = 1;
-    static const char my_version[] = ZLIB_VERSION;
 
     unsigned short *overlay;
     
-
-    if (version == Z_NULL || version[0] != my_version[0] ||
-        stream_size != sizeof(z_stream)) {
-        return Z_VERSION_ERROR;
-    }
     if (strm == Z_NULL) return Z_STREAM_ERROR;
 
-    if (windowBits < 0) { 
-        wrap = 0;
-        windowBits = -windowBits;
-    }
-    if (memLevel < 1 || method != Z_DEFLATED ||
-        windowBits < 8 || windowBits > 15) {
-        return Z_STREAM_ERROR;
-    }
-    if (windowBits == 8) windowBits = 9;  
     s = (deflate_state *) malloc(sizeof(deflate_state));
     if (s == Z_NULL) return Z_MEM_ERROR;
     strm->state = (struct internal_state *)s;
     s->strm = strm;
 
     s->wrap = wrap;
-    s->w_bits = windowBits;
+    s->w_bits = 15;
     s->w_size = 1 << s->w_bits;
 
-    s->hash_bits = memLevel + 7;
+    s->hash_bits = 15;
     s->hash_size = 1 << s->hash_bits;
     s->hash_mask = s->hash_size - 1;
     s->hash_shift =  ((s->hash_bits+MIN_MATCH-1)/MIN_MATCH);
 
-    s->window = (Bytef *) malloc(s->w_size * 2*sizeof(Byte));
+    s->window = (Byte *) malloc(s->w_size * 2*sizeof(Byte));
     s->prev   = (Posf *)  malloc(s->w_size * sizeof(Pos));
     s->head   = (Posf *)  malloc(s->hash_size * sizeof(Pos));
 
     s->high_water = 0;      
 
-    s->lit_bufsize = 1 << (memLevel + 6); 
+    s->lit_bufsize = 1 << (8 + 6); 
 
     overlay = (unsigned short *) malloc(s->lit_bufsize * sizeof(unsigned short)+2);
     s->pending_buf = (unsigned char *) overlay;
@@ -237,16 +216,6 @@ static int deflateInit2_(
     s->l_buf = s->pending_buf + (1+sizeof(unsigned short))*s->lit_bufsize;
 
     return deflateReset(strm);
-}
-
-int deflateInit_(
-    z_streamp strm,
-    const char *version,
-    int stream_size )
-{
-    return deflateInit2_(strm, Z_DEFLATED, 15, 8,
-                         version, stream_size);
-    
 }
 
 static void putShortMSB(
@@ -394,7 +363,7 @@ int deflateEnd (
 
 static int read_buf(
     z_streamp strm,
-    Bytef *buf,
+    Byte *buf,
     unsigned size )
 {
     unsigned len = strm->avail_in;
@@ -435,10 +404,10 @@ static uInt longest_match(
     deflate_state *s,
     IPos cur_match )                           
 {
-    register Bytef *scan = s->window + s->strstart; 
-    register Bytef *match;                       
+    register Byte *scan = s->window + s->strstart; 
+    register Byte *match;                       
     register int len;                           
-    register Bytef *strend = s->window + s->strstart + MAX_MATCH;
+    register Byte *strend = s->window + s->strstart + MAX_MATCH;
 
     match = s->window + cur_match;
 
@@ -554,8 +523,8 @@ static void fill_window(
 
 #define FLUSH_BLOCK_ONLY(s, last) { \
    _tr_flush_block(s, (s->block_start >= 0L ? \
-                   (charf *)&s->window[(unsigned)s->block_start] : \
-                   (charf *)Z_NULL), \
+                   (char *)&s->window[(unsigned)s->block_start] : \
+                   (char *)Z_NULL), \
                 (unsigned long)((long)s->strstart - s->block_start), \
                 (last)); \
    s->block_start = s->strstart; \

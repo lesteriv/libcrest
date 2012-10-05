@@ -3,7 +3,6 @@
 // STD
 #include <stdint.h>
 
-#define ZLIB_VERSION "1.2.7"
 #define ZLIB_VERNUM 0x1270
 #define ZLIB_VER_MAJOR 1
 #define ZLIB_VER_MINOR 2
@@ -16,9 +15,6 @@ typedef unsigned char  Byte;
 typedef unsigned int   uInt;
 typedef unsigned long  uLong;
 
-typedef Byte		Bytef;
-typedef char		charf;
-typedef int			intf;
 typedef uInt		uIntf;
 typedef uLong		uLongf;
 
@@ -28,10 +24,10 @@ typedef void       *voidp;
 typedef uint32_t	z_crc_t;
 
 typedef struct z_stream_s {
-    const Bytef *next_in;
+    const Byte *next_in;
     uInt     avail_in;
 
-    Bytef    *next_out;
+    Byte    *next_out;
     uInt     avail_out;
 
     struct internal_state *state;
@@ -69,11 +65,7 @@ typedef z_stream *z_streamp;
 
 extern int deflate (z_streamp strm);
 extern int deflateEnd (z_streamp strm);
-extern int deflateInit_ (z_streamp strm,
-                                     const char *version, int stream_size);
-
-#define deflateInit(strm) \
-        deflateInit_((strm), ZLIB_VERSION, (int)sizeof(z_stream))
+extern int deflateInit (z_streamp strm);
 
 static inline uLong compressBound (uLong sourceLen)
 {
