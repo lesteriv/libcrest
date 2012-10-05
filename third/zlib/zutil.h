@@ -1,6 +1,7 @@
 #ifndef ZUTIL_H
 #define ZUTIL_H
 
+#include <stdlib.h>
 #include <string.h>
 #include "zlib.h"
 
@@ -64,11 +65,9 @@ typedef unsigned long  ulg;
 #define zmemcmp memcmp
 #define zmemzero(dest, len) memset(dest, 0, len)
 
-#define ZALLOC(strm, items, size) \
-           (*((strm)->zalloc))((strm)->opaque, (items), (size))
-#define ZFREE(strm, addr)  (*((strm)->zfree))((strm)->opaque, (voidpf)(addr))
-#define TRY_FREE(s, p) {if (p) ZFREE(s, p);}
-
+#define ZALLOC(items, size) \
+           malloc( (items) * (size))
+#define ZFREE(addr)  free((voidpf)(addr))
 
 #define ZSWAP32(q) ((((q) >> 24) & 0xff) + (((q) >> 8) & 0xff00) + \
                     (((q) & 0xff00) << 8) + (((q) & 0xff) << 24))

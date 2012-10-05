@@ -13,9 +13,6 @@ extern "C" {
 #define ZLIB_VER_REVISION 7
 #define ZLIB_VER_SUBREVISION 0
 
-typedef voidpf (*alloc_func) OF((voidpf opaque, uInt items, uInt size));
-typedef void   (*free_func)  OF((voidpf opaque, voidpf address));
-
 struct internal_state;
 
 typedef struct z_stream_s {
@@ -28,10 +25,6 @@ typedef struct z_stream_s {
     uLong    total_out;
 
     struct internal_state FAR *state;
-
-    alloc_func zalloc;
-    free_func  zfree;
-    voidpf     opaque;
 
     int     data_type;
     uLong   adler;
