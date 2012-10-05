@@ -20,8 +20,8 @@
 #define MOD63(a) a %= BASE
 
 /* ========================================================================= */
-uLong adler32(
-    uLong adler,
+unsigned long adler32(
+    unsigned long adler,
     const Byte *buf,
     uInt len )
 {
@@ -104,8 +104,8 @@ static void fill_window    (deflate_state *s);
 static block_state deflate_fast   (deflate_state *s, int flush);
 static void lm_init        (deflate_state *s);
 static void putShortMSB    (deflate_state *s, uInt b);
-static void flush_pending  (z_streamp strm);
-static int read_buf        (z_streamp strm, Byte *buf, unsigned size);
+static void flush_pending  (z_stream* strm);
+static int read_buf        (z_stream* strm, Byte *buf, unsigned size);
 static uInt longest_match  (deflate_state *s, IPos cur_match);
 
 #define NIL 0
@@ -137,7 +137,7 @@ typedef struct config_s {
     memset(s->head, 0, (unsigned)(s->hash_size-1)*sizeof(*s->head));
 
 static void deflateResetKeep(
-    z_streamp strm )
+    z_stream* strm )
 {
     deflate_state *s;
 
@@ -156,13 +156,13 @@ static void deflateResetKeep(
 }
 
 static void deflateReset(
-    z_streamp strm )
+    z_stream* strm )
 {
     deflateResetKeep(strm);
     lm_init(strm->state);
 }
 	
-void deflateInit( z_streamp strm )
+void deflateInit( z_stream* strm )
 {
     deflate_state *s;
     int wrap = 1;
@@ -209,7 +209,7 @@ static void putShortMSB(
 
 
 static void flush_pending(
-    z_streamp strm )
+    z_stream* strm )
 {
     unsigned len;
     deflate_state *s = strm->state;
@@ -230,7 +230,7 @@ static void flush_pending(
 }
 
 void deflate (
-    z_streamp strm )
+    z_stream* strm )
 {
 	deflateInit( strm );
 	
@@ -297,7 +297,7 @@ finish:
 }
 
 static int read_buf(
-    z_streamp strm,
+    z_stream* strm,
     Byte *buf,
     unsigned size )
 {

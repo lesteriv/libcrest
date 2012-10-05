@@ -55,7 +55,7 @@ typedef unsigned IPos;
 
 
 typedef struct internal_state {
-    z_streamp strm;      
+    z_stream* strm;      
     int   status;        
     Byte *pending_buf;  
     unsigned long   pending_buf_size; 
