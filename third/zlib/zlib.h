@@ -27,7 +27,6 @@ typedef struct z_stream_s {
     uInt     avail_out;
     uLong    total_out;
 
-    z_const char *msg;
     struct internal_state FAR *state;
 
     alloc_func zalloc;
@@ -179,8 +178,6 @@ ZEXTERN int ZEXPORT inflateBack OF((z_streamp strm,
                                     out_func out, void FAR *out_desc));
 
 ZEXTERN int ZEXPORT inflateBackEnd OF((z_streamp strm));
-
-ZEXTERN uLong ZEXPORT zlibCompileFlags OF((void));
 
 #ifndef Z_SOLO
 
@@ -350,7 +347,6 @@ ZEXTERN int ZEXPORT gzgetc_ OF((gzFile file));
     struct internal_state {int dummy;};
 #endif
 
-ZEXTERN const char   * ZEXPORT zError           OF((int));
 ZEXTERN int            ZEXPORT inflateSyncPoint OF((z_streamp));
 ZEXTERN const z_crc_t FAR * ZEXPORT get_crc_table    OF((void));
 ZEXTERN int            ZEXPORT inflateUndermine OF((z_streamp, int));

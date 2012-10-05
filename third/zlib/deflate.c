@@ -1,15 +1,4 @@
-
-
-
-
-
-
 #include "deflate.h"
-
-const char deflate_copyright[] =
-   " deflate 1.2.7 Copyright 1995-2012 Jean-loup Gailly and Mark Adler ";
-
-
 
 typedef enum {
     need_more,      
@@ -19,7 +8,6 @@ typedef enum {
 } block_state;
 
 typedef block_state (*compress_func) OF((deflate_state *s, int flush));
-
 
 local void fill_window    OF((deflate_state *s));
 local block_state deflate_stored OF((deflate_state *s, int flush));
@@ -149,7 +137,6 @@ int ZEXPORT deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
     }
     if (strm == Z_NULL) return Z_STREAM_ERROR;
 
-    strm->msg = Z_NULL;
     if (strm->zalloc == (alloc_func)0) {
 #ifdef Z_SOLO
         return Z_STREAM_ERROR;
@@ -212,7 +199,6 @@ int ZEXPORT deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
     if (s->window == Z_NULL || s->prev == Z_NULL || s->head == Z_NULL ||
         s->pending_buf == Z_NULL) {
         s->status = FINISH_STATE;
-        strm->msg = (char*)ERR_MSG(Z_MEM_ERROR);
         deflateEnd (strm);
         return Z_MEM_ERROR;
     }
@@ -307,7 +293,6 @@ int ZEXPORT deflateResetKeep (strm)
     }
 
     strm->total_in = strm->total_out = 0;
-    strm->msg = Z_NULL; 
     strm->data_type = Z_UNKNOWN;
 
     s = (deflate_state *)strm->state;
@@ -555,9 +540,9 @@ int ZEXPORT deflate (strm, flush)
     if (strm->next_out == Z_NULL ||
         (strm->next_in == Z_NULL && strm->avail_in != 0) ||
         (s->status == FINISH_STATE && flush != Z_FINISH)) {
-        ERR_RETURN(strm, Z_STREAM_ERROR);
+        return Z_STREAM_ERROR;
     }
-    if (strm->avail_out == 0) ERR_RETURN(strm, Z_BUF_ERROR);
+    if (strm->avail_out == 0) return Z_BUF_ERROR;
 
     s->strm = strm; 
     old_flush = s->last_flush;
@@ -604,12 +589,12 @@ int ZEXPORT deflate (strm, flush)
     
     } else if (strm->avail_in == 0 && RANK(flush) <= RANK(old_flush) &&
                flush != Z_FINISH) {
-        ERR_RETURN(strm, Z_BUF_ERROR);
+        return  Z_BUF_ERROR;
     }
 
     
     if (s->status == FINISH_STATE && strm->avail_in != 0) {
-        ERR_RETURN(strm, Z_BUF_ERROR);
+        return Z_BUF_ERROR;
     }
 
     
@@ -1378,7 +1363,6 @@ local block_state deflate_huff(s, flush)
                 break;      
             }
         }
-
         
         s->match_length = 0;
         _tr_tally_lit (s, s->window[s->strstart], bflush);

@@ -26,16 +26,6 @@ typedef unsigned short ush;
 typedef ush FAR ushf;
 typedef unsigned long  ulg;
 
-extern const char * const z_errmsg[10]; 
-
-
-#define ERR_MSG(err) z_errmsg[Z_NEED_DICT-(err)]
-
-#define ERR_RETURN(strm,err) \
-  return (strm->msg = (char*)ERR_MSG(err), (err))
-
-
-        
 
 #ifndef DEF_WBITS
 #  define DEF_WBITS MAX_WBITS
