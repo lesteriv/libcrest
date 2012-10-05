@@ -12,8 +12,10 @@
 
 // CREST
 #include "../include/crest.h"
-#include "auth_basic.h"
 #include "utils.h"
+
+/**********************************************************************************************/
+#ifndef NO_AUTH
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -29,9 +31,6 @@ bool parse_basic_auth(
 	char*&		user,
 	char*&		password )
 {
-	if( !auth )
-		return false;
-
 	if( strncmp( "Basic ", auth, 6 ) )
 		return false;
 	
@@ -65,7 +64,7 @@ bool auth_basic(
 	const char* auth = conn.get_http_header( "Authorization" );
 	
 	size_t auth_len = auth ? strlen( auth ) : 0;
-	char* buf = (char*) alloca( auth_len + 1 );
+	char *buf = (char*) alloca( auth_len + 1 );
 	char *user, *pass;
 
 	if( auth && parse_basic_auth( auth, auth_len, buf, user, pass ) )
@@ -91,3 +90,7 @@ bool auth_basic(
 	
 	return res;	
 }
+
+
+/**********************************************************************************************/
+#endif // NO_AUTH

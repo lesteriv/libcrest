@@ -56,13 +56,14 @@ static size_t				g_log_size;
 
 
 //////////////////////////////////////////////////////////////////////////
-// fix build without libstdc++
+// to work on old glibc and without libstdc++
 //////////////////////////////////////////////////////////////////////////
 
 
 /**********************************************************************************************/
 extern "C" int __cxa_guard_acquire( void ) { return 0; }
 extern "C" int __cxa_guard_release( int  ) { return 0; }
+extern "C" unsigned long__fdelt_chk( unsigned int d ) { return d; }
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -232,7 +233,7 @@ static crest_string_array parse_resource_name(
 	res.count_ = 0;
 	
 	char* curl = (char*) res.items_ + 16 * sizeof * res.items_;
-	memcpy( curl, url, len + 1 );
+	memmove( curl, url, len + 1 );
 	
 	while( *curl )
 	{
@@ -381,7 +382,7 @@ void event_handler( mg_connection* conn )
 				}
 			}
 		}
-		
+
 		mg_write( conn, "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n", 45 );
 	}
 }
@@ -539,7 +540,7 @@ bool crest_start(
 		if( len < 4 || strcmp( g_log_file_path + len - 4, ".log" ) )
 		{
 			g_log_file_path = (char*) realloc( g_log_file_path, len + 5 );
-			memcpy( g_log_file_path + len, ".log", 5 );
+			memmove( g_log_file_path + len, ".log", 5 );
 		}
 		
 		g_log_file = fopen( g_log_file_path, "at" );

@@ -141,7 +141,7 @@ const char* crest_user_manager::add_user(
 	if( !user )
 	{
 		crest_user* new_user = create_user( name );
-		memcpy( new_user->password_, buf, 16 );
+		memmove( new_user->password_, buf, 16 );
 		new_user->admin_ = admin;
 	}
 	
@@ -218,7 +218,7 @@ bool crest_user_manager::get_password(
 	crest_user* user = find_user( name );
 	if( user )
 	{
-		memcpy( pass, user->password_, 16 );
+		memmove( pass, user->password_, 16 );
 		res = true;
 	}
 	
@@ -286,7 +286,7 @@ const char* crest_user_manager::update_user_password(
 	
 	crest_user* user = find_user( name );
 	if( user )
-		memcpy( user->password_, buf, 16 );
+		memmove( user->password_, buf, 16 );
 	
 	mg_mutex_unlock( mutex_ ); // -----------------------------
 	
