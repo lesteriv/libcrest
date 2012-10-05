@@ -9,7 +9,9 @@
             <header-extensions>h</header-extensions>
             <sourceEncoding>UTF-8</sourceEncoding>
             <make-dep-projects/>
-            <sourceRootList/>
+            <sourceRootList>
+                <sourceRootElem>third/zlib</sourceRootElem>
+            </sourceRootList>
             <confList>
                 <confElem>
                     <name>debug_native</name>
@@ -36,11 +38,7 @@
                     <type>1</type>
                 </confElem>
                 <confElem>
-                    <name>examples_dietlibc</name>
-                    <type>1</type>
-                </confElem>
-                <confElem>
-                    <name>exampes_minimal</name>
+                    <name>examples_minimal</name>
                     <type>1</type>
                 </confElem>
                 <confElem>

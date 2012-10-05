@@ -35,6 +35,8 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/src/utils.o \
+	${OBJECTDIR}/third/zlib/trees.o \
+	${OBJECTDIR}/third/zlib/deflate.o \
 	${OBJECTDIR}/src/crest_user_manager.o \
 	${OBJECTDIR}/src/crest.o \
 	${OBJECTDIR}/src/auth_digest.o \
@@ -45,11 +47,11 @@ OBJECTFILES= \
 
 
 # C Compiler Flags
-CFLAGS=
+CFLAGS=-Wall -Wextra
 
 # CC Compiler Flags
-CCFLAGS=-Wall -Wextra -fno-exceptions -fno-rtti -fvisibility=hidden -ffast-math -fno-threadsafe-statics
-CXXFLAGS=-Wall -Wextra -fno-exceptions -fno-rtti -fvisibility=hidden -ffast-math -fno-threadsafe-statics
+CCFLAGS=-Wall -Wextra -fno-rtti -fno-exceptions
+CXXFLAGS=-Wall -Wextra -fno-rtti -fno-exceptions
 
 # Fortran Compiler Flags
 FFLAGS=
@@ -66,12 +68,22 @@ LDLIBSOPTIONS=-lpthread -ldl
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	g++ -fvisibility=hidden -static-libstdc++ -fno-threadsafe-statics -Wl,--gc-sections -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc ${OBJECTFILES} ${LDLIBSOPTIONS} 
+	gcc -fno-exceptions -fno-rtti -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
 ${OBJECTDIR}/src/utils.o: src/utils.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/utils.o src/utils.cpp
+
+${OBJECTDIR}/third/zlib/trees.o: third/zlib/trees.cpp 
+	${MKDIR} -p ${OBJECTDIR}/third/zlib
+	${RM} $@.d
+	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/zlib/trees.o third/zlib/trees.cpp
+
+${OBJECTDIR}/third/zlib/deflate.o: third/zlib/deflate.cpp 
+	${MKDIR} -p ${OBJECTDIR}/third/zlib
+	${RM} $@.d
+	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/zlib/deflate.o third/zlib/deflate.cpp
 
 ${OBJECTDIR}/src/crest_user_manager.o: src/crest_user_manager.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src

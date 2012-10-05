@@ -35,6 +35,8 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/src/utils.o \
+	${OBJECTDIR}/third/zlib/trees.o \
+	${OBJECTDIR}/third/zlib/deflate.o \
 	${OBJECTDIR}/src/crest_user_manager.o \
 	${OBJECTDIR}/src/crest.o \
 	${OBJECTDIR}/src/auth_digest.o \
@@ -47,8 +49,8 @@ OBJECTFILES= \
 CFLAGS=-O3 -flto -fvisibility=hidden
 
 # CC Compiler Flags
-CCFLAGS=-O3 -flto -fno-exceptions -fno-rtti -fvisibility=hidden
-CXXFLAGS=-O3 -flto -fno-exceptions -fno-rtti -fvisibility=hidden
+CCFLAGS=-fno-exceptions -fno-rtti -flto -Ofast -fvisibility=hidden
+CXXFLAGS=-fno-exceptions -fno-rtti -flto -Ofast -fvisibility=hidden
 
 # Fortran Compiler Flags
 FFLAGS=
@@ -73,6 +75,16 @@ ${OBJECTDIR}/src/utils.o: src/utils.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/utils.o src/utils.cpp
+
+${OBJECTDIR}/third/zlib/trees.o: third/zlib/trees.cpp 
+	${MKDIR} -p ${OBJECTDIR}/third/zlib
+	${RM} $@.d
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/zlib/trees.o third/zlib/trees.cpp
+
+${OBJECTDIR}/third/zlib/deflate.o: third/zlib/deflate.cpp 
+	${MKDIR} -p ${OBJECTDIR}/third/zlib
+	${RM} $@.d
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/zlib/deflate.o third/zlib/deflate.cpp
 
 ${OBJECTDIR}/src/crest_user_manager.o: src/crest_user_manager.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
