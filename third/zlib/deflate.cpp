@@ -17,7 +17,6 @@
 
 #define MOD(a) a %= BASE
 #define MOD28(a) a %= BASE
-#define MOD63(a) a %= BASE
 
 /* ========================================================================= */
 unsigned long adler32(
@@ -110,11 +109,6 @@ static unsigned int longest_match  (deflate_state *s, IPos cur_match);
 
 #define NIL 0
 
-#ifndef TOO_FAR
-#  define TOO_FAR 4096
-#endif
-
-
 typedef struct config_s {
    unsigned short good_length; 
    unsigned short max_lazy;    
@@ -124,7 +118,6 @@ typedef struct config_s {
 } config;
 
 
-#define RANK(f) (((f) << 1) - ((f) > 4 ? 9 : 0))
 #define UPDATE_HASH(s,h,c) (h = (((h)<<s->hash_shift) ^ (c)) & s->hash_mask)
 
 #define INSERT_STRING(s, str, match_head) \
