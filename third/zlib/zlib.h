@@ -102,8 +102,6 @@ typedef gz_header FAR *gz_headerp;
 
 
 
-ZEXTERN const char * ZEXPORT zlibVersion OF((void));
-
 ZEXTERN int ZEXPORT deflate OF((z_streamp strm, int flush));
 
 ZEXTERN int ZEXPORT deflateEnd OF((z_streamp strm));
