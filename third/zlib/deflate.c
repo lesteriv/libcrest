@@ -65,7 +65,6 @@ static int deflateResetKeep (strm)
         return Z_STREAM_ERROR;
     }
 
-    strm->total_in = strm->total_out = 0;
     strm->data_type = Z_UNKNOWN;
 
     s = (deflate_state *)strm->state;
@@ -200,7 +199,6 @@ static void flush_pending(strm)
     memcpy(strm->next_out, s->pending_out, len);
     strm->next_out  += len;
     s->pending_out  += len;
-    strm->total_out += len;
     strm->avail_out  -= len;
     s->pending -= len;
     if (s->pending == 0) {
@@ -311,12 +309,12 @@ int deflateEnd (strm)
     }
 
     
-    ZFREE(strm->state->pending_buf);
-    ZFREE(strm->state->head);
-    ZFREE(strm->state->prev);
-    ZFREE(strm->state->window);
+    free(strm->state->pending_buf);
+    free(strm->state->head);
+    free(strm->state->prev);
+    free(strm->state->window);
 
-    ZFREE(strm->state);
+    free(strm->state);
     strm->state = Z_NULL;
 
     return status == BUSY_STATE ? Z_DATA_ERROR : Z_OK;
@@ -339,7 +337,6 @@ static int read_buf(strm, buf, size)
         strm->adler = adler32(strm->adler, buf, len);
     }
     strm->next_in  += len;
-    strm->total_in += len;
 
     return (int)len;
 }

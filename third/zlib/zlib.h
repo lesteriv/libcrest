@@ -18,11 +18,9 @@ struct internal_state;
 typedef struct z_stream_s {
     z_const Bytef *next_in;
     uInt     avail_in;
-    uLong    total_in;
 
     Bytef    *next_out;
     uInt     avail_out;
-    uLong    total_out;
 
     struct internal_state FAR *state;
 

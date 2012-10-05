@@ -35,9 +35,7 @@ typedef unsigned long  ulg;
 #endif
 
 #define zmemzero(dest, len) memset(dest, 0, len)
-
 #define ZALLOC(items, size) malloc( (items) * (size))
-#define ZFREE(addr)  free((voidpf)(addr))
 
 #define ZSWAP32(q) ((((q) >> 24) & 0xff) + (((q) >> 8) & 0xff00) + \
                     (((q) & 0xff00) << 8) + (((q) & 0xff) << 24))
