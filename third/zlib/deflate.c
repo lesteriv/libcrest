@@ -277,67 +277,6 @@ int deflateParams(strm, level, strategy)
 }
 
 
-int deflateTune(strm, good_length, max_lazy, nice_length, max_chain)
-    z_streamp strm;
-    int good_length;
-    int max_lazy;
-    int nice_length;
-    int max_chain;
-{
-    deflate_state *s;
-
-    if (strm == Z_NULL || strm->state == Z_NULL) return Z_STREAM_ERROR;
-    s = strm->state;
-    s->good_match = good_length;
-    s->max_lazy_match = max_lazy;
-    s->nice_match = nice_length;
-    s->max_chain_length = max_chain;
-    return Z_OK;
-}
-
-
-uLong deflateBound(strm, sourceLen)
-    z_streamp strm;
-    uLong sourceLen;
-{
-    deflate_state *s;
-    uLong complen, wraplen;
-    Bytef *str;
-
-    
-    complen = sourceLen +
-              ((sourceLen + 7) >> 3) + ((sourceLen + 63) >> 6) + 5;
-
-    
-    if (strm == Z_NULL || strm->state == Z_NULL)
-        return complen + 6;
-
-    
-    s = strm->state;
-    switch (s->wrap) {
-    case 0:                                 
-        wraplen = 0;
-        break;
-    case 1:                                 
-        wraplen = 6 + (s->strstart ? 4 : 0);
-        break;
-    case 2:                                 
-        wraplen = 18;
-        break;
-    default:                                
-        wraplen = 6;
-    }
-
-    
-    if (s->w_bits != 15 || s->hash_bits != 8 + 7)
-        return complen + wraplen;
-
-    
-    return sourceLen + (sourceLen >> 12) + (sourceLen >> 14) +
-           (sourceLen >> 25) + 13 - 6 + wraplen;
-}
-
-
 local void putShortMSB (s, b)
     deflate_state *s;
     uInt b;
