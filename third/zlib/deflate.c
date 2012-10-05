@@ -1,5 +1,8 @@
 #include "deflate.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 typedef enum {
     need_more,      
     block_done,     
@@ -25,10 +28,10 @@ static uInt longest_match  (deflate_state *s, IPos cur_match);
 
 
 typedef struct config_s {
-   ush good_length; 
-   ush max_lazy;    
-   ush nice_length; 
-   ush max_chain;
+   unsigned short good_length; 
+   unsigned short max_lazy;    
+   unsigned short nice_length; 
+   unsigned short max_chain;
    compress_func func;
 } config;
 
@@ -43,7 +46,7 @@ typedef struct config_s {
 
 #define CLEAR_HASH(s) \
     s->head[s->hash_size-1] = NIL; \
-    zmemzero((Bytef *)s->head, (unsigned)(s->hash_size-1)*sizeof(*s->head));
+    memset(s->head, 0, (unsigned)(s->hash_size-1)*sizeof(*s->head));
 
 static int deflateResetKeep (strm)
     z_streamp strm;
@@ -94,7 +97,7 @@ static int deflateInit2_(strm, method, windowBits, memLevel,
     int wrap = 1;
     static const char my_version[] = ZLIB_VERSION;
 
-    ushf *overlay;
+    unsigned short *overlay;
     
 
     if (version == Z_NULL || version[0] != my_version[0] ||
@@ -112,7 +115,7 @@ static int deflateInit2_(strm, method, windowBits, memLevel,
         return Z_STREAM_ERROR;
     }
     if (windowBits == 8) windowBits = 9;  
-    s = (deflate_state *) ZALLOC(1, sizeof(deflate_state));
+    s = (deflate_state *) malloc(sizeof(deflate_state));
     if (s == Z_NULL) return Z_MEM_ERROR;
     strm->state = (struct internal_state *)s;
     s->strm = strm;
@@ -126,17 +129,17 @@ static int deflateInit2_(strm, method, windowBits, memLevel,
     s->hash_mask = s->hash_size - 1;
     s->hash_shift =  ((s->hash_bits+MIN_MATCH-1)/MIN_MATCH);
 
-    s->window = (Bytef *) ZALLOC(s->w_size, 2*sizeof(Byte));
-    s->prev   = (Posf *)  ZALLOC(s->w_size, sizeof(Pos));
-    s->head   = (Posf *)  ZALLOC(s->hash_size, sizeof(Pos));
+    s->window = (Bytef *) malloc(s->w_size * 2*sizeof(Byte));
+    s->prev   = (Posf *)  malloc(s->w_size * sizeof(Pos));
+    s->head   = (Posf *)  malloc(s->hash_size * sizeof(Pos));
 
     s->high_water = 0;      
 
     s->lit_bufsize = 1 << (memLevel + 6); 
 
-    overlay = (ushf *) ZALLOC(s->lit_bufsize, sizeof(ush)+2);
-    s->pending_buf = (uchf *) overlay;
-    s->pending_buf_size = (ulg)s->lit_bufsize * (sizeof(ush)+2L);
+    overlay = (unsigned short *) malloc(s->lit_bufsize * sizeof(unsigned short)+2);
+    s->pending_buf = (unsigned char *) overlay;
+    s->pending_buf_size = (unsigned long)s->lit_bufsize * (sizeof(unsigned short)+2L);
 
     if (s->window == Z_NULL || s->prev == Z_NULL || s->head == Z_NULL ||
         s->pending_buf == Z_NULL) {
@@ -144,8 +147,8 @@ static int deflateInit2_(strm, method, windowBits, memLevel,
         deflateEnd (strm);
         return Z_MEM_ERROR;
     }
-    s->d_buf = overlay + s->lit_bufsize/sizeof(ush);
-    s->l_buf = s->pending_buf + (1+sizeof(ush))*s->lit_bufsize;
+    s->d_buf = overlay + s->lit_bufsize/sizeof(unsigned short);
+    s->l_buf = s->pending_buf + (1+sizeof(unsigned short))*s->lit_bufsize;
 
     return deflateReset(strm);
 }
@@ -155,7 +158,7 @@ int deflateInit_(strm, version, stream_size)
     const char *version;
     int stream_size;
 {
-    return deflateInit2_(strm, Z_DEFLATED, MAX_WBITS, DEF_MEM_LEVEL,
+    return deflateInit2_(strm, Z_DEFLATED, MAX_WBITS, 8,
                          version, stream_size);
     
 }
@@ -212,7 +215,7 @@ int deflate (strm)
     if (s->status == INIT_STATE) {
         {
             uInt header = (Z_DEFLATED + ((s->w_bits-8)<<4)) << 8;
-            if (s->strstart != 0) header |= PRESET_DICT;
+            if (s->strstart != 0) header |= 0x20;
             header += 31 - (header % 31);
 
             s->status = BUSY_STATE;
@@ -328,7 +331,7 @@ static int read_buf(strm, buf, size)
 static void lm_init (s)
     deflate_state *s;
 {
-    s->window_size = (ulg)2L*s->w_size;
+    s->window_size = (unsigned long)2L*s->w_size;
 
     CLEAR_HASH(s);
 
@@ -383,7 +386,7 @@ static void fill_window(s)
     uInt wsize = s->w_size;
 
     do {
-        more = (unsigned)(s->window_size -(ulg)s->lookahead -(ulg)s->strstart);
+        more = (unsigned)(s->window_size -(unsigned long)s->lookahead -(unsigned long)s->strstart);
 
         
         if (sizeof(int) <= 2) {
@@ -440,23 +443,23 @@ static void fill_window(s)
 
     
     if (s->high_water < s->window_size) {
-        ulg curr = s->strstart + (ulg)(s->lookahead);
-        ulg init;
+        unsigned long curr = s->strstart + (unsigned long)(s->lookahead);
+        unsigned long init;
 
         if (s->high_water < curr) {
             
             init = s->window_size - curr;
             if (init > WIN_INIT)
                 init = WIN_INIT;
-            zmemzero(s->window + curr, (unsigned)init);
+            memset(s->window + curr, 0, (unsigned)init);
             s->high_water = curr + init;
         }
-        else if (s->high_water < (ulg)curr + WIN_INIT) {
+        else if (s->high_water < (unsigned long)curr + WIN_INIT) {
             
-            init = (ulg)curr + WIN_INIT - s->high_water;
+            init = (unsigned long)curr + WIN_INIT - s->high_water;
             if (init > s->window_size - s->high_water)
                 init = s->window_size - s->high_water;
-            zmemzero(s->window + s->high_water, (unsigned)init);
+            memset(s->window + s->high_water, 0, (unsigned)init);
             s->high_water += init;
         }
     }
@@ -467,7 +470,7 @@ static void fill_window(s)
    _tr_flush_block(s, (s->block_start >= 0L ? \
                    (charf *)&s->window[(unsigned)s->block_start] : \
                    (charf *)Z_NULL), \
-                (ulg)((long)s->strstart - s->block_start), \
+                (unsigned long)((long)s->strstart - s->block_start), \
                 (last)); \
    s->block_start = s->strstart; \
    flush_pending(s->strm); \

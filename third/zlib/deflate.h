@@ -1,6 +1,6 @@
 #pragma once
 
-#include "zutil.h"
+#include "zlib.h"
 
 
 #define LENGTH_CODES 29
@@ -24,12 +24,12 @@
 
 typedef struct ct_data_s {
     union {
-        ush  freq;       
-        ush  code;       
+        unsigned short  freq;       
+        unsigned short  code;       
     } fc;
     union {
-        ush  dad;        
-        ush  len;        
+        unsigned short  dad;        
+        unsigned short  len;        
     } dl;
 } ct_data;
 
@@ -49,7 +49,7 @@ typedef struct tree_desc_s {
 tree_desc;
 
 
-typedef ush Pos;
+typedef unsigned short Pos;
 typedef Pos Posf;
 typedef unsigned IPos;
 
@@ -58,7 +58,7 @@ typedef struct internal_state {
     z_streamp strm;      
     int   status;        
     Bytef *pending_buf;  
-    ulg   pending_buf_size; 
+    unsigned long   pending_buf_size; 
     Bytef *pending_out;  
     uInt   pending;      
     int   wrap;          
@@ -67,7 +67,7 @@ typedef struct internal_state {
     uInt  w_bits;        
 
     Bytef *window;
-    ulg window_size;
+    unsigned long window_size;
 
     Posf *prev;
     Posf *head; 
@@ -96,24 +96,24 @@ typedef struct internal_state {
     struct tree_desc_s d_desc;               
     struct tree_desc_s bl_desc;              
 
-    ush bl_count[MAX_BITS+1];
+    unsigned short bl_count[MAX_BITS+1];
     
     int heap[2*L_CODES+1];      
     int heap_len;               
     int heap_max;               
     
-    uch depth[2*L_CODES+1];
-    uchf *l_buf;          
+    unsigned char depth[2*L_CODES+1];
+    unsigned char *l_buf;          
     uInt lit_bufsize;
     uInt last_lit;      
-    ushf *d_buf;
-    ulg opt_len;        
-	ulg static_len;     
+    unsigned short *d_buf;
+    unsigned long opt_len;        
+	unsigned long static_len;     
 	uInt matches;       
 	uInt insert;        
-    ush bi_buf;
+    unsigned short bi_buf;
     int bi_valid;
-    ulg high_water;
+    unsigned long high_water;
 } deflate_state;
 
 
@@ -126,20 +126,20 @@ typedef struct internal_state {
 void _tr_init (deflate_state *s);
 int _tr_tally (deflate_state *s, unsigned dist, unsigned lc);
 void _tr_flush_block (deflate_state *s, charf *buf,
-                        ulg stored_len, int last);
+                        unsigned long stored_len, int last);
 void _tr_flush_bits (deflate_state *s);
 void _tr_align (deflate_state *s);
 void _tr_stored_block (deflate_state *s, charf *buf,
-                        ulg stored_len, int last);
+                        unsigned long stored_len, int last);
 
 #define d_code(dist) \
    ((dist) < 256 ? _dist_code[dist] : _dist_code[256+((dist)>>7)])
 
-extern const uch _length_code[];
-extern const uch _dist_code[];
+extern const unsigned char _length_code[];
+extern const unsigned char _dist_code[];
 
 # define _tr_tally_lit(s, c, flush) \
-  { uch cc = (c); \
+  { unsigned char cc = (c); \
     s->d_buf[s->last_lit] = 0; \
     s->l_buf[s->last_lit++] = cc; \
     s->dyn_ltree[cc].Freq++; \
@@ -147,8 +147,8 @@ extern const uch _dist_code[];
    }
 
 # define _tr_tally_dist(s, distance, length, flush) \
-  { uch len = (length); \
-    ush dist = (distance); \
+  { unsigned char len = (length); \
+    unsigned short dist = (distance); \
     s->d_buf[s->last_lit] = dist; \
     s->l_buf[s->last_lit++] = len; \
     dist--; \

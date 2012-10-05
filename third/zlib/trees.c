@@ -16,13 +16,17 @@ static const int extra_dbits[D_CODES]
 static const int extra_blbits[BL_CODES]
    = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,3,7};
 
-static const uch bl_order[BL_CODES]
+static const unsigned char bl_order[BL_CODES]
    = {16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15};
 
 
 
 
 #define DIST_CODE_LEN  512 
+
+#define STORED_BLOCK 0
+#define STATIC_TREES 1
+#define DYN_TREES    2
 
 #include "trees.h"
 
@@ -48,7 +52,7 @@ static static_tree_desc  static_bl_desc =
 static void init_block     (deflate_state *s);
 static void pqdownheap     (deflate_state *s, ct_data *tree, int k);
 static void gen_bitlen     (deflate_state *s, tree_desc *desc);
-static void gen_codes      (ct_data *tree, int max_code, ushf *bl_count);
+static void gen_codes      (ct_data *tree, int max_code, unsigned short *bl_count);
 static void build_tree     (deflate_state *s, tree_desc *desc);
 static void scan_tree      (deflate_state *s, ct_data *tree, int max_code);
 static void send_tree      (deflate_state *s, ct_data *tree, int max_code);
@@ -67,20 +71,20 @@ static void copy_block     (deflate_state *s, charf *buf, unsigned len,
 #  define send_code(s, c, tree) send_bits(s, tree[c].Code, tree[c].Len)
 
 #define put_short(s, w) { \
-    put_byte(s, (uch)((w) & 0xff)); \
-    put_byte(s, (uch)((ush)(w) >> 8)); \
+    put_byte(s, (unsigned char)((w) & 0xff)); \
+    put_byte(s, (unsigned char)((unsigned short)(w) >> 8)); \
 }
 
 #define send_bits(s, value, length) \
 { int len = length;\
   if (s->bi_valid > (int)Buf_size - len) {\
     int val = value;\
-    s->bi_buf |= (ush)val << s->bi_valid;\
+    s->bi_buf |= (unsigned short)val << s->bi_valid;\
     put_short(s, s->bi_buf);\
-    s->bi_buf = (ush)val >> (Buf_size - s->bi_valid);\
+    s->bi_buf = (unsigned short)val >> (Buf_size - s->bi_valid);\
     s->bi_valid += len - Buf_size;\
   } else {\
-    s->bi_buf |= (ush)(value) << s->bi_valid;\
+    s->bi_buf |= (unsigned short)(value) << s->bi_valid;\
     s->bi_valid += len;\
   }\
 }
@@ -177,7 +181,7 @@ static void gen_bitlen(s, desc)
     int n, m;           
     int bits;           
     int xbits;          
-    ush f;              
+    unsigned short f;              
     int overflow = 0;   
 
     for (bits = 0; bits <= MAX_BITS; bits++) s->bl_count[bits] = 0;
@@ -189,7 +193,7 @@ static void gen_bitlen(s, desc)
         n = s->heap[h];
         bits = tree[tree[n].Dad].Len + 1;
         if (bits > max_length) bits = max_length, overflow++;
-        tree[n].Len = (ush)bits;
+        tree[n].Len = (unsigned short)bits;
         
 
         if (n > max_code) continue; 
@@ -198,8 +202,8 @@ static void gen_bitlen(s, desc)
         xbits = 0;
         if (n >= base) xbits = extra[n-base];
         f = tree[n].Freq;
-        s->opt_len += (ulg)f * (bits + xbits);
-        if (stree) s->static_len += (ulg)f * (stree[n].Len + xbits);
+        s->opt_len += (unsigned long)f * (bits + xbits);
+        if (stree) s->static_len += (unsigned long)f * (stree[n].Len + xbits);
     }
     if (overflow == 0) return;
 
@@ -222,7 +226,7 @@ static void gen_bitlen(s, desc)
             if ((unsigned) tree[m].Len != (unsigned) bits) {
                 s->opt_len += ((long)bits - (long)tree[m].Len)
                               *(long)tree[m].Freq;
-                tree[m].Len = (ush)bits;
+                tree[m].Len = (unsigned short)bits;
             }
             n--;
         }
@@ -233,10 +237,10 @@ static void gen_bitlen(s, desc)
 static void gen_codes (tree, max_code, bl_count)
     ct_data *tree;             
     int max_code;              
-    ushf *bl_count;            
+    unsigned short *bl_count;            
 {
-    ush next_code[MAX_BITS+1]; 
-    ush code = 0;              
+    unsigned short next_code[MAX_BITS+1]; 
+    unsigned short code = 0;              
     int bits;                  
     int n;                     
 
@@ -301,9 +305,9 @@ static void build_tree(s, desc)
 
         
         tree[node].Freq = tree[n].Freq + tree[m].Freq;
-        s->depth[node] = (uch)((s->depth[n] >= s->depth[m] ?
+        s->depth[node] = (unsigned char)((s->depth[n] >= s->depth[m] ?
                                 s->depth[n] : s->depth[m]) + 1);
-        tree[n].Dad = tree[m].Dad = (ush)node;
+        tree[n].Dad = tree[m].Dad = (unsigned short)node;
 #ifdef DUMP_BL_TREE
         if (tree == s->bl_tree) {
             fprintf(stderr,"\nnode %d(%d), sons %d(%d) %d(%d)",
@@ -340,7 +344,7 @@ static void scan_tree (s, tree, max_code)
     int min_count = 4;         
 
     if (nextlen == 0) max_count = 138, min_count = 3;
-    tree[max_code+1].Len = (ush)0xffff; 
+    tree[max_code+1].Len = (unsigned short)0xffff; 
 
     for (n = 0; n <= max_code; n++) {
         curlen = nextlen; nextlen = tree[n+1].Len;
@@ -460,7 +464,7 @@ static void send_all_trees(s, lcodes, dcodes, blcodes)
 void _tr_stored_block(s, buf, stored_len, last)
     deflate_state *s;
     charf *buf;       
-    ulg stored_len;   
+    unsigned long stored_len;   
     int last;         
 {
     send_bits(s, (STORED_BLOCK<<1)+last, 3);    
@@ -487,10 +491,10 @@ void _tr_align(s)
 void _tr_flush_block(s, buf, stored_len, last)
     deflate_state *s;
     charf *buf;       
-    ulg stored_len;   
+    unsigned long stored_len;   
     int last;         
 {
-    ulg opt_lenb, static_lenb; 
+    unsigned long opt_lenb, static_lenb; 
     int max_blindex = 0;  
 
 	build_tree(s, (tree_desc *)(&(s->l_desc)));
@@ -540,8 +544,8 @@ int _tr_tally (s, dist, lc)
     unsigned dist;  
     unsigned lc;    
 {
-    s->d_buf[s->last_lit] = (ush)dist;
-    s->l_buf[s->last_lit++] = (uch)lc;
+    s->d_buf[s->last_lit] = (unsigned short)dist;
+    s->l_buf[s->last_lit++] = (unsigned char)lc;
     if (dist == 0) {
         
         s->dyn_ltree[lc].Freq++;
@@ -650,8 +654,8 @@ static void copy_block(s, buf, len, header)
     bi_windup(s);        
 
     if (header) {
-        put_short(s, (ush)len);
-        put_short(s, (ush)~len);
+        put_short(s, (unsigned short)len);
+        put_short(s, (unsigned short)~len);
     }
     while (len--) {
         put_byte(s, *buf++);

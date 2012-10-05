@@ -30,6 +30,8 @@ typedef struct z_stream_s {
 
 typedef z_stream *z_streamp;
 
+#define MAX_MATCH  258
+#define MIN_MATCH  3
 
 #define Z_NO_FLUSH      0
 #define Z_PARTIAL_FLUSH 1
