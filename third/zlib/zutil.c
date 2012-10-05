@@ -16,48 +16,6 @@ const char * ZEXPORT zlibVersion()
     return ZLIB_VERSION;
 }
 
-#if defined(_WIN32_WCE)
-    
-    int errno = 0;
-#endif
-
-#ifndef HAVE_MEMCPY
-
-void ZLIB_INTERNAL zmemcpy(dest, source, len)
-    Bytef* dest;
-    const Bytef* source;
-    uInt  len;
-{
-    if (len == 0) return;
-    do {
-        *dest++ = *source++; 
-    } while (--len != 0);
-}
-
-int ZLIB_INTERNAL zmemcmp(s1, s2, len)
-    const Bytef* s1;
-    const Bytef* s2;
-    uInt  len;
-{
-    uInt j;
-
-    for (j = 0; j < len; j++) {
-        if (s1[j] != s2[j]) return 2*(s1[j] > s2[j])-1;
-    }
-    return 0;
-}
-
-void ZLIB_INTERNAL zmemzero(dest, len)
-    Bytef* dest;
-    uInt  len;
-{
-    if (len == 0) return;
-    do {
-        *dest++ = 0;  
-    } while (--len != 0);
-}
-#endif
-
 #ifndef Z_SOLO
 
 #ifdef SYS16BIT
