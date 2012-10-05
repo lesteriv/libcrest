@@ -57,7 +57,8 @@ char*			crest_strdup( const char* str, int en = -1 );
 size_t			deflate(
 					const char*		buf,
 					size_t			len,
-					char*			out );
+					char*			out,
+					size_t			out_len );
 
 				/** Returns TRUE if this file exists. */
 bool			file_exists( const char* path );

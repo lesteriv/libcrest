@@ -194,17 +194,15 @@ char* crest_strdup(
 size_t deflate(
 	const char*		buf,
 	size_t			len,
-	char*			out )
+	char*			out,
+	size_t			out_len )
 {
 	z_stream zstream;
-	zstream.avail_in	= (uInt) len;
-	zstream.next_in		= (Bytef*) buf;
-	zstream.avail_out	= (uInt) len + 256;
-	zstream.next_out	= (Bytef*) out;
-
-	deflateInit( &zstream );
+	zstream.avail_in	= (unsigned int) len;
+	zstream.next_in		= (Byte*) buf;
+	zstream.avail_out	= out_len;
+	zstream.next_out	= (Byte*) out;
 	deflate( &zstream );
-	deflateEnd( &zstream );
 
 	return (char*) zstream.next_out - out;
 }

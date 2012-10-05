@@ -109,30 +109,32 @@ void crest_connection::respond(
 	size_t				data_len )
 {
 	// Compress data if need
-	if( data && data_len > 128 )
+#ifndef NO_DEFLATE	
+	if( data && data_len > 1 )
 	{
-		const char* aeheader = mg_get_header( conn_, "Accept-Encoding" );
-		if( aeheader && strstr( aeheader, "deflate" ) )
+		const char* enc_header = mg_get_header( conn_, "Accept-Encoding" );
+		if( enc_header && strstr( enc_header, "deflate" ) )
 		{
-			char* out = (char*) alloca( compressBound( data_len ) );
-			data_len = deflate( data, data_len, out );
+			size_t out_len = compressBound( data_len );
+			char* out = (char*) alloca( out_len );
+			data_len = deflate( data, data_len, out, out_len );
 
 			char header[ 128 ];
 			size_t header_len;
 			create_responce_header( header, header_len, rc, data_len, true );
 			mg_write( conn_, header, header_len );
-
 			mg_write( conn_, out, data_len );
+			
 			return;
 		}
 	}
+#endif // NO_DEFLATE	
 	
 	// Write non-compressed data
 	char header[ 128 ];
 	size_t header_len;
 	create_responce_header( header, header_len, rc, data_len );
 	mg_write( conn_, header, header_len );
-	
 	mg_write( conn_, data, data_len );
 }
 
@@ -148,6 +150,7 @@ void crest_connection::send_file( const char* path )
 
 	fseek( f, 0, SEEK_END );
 	
+	// Header
 	char header[ 128 ];
 	size_t header_len;
 	create_responce_header( header, header_len, CREST_HTTP_OK, ftell( f ) );
@@ -155,6 +158,7 @@ void crest_connection::send_file( const char* path )
 
 	fseek( f, 0, SEEK_SET );
 	
+	// File data
 	char data[ 16384 ];
 	while( !feof( f ) )
 	{
@@ -185,6 +189,6 @@ int crest_connection::write( const char* buf, size_t len )
 /**********************************************************************************************/
 crest_connection_internal::~crest_connection_internal( void )
 {
-	// Free path params
+	// Free temporary data
 	free( path_params_.items_ );
 }
