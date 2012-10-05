@@ -90,7 +90,6 @@ typedef struct internal_state {
 
     uInt match_length;           
     IPos prev_match;             
-    int match_available;         
     uInt strstart;               
     uInt match_start;            
     uInt lookahead;              
