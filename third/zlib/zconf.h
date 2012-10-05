@@ -1,11 +1,6 @@
 #pragma once
 
-#if defined(__MSDOS__) && !defined(MSDOS)
-#  define MSDOS
-#endif
-#if (defined(OS_2) || defined(__OS2__)) && !defined(OS2)
-#  define OS2
-#endif
+
 #if defined(_WINDOWS) && !defined(WINDOWS)
 #  define WINDOWS
 #endif
@@ -20,13 +15,6 @@
 #      define SYS16BIT
 #    endif
 #  endif
-#endif
-
-#ifdef SYS16BIT
-#  define MAXSEG_64K
-#endif
-#ifdef MSDOS
-#  define UNALIGNED_OK
 #endif
 
 #ifdef __STDC_VERSION__
@@ -66,10 +54,6 @@
 #  define z_const const
 #else
 #  define z_const
-#endif
-
-#if defined(__MWERKS__)||defined(applec)||defined(THINK_C)||defined(__SC__)
-#  define NO_DUMMY_DECL
 #endif
 
 #ifndef MAX_MEM_LEVEL
@@ -157,26 +141,6 @@ typedef uLong FAR uLongf;
 #  include <stddef.h>
 #endif
 
-#if defined(LARGEFILE64_SOURCE) && -_LARGEFILE64_SOURCE - -1 == 1
-#  undef _LARGEFILE64_SOURCE
-#endif
-
-#if defined(__WATCOMC__) && !defined(Z_HAVE_UNISTD_H)
-#  define Z_HAVE_UNISTD_H
-#endif
-
-#if defined(_LFS64_LARGEFILE) && _LFS64_LARGEFILE-0
-#  define Z_LFS64
-#endif
-
-#if defined(_LARGEFILE64_SOURCE) && defined(Z_LFS64)
-#  define Z_LARGE64
-#endif
-
-#if defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS-0 == 64 && defined(Z_LFS64)
-#  define Z_WANT64
-#endif
-
 #ifndef z_off_t
 #  define z_off_t long
 #endif
@@ -185,19 +149,4 @@ typedef uLong FAR uLongf;
 #  define z_off64_t off64_t
 #else
 #    define z_off64_t z_off_t
-#endif
-
-#if defined(__MVS__)
-  #pragma map(deflateInit_,"DEIN")
-  #pragma map(deflateInit2_,"DEIN2")
-  #pragma map(deflateEnd,"DEEND")
-  #pragma map(deflateBound,"DEBND")
-  #pragma map(inflateInit_,"ININ")
-  #pragma map(inflateInit2_,"ININ2")
-  #pragma map(inflateEnd,"INEND")
-  #pragma map(inflateSync,"INSY")
-  #pragma map(inflateSetDictionary,"INSEDI")
-  #pragma map(inflate_table,"INTABL")
-  #pragma map(inflate_fast,"INFA")
-  #pragma map(inflate_copyright,"INCOPY")
 #endif
