@@ -67,7 +67,7 @@ typedef z_stream FAR *z_streamp;
 #define Z_NULL  0
 
 
-ZEXTERN int deflate OF((z_streamp strm, int flush));
+ZEXTERN int deflate OF((z_streamp strm));
 ZEXTERN int deflateEnd OF((z_streamp strm));
 ZEXTERN int deflateInit_ OF((z_streamp strm,
                                      const char *version, int stream_size));

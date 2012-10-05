@@ -9,13 +9,13 @@ typedef enum {
 
 typedef block_state (*compress_func) OF((deflate_state *s, int flush));
 
-local void fill_window    OF((deflate_state *s));
-local block_state deflate_fast   OF((deflate_state *s, int flush));
-local void lm_init        OF((deflate_state *s));
-local void putShortMSB    OF((deflate_state *s, uInt b));
-local void flush_pending  OF((z_streamp strm));
-local int read_buf        OF((z_streamp strm, Bytef *buf, unsigned size));
-local uInt longest_match  OF((deflate_state *s, IPos cur_match));
+static void fill_window    OF((deflate_state *s));
+static block_state deflate_fast   OF((deflate_state *s, int flush));
+static void lm_init        OF((deflate_state *s));
+static void putShortMSB    OF((deflate_state *s, uInt b));
+static void flush_pending  OF((z_streamp strm));
+static int read_buf        OF((z_streamp strm, Bytef *buf, unsigned size));
+static uInt longest_match  OF((deflate_state *s, IPos cur_match));
 
 
 #define NIL 0
@@ -56,7 +56,7 @@ struct static_tree_desc_s {int dummy;};
     s->head[s->hash_size-1] = NIL; \
     zmemzero((Bytef *)s->head, (unsigned)(s->hash_size-1)*sizeof(*s->head));
 
-local int deflateResetKeep (strm)
+static int deflateResetKeep (strm)
     z_streamp strm;
 {
     deflate_state *s;
@@ -78,7 +78,6 @@ local int deflateResetKeep (strm)
     s->status = s->wrap ? INIT_STATE : BUSY_STATE;
     strm->adler =
         adler32(0L, Z_NULL, 0);
-    s->last_flush = Z_NO_FLUSH;
 
     _tr_init(s);
 
@@ -86,7 +85,7 @@ local int deflateResetKeep (strm)
 }
 
 
-local int deflateReset (strm)
+static int deflateReset (strm)
     z_streamp strm;
 {
     int ret;
@@ -96,7 +95,7 @@ local int deflateReset (strm)
         lm_init(strm->state);
     return ret;
 }
-local int deflateInit2_(strm, method, windowBits, memLevel,
+static int deflateInit2_(strm, method, windowBits, memLevel,
                   version, stream_size)
     z_streamp strm;
     int  method;
@@ -178,7 +177,7 @@ int deflateInit_(strm, version, stream_size)
     
 }
 
-local void putShortMSB (s, b)
+static void putShortMSB (s, b)
     deflate_state *s;
     uInt b;
 {
@@ -187,7 +186,7 @@ local void putShortMSB (s, b)
 }
 
 
-local void flush_pending(strm)
+static void flush_pending(strm)
     z_streamp strm;
 {
     unsigned len;
@@ -210,30 +209,23 @@ local void flush_pending(strm)
 }
 
 
-int deflate (strm, flush)
+int deflate (strm)
     z_streamp strm;
-    int flush;
 {
-    int old_flush; 
     deflate_state *s;
 
-    if (strm == Z_NULL || strm->state == Z_NULL ||
-        flush > Z_BLOCK || flush < 0) {
+    if (strm == Z_NULL || strm->state == Z_NULL) {
         return Z_STREAM_ERROR;
     }
     s = strm->state;
 
     if (strm->next_out == Z_NULL ||
-        (strm->next_in == Z_NULL && strm->avail_in != 0) ||
-        (s->status == FINISH_STATE && flush != Z_FINISH)) {
+        (strm->next_in == Z_NULL && strm->avail_in != 0)) {
         return Z_STREAM_ERROR;
     }
     if (strm->avail_out == 0) return Z_BUF_ERROR;
 
     s->strm = strm; 
-    old_flush = s->last_flush;
-    s->last_flush = flush;
-
     
     if (s->status == INIT_STATE) {
         {
@@ -256,17 +248,9 @@ int deflate (strm, flush)
     if (s->pending != 0) {
         flush_pending(strm);
         if (strm->avail_out == 0) {
-            
-            s->last_flush = -1;
             return Z_OK;
         }
-
-    
-    } else if (strm->avail_in == 0 && RANK(flush) <= RANK(old_flush) &&
-               flush != Z_FINISH) {
-        return  Z_BUF_ERROR;
     }
-
     
     if (s->status == FINISH_STATE && strm->avail_in != 0) {
         return Z_BUF_ERROR;
@@ -274,45 +258,27 @@ int deflate (strm, flush)
 
     
     if (strm->avail_in != 0 || s->lookahead != 0 ||
-        (flush != Z_NO_FLUSH && s->status != FINISH_STATE)) {
+        s->status != FINISH_STATE) {
         block_state bstate;
 
-        bstate = deflate_fast(s, flush);
+        bstate = deflate_fast(s, Z_FINISH);
 
         if (bstate == finish_started || bstate == finish_done) {
             s->status = FINISH_STATE;
         }
         if (bstate == need_more || bstate == finish_started) {
-            if (strm->avail_out == 0) {
-                s->last_flush = -1; 
-            }
             return Z_OK;
-            
         }
         if (bstate == block_done) {
-            if (flush == Z_PARTIAL_FLUSH) {
-                _tr_align(s);
-            } else if (flush != Z_BLOCK) { 
-                _tr_stored_block(s, (char*)0, 0L, 0);
-                
-                if (flush == Z_FULL_FLUSH) {
-                    CLEAR_HASH(s);             
-                    if (s->lookahead == 0) {
-                        s->strstart = 0;
-                        s->block_start = 0L;
-                        s->insert = 0;
-                    }
-                }
-            }
+			_tr_stored_block(s, (char*)0, 0L, 0);
+
             flush_pending(strm);
             if (strm->avail_out == 0) {
-              s->last_flush = -1; 
               return Z_OK;
             }
         }
     }
 
-    if (flush != Z_FINISH) return Z_OK;
     if (s->wrap <= 0) return Z_STREAM_END;
 
     {
@@ -356,7 +322,7 @@ int deflateEnd (strm)
     return status == BUSY_STATE ? Z_DATA_ERROR : Z_OK;
 }
 
-local int read_buf(strm, buf, size)
+static int read_buf(strm, buf, size)
     z_streamp strm;
     Bytef *buf;
     unsigned size;
@@ -379,7 +345,7 @@ local int read_buf(strm, buf, size)
 }
 
 
-local void lm_init (s)
+static void lm_init (s)
     deflate_state *s;
 {
     s->window_size = (ulg)2L*s->w_size;
@@ -397,7 +363,7 @@ local void lm_init (s)
 
 #define check_match(s, start, match, length)
 
-local uInt longest_match(s, cur_match)
+static uInt longest_match(s, cur_match)
     deflate_state *s;
     IPos cur_match;                             
 {
@@ -429,7 +395,7 @@ local uInt longest_match(s, cur_match)
     return (uInt)len <= s->lookahead ? (uInt)len : s->lookahead;
 }
 
-local void fill_window(s)
+static void fill_window(s)
     deflate_state *s;
 {
     register unsigned n, m;
@@ -538,7 +504,7 @@ local void fill_window(s)
 }
 
 
-local block_state deflate_fast(s, flush)
+static block_state deflate_fast(s, flush)
     deflate_state *s;
     int flush;
 {

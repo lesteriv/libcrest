@@ -61,9 +61,6 @@ typedef struct internal_state {
     uInt   pending;      
     int   wrap;          
     Byte  method;        
-    int   last_flush;    
-
-                
 
     uInt  w_size;        
     uInt  w_bits;        
