@@ -3,10 +3,6 @@
 // STD
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define ZLIB_VERSION "1.2.7"
 #define ZLIB_VERNUM 0x1270
 #define ZLIB_VER_MAJOR 1
@@ -84,7 +80,3 @@ static inline uLong compressBound (uLong sourceLen)
     return sourceLen + (sourceLen >> 12) + (sourceLen >> 14) +
            (sourceLen >> 25) + 13;
 }
-	
-#ifdef __cplusplus
-}
-#endif
