@@ -190,7 +190,7 @@ void deflateInit( z_stream* strm )
 
     s->lit_bufsize = 1 << (8 + 6); 
 
-    overlay = (unsigned short *) malloc(s->lit_bufsize * sizeof(unsigned short)+2);
+    overlay = (unsigned short*) malloc(s->lit_bufsize * (sizeof(unsigned short)+2));
     s->pending_buf = (unsigned char *) overlay;
     s->pending_buf_size = (unsigned long)s->lit_bufsize * (sizeof(unsigned short)+2L);
     s->d_buf = overlay + s->lit_bufsize/sizeof(unsigned short);
@@ -517,7 +517,6 @@ static block_state deflate_fast(
                 UPDATE_HASH(s, s->ins_h, s->window[s->strstart+1]);
             }
         } else {
-            
             _tr_tally_lit (s, s->window[s->strstart], bflush);
             s->lookahead--;
             s->strstart++;

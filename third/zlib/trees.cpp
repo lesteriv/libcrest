@@ -1,55 +1,38 @@
+/**********************************************************************************************/
+/* trees.cpp		  		                                                   				  */
+/*                                                                       					  */
+/* (C) 1995-2012 Jean-loup Gailly and Mark Adler											  */
+/* ZLIB license   																		  	  */
+/**********************************************************************************************/
+
+// ZLIB
 #include "deflate.h"
-
-#define MAX_BL_BITS 7
-#define END_BLOCK 256
-#define REP_3_6      16
-#define REPZ_3_10    17
-#define REPZ_11_138  18
-
-
-static const int extra_lbits[LENGTH_CODES] 
-   = {0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0};
-
-static const int extra_dbits[D_CODES] 
-   = {0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13};
-
-static const int extra_blbits[BL_CODES]
-   = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,3,7};
-
-static const unsigned char bl_order[BL_CODES]
-   = {16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15};
-
-
-
-
-#define DIST_CODE_LEN  512 
-
-#define STORED_BLOCK 0
-#define STATIC_TREES 1
-#define DYN_TREES    2
-
 #include "trees.h"
 
-struct static_tree_desc_s {
-    const ct_data *static_tree;  
-    const int *extra_bits;      
-    int     extra_base;          
-    int     elems;               
-    int     max_length;          
+
+/**********************************************************************************************/
+struct static_tree_desc_s
+{
+    int				elems;               
+    const int*		extra_bits;      
+    int				extra_base;          
+    int				max_length;          
+    const ct_data*	static_tree;  
 };
 
-static static_tree_desc  static_l_desc =
-{static_ltree, extra_lbits, LITERALS+1, L_CODES, MAX_BITS};
+/**********************************************************************************************/
+static static_tree_desc  static_l_desc = {
+	L_CODES, extra_lbits, LITERALS + 1, MAX_BITS, static_ltree };
 
-static static_tree_desc  static_d_desc =
-{static_dtree, extra_dbits, 0,          D_CODES, MAX_BITS};
+/**********************************************************************************************/
+static static_tree_desc  static_d_desc = {
+	D_CODES, extra_dbits, 0, MAX_BITS, static_dtree };
 
-static static_tree_desc  static_bl_desc =
-{(const ct_data *)0, extra_blbits, 0,   BL_CODES, MAX_BL_BITS};
+/**********************************************************************************************/
+static static_tree_desc  static_bl_desc = {
+	BL_CODES, extra_blbits, 0, MAX_BL_BITS, (const ct_data*) 0 };
 
 
-
-static void init_block     (deflate_state *s);
 static void pqdownheap     (deflate_state *s, ct_data *tree, int k);
 static void gen_bitlen     (deflate_state *s, tree_desc *desc);
 static void gen_codes      (ct_data *tree, int max_code, unsigned short *bl_count);
@@ -61,7 +44,6 @@ static void send_all_trees (deflate_state *s, int lcodes, int dcodes,
                               int blcodes);
 static void compress_block (deflate_state *s, ct_data *ltree,
                               ct_data *dtree);
-static int  detect_data_type (deflate_state *s);
 static unsigned bi_reverse (unsigned value, int length);
 static void bi_windup      (deflate_state *s);
 static void bi_flush       (deflate_state *s);
@@ -89,6 +71,19 @@ static void copy_block     (deflate_state *s, char *buf, unsigned len,
   }\
 }
 
+static void init_block( deflate_state* s)
+{
+    int n; 
+    
+    for (n = 0; n < L_CODES;  n++) s->dyn_ltree[n].Freq = 0;
+    for (n = 0; n < D_CODES;  n++) s->dyn_dtree[n].Freq = 0;
+    for (n = 0; n < BL_CODES; n++) s->bl_tree[n].Freq = 0;
+
+    s->dyn_ltree[END_BLOCK].Freq = 1;
+    s->opt_len = s->static_len = 0L;
+    s->last_lit = s->matches = 0;
+}
+
 void _tr_init( deflate_state* s )
 {
     s->l_desc.dyn_tree = s->dyn_ltree;
@@ -106,20 +101,6 @@ void _tr_init( deflate_state* s )
     init_block(s);
 }
 
-
-static void init_block( deflate_state* s)
-{
-    int n; 
-
-    
-    for (n = 0; n < L_CODES;  n++) s->dyn_ltree[n].Freq = 0;
-    for (n = 0; n < D_CODES;  n++) s->dyn_dtree[n].Freq = 0;
-    for (n = 0; n < BL_CODES; n++) s->bl_tree[n].Freq = 0;
-
-    s->dyn_ltree[END_BLOCK].Freq = 1;
-    s->opt_len = s->static_len = 0L;
-    s->last_lit = s->matches = 0;
-}
 
 #define SMALLEST 1
 
