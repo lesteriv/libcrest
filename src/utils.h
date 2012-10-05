@@ -19,19 +19,19 @@
 
 				/** Adds string to another. */
 inline char*	add_string(
-					char*		dest,
-					const char*	src,
-					size_t		len )
+					char*			dest,
+					const char*		src,
+					size_t			len )
 				{
-					memcpy( dest, src, len + 1 );
+					memmove( dest, src, len + 1 );
 					return dest + len;
 				}
 
 				/** Decode base64-encoded data, return count of bytes in result. */
 size_t			base64_decode(
-					char*		out,
-					const char*	data,
-					size_t		data_size );
+					char*			out,
+					const char*		data,
+					size_t			data_size );
 
 				/** Returns string with status code, 'Content-Length' header and content. */
 void			create_responce(
@@ -49,9 +49,14 @@ void			create_responce_header(
 					size_t				content_len );
 
 				/** The same as strdup. */
-char*			crest_strdup(
-					const char*	str,
-					int			en = -1 );
+char*			crest_strdup( const char* str, int en = -1 );
+
+				/** Compress data. */
+size_t			deflate(
+					const char*		buf,
+					size_t			len,
+					char*			out,
+					int				level = 6 );
 
 				/** Returns TRUE if this file exists. */
 bool			file_exists( const char* path );
@@ -74,6 +79,4 @@ void			parse_query_parameters(
 					char*			str );
 
 				/** Converts integer value to string, returns end of string - \0 pos. */
-char*			to_string(
-					char*	buf,
-					int		value );
+char*			to_string( char* buf, int value );

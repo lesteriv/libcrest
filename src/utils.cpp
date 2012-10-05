@@ -13,6 +13,7 @@
 #include <string.h>
 
 // CREST
+#include "../third/zlib/deflate.h"
 #include "../include/crest.h"
 #include "utils.h"
 
@@ -154,6 +155,7 @@ void create_responce_header(
 	char* str = out;
 	str = add_string ( str, RESPONCE_PREFIX[ status ], RESPONCE_PREFIX_SIZE[ status ] );
 	str = to_string  ( str, (int) content_len );
+	str = add_string ( str, "\r\nContent-Encoding: deflate", 27 );
 	str = add_string ( str, "\r\n\r\n", 5 );
 	
 	out_len = str - out - 1;
@@ -171,10 +173,33 @@ char* crest_strdup(
 		len = strlen( str );
 	
 	char* res = (char*) malloc( len + 1 );
-	memcpy( res, str, len );
+	memmove( res, str, len );
 	res[ len ] = 0;
 	
 	return res;
+}
+
+/**********************************************************************************************/
+size_t deflate(
+	const char*		buf,
+	size_t			len,
+	char*			out,
+	int				level )
+{
+	z_stream zstream;
+	zstream.zalloc		= Z_NULL;
+	zstream.zfree		= Z_NULL;
+	zstream.opaque		= Z_NULL;
+	zstream.avail_in	= (uInt) len;
+	zstream.next_in		= (Bytef*) buf;
+	zstream.avail_out	= (uInt) len + 256;
+	zstream.next_out	= (Bytef*) out;
+
+	deflateInit( &zstream, level );
+	deflate( &zstream, Z_FINISH );
+	deflateEnd( &zstream );
+
+	return (char*) zstream.next_out - out;
 }
 
 /**********************************************************************************************/
@@ -385,11 +410,11 @@ void md5(
 			t = 64 - t;
 			if( len < t )
 			{
-				memcpy( p, data, len );
+				memmove( p, data, len );
 				continue;
 			}
 
-			memcpy( p, data, t );
+			memmove( p, data, t );
 			md5_transform( buf, (uint32_t*) in );
 			data += t;
 			len -= t;
@@ -397,13 +422,13 @@ void md5(
 
 		while( len >= 64 )
 		{
-			memcpy( in, data, 64 );
+			memmove( in, data, 64 );
 			md5_transform( buf, (uint32_t*) in );
 			data += 64;
 			len -= 64;
 		}
 
-		memcpy( in, data, len );	
+		memmove( in, data, len );	
 	}
 
 	unsigned count = ( bits[ 0 ] >> 3 ) & 0x3F;
@@ -427,7 +452,7 @@ void md5(
 	((uint32_t*) in)[ 15 ] = bits[ 1 ];
 
 	md5_transform( buf, (uint32_t*) in);
-	memcpy( hash, buf, 16 );
+	memmove( hash, buf, 16 );
 }
 
 /**********************************************************************************************/
