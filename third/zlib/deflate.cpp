@@ -23,7 +23,7 @@
 unsigned long adler32(
     unsigned long adler,
     const Byte *buf,
-    uInt len )
+    unsigned int len )
 {
     unsigned long sum2;
     unsigned n;
@@ -103,10 +103,10 @@ typedef block_state (*compress_func) (deflate_state *s, int flush);
 static void fill_window    (deflate_state *s);
 static block_state deflate_fast   (deflate_state *s, int flush);
 static void lm_init        (deflate_state *s);
-static void putShortMSB    (deflate_state *s, uInt b);
+static void putShortMSB    (deflate_state *s, unsigned int b);
 static void flush_pending  (z_stream* strm);
 static int read_buf        (z_stream* strm, Byte *buf, unsigned size);
-static uInt longest_match  (deflate_state *s, IPos cur_match);
+static unsigned int longest_match  (deflate_state *s, IPos cur_match);
 
 #define NIL 0
 
@@ -201,7 +201,7 @@ void deflateInit( z_stream* strm )
 
 static void putShortMSB(
     deflate_state *s,
-    uInt b )
+    unsigned int b )
 {
     put_byte(s, (Byte)(b >> 8));
     put_byte(s, (Byte)(b & 0xff));
@@ -241,7 +241,7 @@ void deflate (
     
     if (s->status == INIT_STATE)
 	{
-		uInt header = (Z_DEFLATED + ((s->w_bits-8)<<4)) << 8;
+		unsigned int header = (Z_DEFLATED + ((s->w_bits-8)<<4)) << 8;
 		if (s->strstart != 0) header |= 0x20;
 		header += 31 - (header % 31);
 
@@ -249,8 +249,8 @@ void deflate (
 		putShortMSB(s, header);
 
 		if (s->strstart != 0) {
-			putShortMSB(s, (uInt)(strm->adler >> 16));
-			putShortMSB(s, (uInt)(strm->adler & 0xffff));
+			putShortMSB(s, (unsigned int)(strm->adler >> 16));
+			putShortMSB(s, (unsigned int)(strm->adler & 0xffff));
 		}
 		strm->adler = adler32(0L, 0, 0);
 	}
@@ -266,7 +266,7 @@ void deflate (
         s->status != FINISH_STATE) {
         block_state bstate;
 
-        bstate = deflate_fast(s, Z_FINISH);
+        bstate = deflate_fast(s, 4);
 
         if (bstate == finish_started || bstate == finish_done) {
             s->status = FINISH_STATE;
@@ -284,8 +284,8 @@ void deflate (
         }
     }
 
-	putShortMSB(s, (uInt)(strm->adler >> 16));
-	putShortMSB(s, (uInt)(strm->adler & 0xffff));
+	putShortMSB(s, (unsigned int)(strm->adler >> 16));
+	putShortMSB(s, (unsigned int)(strm->adler & 0xffff));
     flush_pending(strm);
     
 finish:
@@ -335,7 +335,7 @@ static void lm_init (
 
 #define check_match(s, start, match, length)
 
-static uInt longest_match(
+static unsigned int longest_match(
     deflate_state *s,
     IPos cur_match )                           
 {
@@ -364,7 +364,7 @@ static uInt longest_match(
     if (len < MIN_MATCH) return MIN_MATCH - 1;
 
     s->match_start = cur_match;
-    return (uInt)len <= s->lookahead ? (uInt)len : s->lookahead;
+    return (unsigned int)len <= s->lookahead ? (unsigned int)len : s->lookahead;
 }
 
 static void fill_window(
@@ -373,7 +373,7 @@ static void fill_window(
     register unsigned n, m;
     register Posf *p;
     unsigned more;    
-    uInt wsize = s->w_size;
+    unsigned int wsize = s->w_size;
 
     do {
         more = (unsigned)(s->window_size -(unsigned long)s->lookahead -(unsigned long)s->strstart);
@@ -415,7 +415,7 @@ static void fill_window(
 
         
         if (s->lookahead + s->insert >= MIN_MATCH) {
-            uInt str = s->strstart - s->insert;
+            unsigned int str = s->strstart - s->insert;
             s->ins_h = s->window[str];
             UPDATE_HASH(s, s->ins_h, s->window[str + 1]);
             while (s->insert) {
@@ -484,7 +484,7 @@ static block_state deflate_fast(
         
         if (s->lookahead < MIN_LOOKAHEAD) {
             fill_window(s);
-            if (s->lookahead < MIN_LOOKAHEAD && flush == Z_NO_FLUSH) {
+            if (s->lookahead < MIN_LOOKAHEAD && flush == 0) {
                 return need_more;
             }
             if (s->lookahead == 0) break; 
@@ -525,7 +525,7 @@ static block_state deflate_fast(
         if (bflush) FLUSH_BLOCK(s, 0);
     }
     s->insert = s->strstart < MIN_MATCH-1 ? s->strstart : MIN_MATCH-1;
-    if (flush == Z_FINISH) {
+    if (flush == 4) {
         FLUSH_BLOCK(s, 1);
         return finish_done;
     }

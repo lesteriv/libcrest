@@ -60,11 +60,11 @@ typedef struct internal_state {
     Byte *pending_buf;  
     unsigned long   pending_buf_size; 
     Byte *pending_out;  
-    uInt   pending;      
+    unsigned int   pending;      
     int   wrap;          
 
-    uInt  w_size;        
-    uInt  w_bits;        
+    unsigned int  w_size;        
+    unsigned int  w_bits;        
 
     Byte *window;
     unsigned long window_size;
@@ -72,19 +72,19 @@ typedef struct internal_state {
     Posf *prev;
     Posf *head; 
 
-    uInt  ins_h;          
-    uInt  hash_size;      
-    uInt  hash_bits;      
-    uInt  hash_mask;      
-    uInt  hash_shift;
+    unsigned int  ins_h;          
+    unsigned int  hash_size;      
+    unsigned int  hash_bits;      
+    unsigned int  hash_mask;      
+    unsigned int  hash_shift;
     
 
     long block_start;
     
-    uInt match_length;           
-    uInt strstart;               
-    uInt match_start;            
-    uInt lookahead;              
+    unsigned int match_length;           
+    unsigned int strstart;               
+    unsigned int match_start;            
+    unsigned int lookahead;              
     
 #   define max_insert_length  max_lazy_match
     
@@ -104,13 +104,13 @@ typedef struct internal_state {
     
     unsigned char depth[2*L_CODES+1];
     unsigned char *l_buf;          
-    uInt lit_bufsize;
-    uInt last_lit;      
+    unsigned int lit_bufsize;
+    unsigned int last_lit;      
     unsigned short *d_buf;
     unsigned long opt_len;        
 	unsigned long static_len;     
-	uInt matches;       
-	uInt insert;        
+	unsigned int matches;       
+	unsigned int insert;        
     unsigned short bi_buf;
     int bi_valid;
     unsigned long high_water;
