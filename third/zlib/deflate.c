@@ -131,7 +131,6 @@ static int deflateInit2_(strm, method, windowBits, memLevel,
     s->wrap = wrap;
     s->w_bits = windowBits;
     s->w_size = 1 << s->w_bits;
-    s->w_mask = s->w_size - 1;
 
     s->hash_bits = memLevel + 7;
     s->hash_size = 1 << s->hash_bits;

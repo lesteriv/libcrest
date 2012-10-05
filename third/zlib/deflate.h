@@ -64,30 +64,22 @@ typedef struct internal_state {
 
     uInt  w_size;        
     uInt  w_bits;        
-    uInt  w_mask;        
 
     Bytef *window;
-    
-
     ulg window_size;
-    
 
     Posf *prev;
-    
-
     Posf *head; 
 
     uInt  ins_h;          
     uInt  hash_size;      
     uInt  hash_bits;      
     uInt  hash_mask;      
-
     uInt  hash_shift;
     
 
     long block_start;
     
-
     uInt match_length;           
     uInt strstart;               
     uInt match_start;            
