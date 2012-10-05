@@ -218,10 +218,6 @@ local void gen_bitlen(s, desc)
     }
     if (overflow == 0) return;
 
-    Trace((stderr,"\nbit length overflow\n"));
-    
-
-    
     do {
         bits = max_length-1;
         while (s->bl_count[bits] == 0) bits--;
@@ -239,7 +235,6 @@ local void gen_bitlen(s, desc)
             m = s->heap[--h];
             if (m > max_code) continue;
             if ((unsigned) tree[m].Len != (unsigned) bits) {
-                Trace((stderr,"code %d bits %d->%d\n", m, tree[m].Len, bits));
                 s->opt_len += ((long)bits - (long)tree[m].Len)
                               *(long)tree[m].Freq;
                 tree[m].Len = (ush)bits;
@@ -265,18 +260,11 @@ local void gen_codes (tree, max_code, bl_count)
         next_code[bits] = code = (code + bl_count[bits-1]) << 1;
     }
     
-    Assert (code + bl_count[MAX_BITS]-1 == (1<<MAX_BITS)-1,
-            "inconsistent bit counts");
-    Tracev((stderr,"\ngen_codes: max_code %d ", max_code));
-
     for (n = 0;  n <= max_code; n++) {
         int len = tree[n].Len;
         if (len == 0) continue;
         
         tree[n].Code = bi_reverse(next_code[len]++, len);
-
-        Tracecv(tree != static_ltree, (stderr,"\nn %3d %c l %2d c %4x (%x) ",
-             n, (isgraph(n) ? n : ' '), len, tree[n].Code, next_code[len]-1));
     }
 }
 
@@ -422,7 +410,6 @@ local void send_tree (s, tree, max_code)
             if (curlen != prevlen) {
                 send_code(s, curlen, s->bl_tree); count--;
             }
-            Assert(count >= 3 && count <= 6, " 3_6?");
             send_code(s, REP_3_6, s->bl_tree); send_bits(s, count-3, 2);
 
         } else if (count <= 10) {
@@ -462,8 +449,6 @@ local int build_bl_tree(s)
     }
     
     s->opt_len += 3*(max_blindex+1) + 5+5+4;
-    Tracev((stderr, "\ndyn trees: dyn %ld, stat %ld",
-            s->opt_len, s->static_len));
 
     return max_blindex;
 }
@@ -475,24 +460,15 @@ local void send_all_trees(s, lcodes, dcodes, blcodes)
 {
     int rank;                    
 
-    Assert (lcodes >= 257 && dcodes >= 1 && blcodes >= 4, "not enough codes");
-    Assert (lcodes <= L_CODES && dcodes <= D_CODES && blcodes <= BL_CODES,
-            "too many codes");
-    Tracev((stderr, "\nbl counts: "));
     send_bits(s, lcodes-257, 5); 
     send_bits(s, dcodes-1,   5);
     send_bits(s, blcodes-4,  4); 
     for (rank = 0; rank < blcodes; rank++) {
-        Tracev((stderr, "\nbl code %2d ", bl_order[rank]));
         send_bits(s, s->bl_tree[bl_order[rank]].Len, 3);
     }
-    Tracev((stderr, "\nbl tree: sent %ld", s->bits_sent));
 
     send_tree(s, (ct_data *)s->dyn_ltree, lcodes-1); 
-    Tracev((stderr, "\nlit tree: sent %ld", s->bits_sent));
-
     send_tree(s, (ct_data *)s->dyn_dtree, dcodes-1); 
-    Tracev((stderr, "\ndist tree: sent %ld", s->bits_sent));
 }
 
 
@@ -503,10 +479,6 @@ void _tr_stored_block(s, buf, stored_len, last)
     int last;         
 {
     send_bits(s, (STORED_BLOCK<<1)+last, 3);    
-#ifdef DEBUG
-    s->compressed_len = (s->compressed_len + 3 + 7) & (ulg)~7L;
-    s->compressed_len += (stored_len + 4) << 3;
-#endif
     copy_block(s, buf, (unsigned)stored_len, 1); 
 }
 
@@ -523,9 +495,6 @@ void _tr_align(s)
 {
     send_bits(s, STATIC_TREES<<1, 3);
     send_code(s, END_BLOCK, static_ltree);
-#ifdef DEBUG
-    s->compressed_len += 10L; 
-#endif
     bi_flush(s);
 }
 
@@ -548,14 +517,7 @@ void _tr_flush_block(s, buf, stored_len, last)
 
         
         build_tree(s, (tree_desc *)(&(s->l_desc)));
-        Tracev((stderr, "\nlit data: dyn %ld, stat %ld", s->opt_len,
-                s->static_len));
-
         build_tree(s, (tree_desc *)(&(s->d_desc)));
-        Tracev((stderr, "\ndist data: dyn %ld, stat %ld", s->opt_len,
-                s->static_len));
-        
-
         
         max_blindex = build_bl_tree(s);
 
@@ -563,14 +525,9 @@ void _tr_flush_block(s, buf, stored_len, last)
         opt_lenb = (s->opt_len+3+7)>>3;
         static_lenb = (s->static_len+3+7)>>3;
 
-        Tracev((stderr, "\nopt %lu(%lu) stat %lu(%lu) stored %lu lit %u ",
-                opt_lenb, s->opt_len, static_lenb, s->static_len, stored_len,
-                s->last_lit));
-
         if (static_lenb <= opt_lenb) opt_lenb = static_lenb;
 
     } else {
-        Assert(buf != (char*)0, "lost buf");
         opt_lenb = static_lenb = stored_len + 5; 
     }
 
@@ -590,30 +547,18 @@ void _tr_flush_block(s, buf, stored_len, last)
 #endif
         send_bits(s, (STATIC_TREES<<1)+last, 3);
         compress_block(s, (ct_data *)static_ltree, (ct_data *)static_dtree);
-#ifdef DEBUG
-        s->compressed_len += 3 + s->static_len;
-#endif
     } else {
         send_bits(s, (DYN_TREES<<1)+last, 3);
         send_all_trees(s, s->l_desc.max_code+1, s->d_desc.max_code+1,
                        max_blindex+1);
         compress_block(s, (ct_data *)s->dyn_ltree, (ct_data *)s->dyn_dtree);
-#ifdef DEBUG
-        s->compressed_len += 3 + s->opt_len;
-#endif
     }
-    Assert (s->compressed_len == s->bits_sent, "bad compressed size");
     
     init_block(s);
 
     if (last) {
         bi_windup(s);
-#ifdef DEBUG
-        s->compressed_len += 7;  
-#endif
     }
-    Tracev((stderr,"\ncomprlen %lu(%lu) ", s->compressed_len>>3,
-           s->compressed_len-7*last));
 }
 
 
@@ -631,9 +576,6 @@ int _tr_tally (s, dist, lc)
         s->matches++;
         
         dist--;             
-        Assert((ush)dist < (ush)MAX_DIST(s) &&
-               (ush)lc <= (ush)(MAX_MATCH-MIN_MATCH) &&
-               (ush)d_code(dist) < (ush)D_CODES,  "_tr_tally: bad match");
 
         s->dyn_ltree[_length_code[lc]+LITERALS+1].Freq++;
         s->dyn_dtree[d_code(dist)].Freq++;
@@ -678,7 +620,6 @@ local void compress_block(s, ltree, dtree)
         lc = s->l_buf[lx++];
         if (dist == 0) {
             send_code(s, lc, ltree); 
-            Tracecv(isgraph(lc), (stderr," '%c' ", lc));
         } else {
             
             code = _length_code[lc];
@@ -690,7 +631,6 @@ local void compress_block(s, ltree, dtree)
             }
             dist--; 
             code = d_code(dist);
-            Assert (code < D_CODES, "bad d_code");
 
             send_code(s, code, dtree);       
             extra = extra_dbits[code];
@@ -699,11 +639,6 @@ local void compress_block(s, ltree, dtree)
                 send_bits(s, dist, extra);   
             }
         } 
-
-        
-        Assert((uInt)(s->pending) < s->lit_bufsize + 2*lx,
-               "pendingBuf overflow");
-
     } while (lx < s->last_lit);
 
     send_code(s, END_BLOCK, ltree);
@@ -773,9 +708,6 @@ local void bi_windup(s)
     }
     s->bi_buf = 0;
     s->bi_valid = 0;
-#ifdef DEBUG
-    s->bits_sent = (s->bits_sent+7) & ~7;
-#endif
 }
 
 
@@ -790,13 +722,7 @@ local void copy_block(s, buf, len, header)
     if (header) {
         put_short(s, (ush)len);
         put_short(s, (ush)~len);
-#ifdef DEBUG
-        s->bits_sent += 2*16;
-#endif
     }
-#ifdef DEBUG
-    s->bits_sent += (ulg)len<<3;
-#endif
     while (len--) {
         put_byte(s, *buf++);
     }

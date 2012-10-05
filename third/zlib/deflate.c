@@ -653,7 +653,6 @@ int ZEXPORT deflate (strm, flush)
             }
         }
     }
-    Assert(strm->avail_out > 0, "bug2");
 
     if (flush != Z_FINISH) return Z_OK;
     if (s->wrap <= 0) return Z_STREAM_END;
@@ -836,10 +835,6 @@ local uInt longest_match(s, cur_match)
     register Byte scan_end1  = scan[best_len-1];
     register Byte scan_end   = scan[best_len];
 #endif
-
-    
-    Assert(s->hash_bits >= 8 && MAX_MATCH == 258, "Code too clever");
-
     
     if (s->prev_length >= s->good_match) {
         chain_length >>= 2;
@@ -847,10 +842,7 @@ local uInt longest_match(s, cur_match)
     
     if ((uInt)nice_match > s->lookahead) nice_match = s->lookahead;
 
-    Assert((ulg)s->strstart <= s->window_size-MIN_LOOKAHEAD, "need lookahead");
-
     do {
-        Assert(cur_match < s->strstart, "no future");
         match = s->window + cur_match;
 
         
@@ -859,8 +851,6 @@ local uInt longest_match(s, cur_match)
         if (*(ushf*)(match+best_len-1) != scan_end ||
             *(ushf*)match != scan_start) continue;
 
-        
-        Assert(scan[2] == match[2], "scan[2]?");
         scan++, match++;
         do {
         } while (*(ushf*)(scan+=2) == *(ushf*)(match+=2) &&
@@ -869,9 +859,6 @@ local uInt longest_match(s, cur_match)
                  *(ushf*)(scan+=2) == *(ushf*)(match+=2) &&
                  scan < strend);
         
-
-        
-        Assert(scan <= s->window+(unsigned)(s->window_size-1), "wild scan");
         if (*scan == *match) scan++;
 
         len = (MAX_MATCH - 1) - (int)(strend-scan);
@@ -886,8 +873,6 @@ local uInt longest_match(s, cur_match)
 
         
         scan += 2, match++;
-        Assert(*scan == *match, "match[2]?");
-
         
         do {
         } while (*++scan == *++match && *++scan == *++match &&
@@ -895,8 +880,6 @@ local uInt longest_match(s, cur_match)
                  *++scan == *++match && *++scan == *++match &&
                  *++scan == *++match && *++scan == *++match &&
                  scan < strend);
-
-        Assert(scan <= s->window+(unsigned)(s->window_size-1), "wild scan");
 
         len = MAX_MATCH - (int)(strend - scan);
         scan = strend - MAX_MATCH;
@@ -934,13 +917,6 @@ local uInt longest_match(s, cur_match)
     register int len;                           
     register Bytef *strend = s->window + s->strstart + MAX_MATCH;
 
-    
-    Assert(s->hash_bits >= 8 && MAX_MATCH == 258, "Code too clever");
-
-    Assert((ulg)s->strstart <= s->window_size-MIN_LOOKAHEAD, "need lookahead");
-
-    Assert(cur_match < s->strstart, "no future");
-
     match = s->window + cur_match;
 
     
@@ -948,8 +924,6 @@ local uInt longest_match(s, cur_match)
 
     
     scan += 2, match += 2;
-    Assert(*scan == *match, "match[2]?");
-
     
     do {
     } while (*++scan == *++match && *++scan == *++match &&
@@ -957,8 +931,6 @@ local uInt longest_match(s, cur_match)
              *++scan == *++match && *++scan == *++match &&
              *++scan == *++match && *++scan == *++match &&
              scan < strend);
-
-    Assert(scan <= s->window+(unsigned)(s->window_size-1), "wild scan");
 
     len = MAX_MATCH - (int)(strend - scan);
 
@@ -980,8 +952,6 @@ local void fill_window(s)
     register Posf *p;
     unsigned more;    
     uInt wsize = s->w_size;
-
-    Assert(s->lookahead < MIN_LOOKAHEAD, "already enough lookahead");
 
     do {
         more = (unsigned)(s->window_size -(ulg)s->lookahead -(ulg)s->strstart);
@@ -1025,9 +995,6 @@ local void fill_window(s)
             more += wsize;
         }
         if (s->strm->avail_in == 0) break;
-
-        
-        Assert(more >= 2, "more < 2");
 
         n = read_buf(s->strm, s->window + s->strstart + s->lookahead, more);
         s->lookahead += n;
@@ -1078,9 +1045,6 @@ local void fill_window(s)
             s->high_water += init;
         }
     }
-
-    Assert((ulg)s->strstart <= s->window_size - MIN_LOOKAHEAD,
-           "not enough room for search");
 }
 
 
@@ -1092,7 +1056,6 @@ local void fill_window(s)
                 (last)); \
    s->block_start = s->strstart; \
    flush_pending(s->strm); \
-   Tracev((stderr,"[FLUSH]")); \
 }
 
 
@@ -1119,15 +1082,11 @@ local block_state deflate_stored(s, flush)
         
         if (s->lookahead <= 1) {
 
-            Assert(s->strstart < s->w_size+MAX_DIST(s) ||
-                   s->block_start >= (long)s->w_size, "slide too late");
-
             fill_window(s);
             if (s->lookahead == 0 && flush == Z_NO_FLUSH) return need_more;
 
             if (s->lookahead == 0) break; 
         }
-        Assert(s->block_start >= 0L, "block gone");
 
         s->strstart += s->lookahead;
         s->lookahead = 0;
@@ -1218,7 +1177,6 @@ local block_state deflate_fast(s, flush)
             }
         } else {
             
-            Tracevv((stderr,"%c", s->window[s->strstart]));
             _tr_tally_lit (s, s->window[s->strstart], bflush);
             s->lookahead--;
             s->strstart++;
@@ -1308,7 +1266,6 @@ local block_state deflate_slow(s, flush)
 
         } else if (s->match_available) {
             
-            Tracevv((stderr,"%c", s->window[s->strstart-1]));
             _tr_tally_lit(s, s->window[s->strstart-1], bflush);
             if (bflush) {
                 FLUSH_BLOCK_ONLY(s, 0);
@@ -1323,9 +1280,8 @@ local block_state deflate_slow(s, flush)
             s->lookahead--;
         }
     }
-    Assert (flush != Z_NO_FLUSH, "no flush?");
+
     if (s->match_available) {
-        Tracevv((stderr,"%c", s->window[s->strstart-1]));
         _tr_tally_lit(s, s->window[s->strstart-1], bflush);
         s->match_available = 0;
     }
@@ -1376,7 +1332,6 @@ local block_state deflate_rle(s, flush)
                 if (s->match_length > s->lookahead)
                     s->match_length = s->lookahead;
             }
-            Assert(scan <= s->window+(uInt)(s->window_size-1), "wild scan");
         }
 
         
@@ -1390,7 +1345,6 @@ local block_state deflate_rle(s, flush)
             s->match_length = 0;
         } else {
             
-            Tracevv((stderr,"%c", s->window[s->strstart]));
             _tr_tally_lit (s, s->window[s->strstart], bflush);
             s->lookahead--;
             s->strstart++;
@@ -1427,7 +1381,6 @@ local block_state deflate_huff(s, flush)
 
         
         s->match_length = 0;
-        Tracevv((stderr,"%c", s->window[s->strstart]));
         _tr_tally_lit (s, s->window[s->strstart], bflush);
         s->lookahead--;
         s->strstart++;

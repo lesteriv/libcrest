@@ -193,13 +193,6 @@ extern const char * const z_errmsg[10];
    void zmemzero OF((Bytef* dest, uInt len));
 #endif
 
-#  define Assert(cond,msg)
-#  define Trace(x)
-#  define Tracev(x)
-#  define Tracevv(x)
-#  define Tracec(c,x)
-#  define Tracecv(c,x)
-
 #ifndef Z_SOLO
    voidpf zcalloc OF((voidpf opaque, unsigned items,
                                     unsigned size));
