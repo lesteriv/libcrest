@@ -65,8 +65,6 @@ static int deflateResetKeep (strm)
         return Z_STREAM_ERROR;
     }
 
-    strm->data_type = Z_UNKNOWN;
-
     s = (deflate_state *)strm->state;
     s->pending = 0;
     s->pending_out = s->pending_buf;

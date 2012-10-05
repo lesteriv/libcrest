@@ -24,7 +24,6 @@ typedef struct z_stream_s {
 
     struct internal_state FAR *state;
 
-    int     data_type;
     uLong   adler;
     uLong   reserved;
 } z_stream;
@@ -55,11 +54,6 @@ typedef z_stream FAR *z_streamp;
 #define Z_BEST_SPEED             1
 #define Z_BEST_COMPRESSION       9
 #define Z_DEFAULT_COMPRESSION  (-1)
-
-#define Z_BINARY   0
-#define Z_TEXT     1
-#define Z_ASCII    Z_TEXT
-#define Z_UNKNOWN  2
 
 #define Z_DEFLATED   8
 #define Z_NULL  0

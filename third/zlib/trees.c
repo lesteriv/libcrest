@@ -493,10 +493,6 @@ void _tr_flush_block(s, buf, stored_len, last)
     ulg opt_lenb, static_lenb; 
     int max_blindex = 0;  
 
-    
-	if (s->strm->data_type == Z_UNKNOWN)
-		s->strm->data_type = detect_data_type(s);
-
 	build_tree(s, (tree_desc *)(&(s->l_desc)));
 	build_tree(s, (tree_desc *)(&(s->d_desc)));
 
@@ -601,31 +597,6 @@ static void compress_block(s, ltree, dtree)
     } while (lx < s->last_lit);
 
     send_code(s, END_BLOCK, ltree);
-}
-
-
-static int detect_data_type(s)
-    deflate_state *s;
-{
-    
-    unsigned long black_mask = 0xf3ffc07fUL;
-    int n;
-
-    
-    for (n = 0; n <= 31; n++, black_mask >>= 1)
-        if ((black_mask & 1) && (s->dyn_ltree[n].Freq != 0))
-            return Z_BINARY;
-
-    
-    if (s->dyn_ltree[9].Freq != 0 || s->dyn_ltree[10].Freq != 0
-            || s->dyn_ltree[13].Freq != 0)
-        return Z_TEXT;
-    for (n = 32; n < LITERALS; n++)
-        if (s->dyn_ltree[n].Freq != 0)
-            return Z_TEXT;
-
-    
-    return Z_BINARY;
 }
 
 
