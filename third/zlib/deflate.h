@@ -1,5 +1,13 @@
+/**********************************************************************************************/
+/* deflate.h		  		                                                   				  */
+/*                                                                       					  */
+/* (C) 1995-2012 Jean-loup Gailly and Mark Adler											  */
+/* ZLIB license   																		  	  */
+/**********************************************************************************************/
+
 #pragma once
 
+// ZLIB
 #include "zlib.h"
 
 
@@ -124,11 +132,9 @@ typedef struct internal_state {
 
         
 void _tr_init (deflate_state *s);
-int _tr_tally (deflate_state *s, unsigned dist, unsigned lc);
 void _tr_flush_block (deflate_state *s, char *buf,
                         unsigned long stored_len, int last);
 void _tr_flush_bits (deflate_state *s);
-void _tr_align (deflate_state *s);
 void _tr_stored_block (deflate_state *s, char *buf,
                         unsigned long stored_len, int last);
 

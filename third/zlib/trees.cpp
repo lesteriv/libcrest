@@ -287,12 +287,6 @@ static void build_tree(
         s->depth[node] = (unsigned char)((s->depth[n] >= s->depth[m] ?
                                 s->depth[n] : s->depth[m]) + 1);
         tree[n].Dad = tree[m].Dad = (unsigned short)node;
-#ifdef DUMP_BL_TREE
-        if (tree == s->bl_tree) {
-            fprintf(stderr,"\nnode %d(%d), sons %d(%d) %d(%d)",
-                    node, tree[node].Freq, n, tree[n].Freq, m, tree[m].Freq);
-        }
-#endif
         
         s->heap[SMALLEST] = node++;
         pqdownheap(s, tree, SMALLEST);
@@ -402,22 +396,16 @@ static int build_bl_tree(
     deflate_state *s )
 {
     int max_blindex;  
-
     
     scan_tree(s, (ct_data *)s->dyn_ltree, s->l_desc.max_code);
     scan_tree(s, (ct_data *)s->dyn_dtree, s->d_desc.max_code);
-
-    
     build_tree(s, (tree_desc *)(&(s->bl_desc)));
-    
-
     
     for (max_blindex = BL_CODES-1; max_blindex >= 3; max_blindex--) {
         if (s->bl_tree[bl_order[max_blindex]].Len != 0) break;
     }
     
     s->opt_len += 3*(max_blindex+1) + 5+5+4;
-
     return max_blindex;
 }
 
@@ -456,16 +444,6 @@ void _tr_flush_bits(
 {
     bi_flush(s);
 }
-
-
-void _tr_align(
-    deflate_state *s )
-{
-    send_bits(s, STATIC_TREES<<1, 3);
-    send_code(s, END_BLOCK, static_ltree);
-    bi_flush(s);
-}
-
 
 void _tr_flush_block(
     deflate_state *s,
@@ -516,31 +494,6 @@ void _tr_flush_block(
         bi_windup(s);
     }
 }
-
-
-int _tr_tally(
-    deflate_state *s,
-    unsigned dist,
-    unsigned lc )  
-{
-    s->d_buf[s->last_lit] = (unsigned short)dist;
-    s->l_buf[s->last_lit++] = (unsigned char)lc;
-    if (dist == 0) {
-        
-        s->dyn_ltree[lc].Freq++;
-    } else {
-        s->matches++;
-        
-        dist--;             
-
-        s->dyn_ltree[_length_code[lc]+LITERALS+1].Freq++;
-        s->dyn_dtree[d_code(dist)].Freq++;
-    }
-
-    return (s->last_lit == s->lit_bufsize-1);
-    
-}
-
 
 static void compress_block(
     deflate_state *s,

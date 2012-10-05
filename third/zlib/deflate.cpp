@@ -1,7 +1,16 @@
-#include "deflate.h"
+/**********************************************************************************************/
+/* deflate.cpp		  		                                                   				  */
+/*                                                                       					  */
+/* (C) 1995-2012 Jean-loup Gailly and Mark Adler											  */
+/* ZLIB license   																		  	  */
+/**********************************************************************************************/
 
+// STD
 #include <stdlib.h>
 #include <string.h>
+
+// ZLIB
+#include "deflate.h"
 
 
 #define BASE 65521      /* largest prime smaller than 65536 */
@@ -18,7 +27,6 @@
 #define MOD(a) a %= BASE
 #define MOD28(a) a %= BASE
 
-/* ========================================================================= */
 unsigned long adler32(
     unsigned long adler,
     const Byte *buf,
