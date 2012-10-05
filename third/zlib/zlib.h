@@ -112,12 +112,6 @@ ZEXTERN int ZEXPORT inflate OF((z_streamp strm, int flush));
 
 ZEXTERN int ZEXPORT inflateEnd OF((z_streamp strm));
 
-
-
-ZEXTERN int ZEXPORT deflateSetDictionary OF((z_streamp strm,
-                                             const Bytef *dictionary,
-                                             uInt  dictLength));
-
 ZEXTERN int ZEXPORT deflateCopy OF((z_streamp dest,
                                     z_streamp source));
 
