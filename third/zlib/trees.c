@@ -535,7 +535,7 @@ void _tr_flush_block(s, buf, stored_len, last)
 #ifdef FORCE_STATIC
     } else if (static_lenb >= 0) { 
 #else
-    } else if (s->strategy == Z_FIXED || static_lenb == opt_lenb) {
+    } else if (static_lenb == opt_lenb) {
 #endif
         send_bits(s, (STATIC_TREES<<1)+last, 3);
         compress_block(s, (ct_data *)static_ltree, (ct_data *)static_dtree);

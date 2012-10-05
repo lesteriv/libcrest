@@ -11,8 +11,6 @@ typedef block_state (*compress_func) OF((deflate_state *s, int flush));
 
 local void fill_window    OF((deflate_state *s));
 local block_state deflate_fast   OF((deflate_state *s, int flush));
-local block_state deflate_rle    OF((deflate_state *s, int flush));
-local block_state deflate_huff   OF((deflate_state *s, int flush));
 local void lm_init        OF((deflate_state *s));
 local void putShortMSB    OF((deflate_state *s, uInt b));
 local void flush_pending  OF((z_streamp strm));
@@ -104,14 +102,13 @@ local int deflateReset (strm)
     return ret;
 }
 
-int deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
+int deflateInit2_(strm, level, method, windowBits, memLevel,
                   version, stream_size)
     z_streamp strm;
     int  level;
     int  method;
     int  windowBits;
     int  memLevel;
-    int  strategy;
     const char *version;
     int stream_size;
 {
@@ -135,8 +132,7 @@ int deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
         windowBits = -windowBits;
     }
     if (memLevel < 1 || memLevel > MAX_MEM_LEVEL || method != Z_DEFLATED ||
-        windowBits < 8 || windowBits > 15 || level < 0 || level > 9 ||
-        strategy < 0 || strategy > Z_FIXED) {
+        windowBits < 8 || windowBits > 15 || level < 0 || level > 9) {
         return Z_STREAM_ERROR;
     }
     if (windowBits == 8) windowBits = 9;  
@@ -177,7 +173,6 @@ int deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
     s->l_buf = s->pending_buf + (1+sizeof(ush))*s->lit_bufsize;
 
     s->level = level;
-    s->strategy = strategy;
     s->method = (Byte)method;
 
     return deflateReset(strm);
@@ -190,7 +185,7 @@ int deflateInit_(strm, level, version, stream_size)
     int stream_size;
 {
     return deflateInit2_(strm, level, Z_DEFLATED, MAX_WBITS, DEF_MEM_LEVEL,
-                         Z_DEFAULT_STRATEGY, version, stream_size);
+                         version, stream_size);
     
 }
 
@@ -256,7 +251,7 @@ int deflate (strm, flush)
             uInt header = (Z_DEFLATED + ((s->w_bits-8)<<4)) << 8;
             uInt level_flags;
 
-            if (s->strategy >= Z_HUFFMAN_ONLY || s->level < 2)
+            if (s->level < 2)
                 level_flags = 0;
             else if (s->level < 6)
                 level_flags = 1;
@@ -304,9 +299,7 @@ int deflate (strm, flush)
         (flush != Z_NO_FLUSH && s->status != FINISH_STATE)) {
         block_state bstate;
 
-        bstate = s->strategy == Z_HUFFMAN_ONLY ? deflate_huff(s, flush) :
-                    (s->strategy == Z_RLE ? deflate_rle(s, flush) :
-                        deflate_fast(s, flush));
+        bstate = deflate_fast(s, flush);
 
         if (bstate == finish_started || bstate == finish_done) {
             s->status = FINISH_STATE;
@@ -680,104 +673,6 @@ local block_state deflate_fast(s, flush)
         if (bflush) FLUSH_BLOCK(s, 0);
     }
     s->insert = s->strstart < MIN_MATCH-1 ? s->strstart : MIN_MATCH-1;
-    if (flush == Z_FINISH) {
-        FLUSH_BLOCK(s, 1);
-        return finish_done;
-    }
-    if (s->last_lit)
-        FLUSH_BLOCK(s, 0);
-    return block_done;
-}
-
-local block_state deflate_rle(s, flush)
-    deflate_state *s;
-    int flush;
-{
-    int bflush;             
-    uInt prev;              
-    Bytef *scan, *strend;   
-
-    for (;;) {
-        
-        if (s->lookahead <= MAX_MATCH) {
-            fill_window(s);
-            if (s->lookahead <= MAX_MATCH && flush == Z_NO_FLUSH) {
-                return need_more;
-            }
-            if (s->lookahead == 0) break; 
-        }
-
-        
-        s->match_length = 0;
-        if (s->lookahead >= MIN_MATCH && s->strstart > 0) {
-            scan = s->window + s->strstart - 1;
-            prev = *scan;
-            if (prev == *++scan && prev == *++scan && prev == *++scan) {
-                strend = s->window + s->strstart + MAX_MATCH;
-                do {
-                } while (prev == *++scan && prev == *++scan &&
-                         prev == *++scan && prev == *++scan &&
-                         prev == *++scan && prev == *++scan &&
-                         prev == *++scan && prev == *++scan &&
-                         scan < strend);
-                s->match_length = MAX_MATCH - (int)(strend - scan);
-                if (s->match_length > s->lookahead)
-                    s->match_length = s->lookahead;
-            }
-        }
-
-        
-        if (s->match_length >= MIN_MATCH) {
-            check_match(s, s->strstart, s->strstart - 1, s->match_length);
-
-            _tr_tally_dist(s, 1, s->match_length - MIN_MATCH, bflush);
-
-            s->lookahead -= s->match_length;
-            s->strstart += s->match_length;
-            s->match_length = 0;
-        } else {
-            
-            _tr_tally_lit (s, s->window[s->strstart], bflush);
-            s->lookahead--;
-            s->strstart++;
-        }
-        if (bflush) FLUSH_BLOCK(s, 0);
-    }
-    s->insert = 0;
-    if (flush == Z_FINISH) {
-        FLUSH_BLOCK(s, 1);
-        return finish_done;
-    }
-    if (s->last_lit)
-        FLUSH_BLOCK(s, 0);
-    return block_done;
-}
-
-
-local block_state deflate_huff(s, flush)
-    deflate_state *s;
-    int flush;
-{
-    int bflush;             
-
-    for (;;) {
-        
-        if (s->lookahead == 0) {
-            fill_window(s);
-            if (s->lookahead == 0) {
-                if (flush == Z_NO_FLUSH)
-                    return need_more;
-                break;      
-            }
-        }
-        
-        s->match_length = 0;
-        _tr_tally_lit (s, s->window[s->strstart], bflush);
-        s->lookahead--;
-        s->strstart++;
-        if (bflush) FLUSH_BLOCK(s, 0);
-    }
-    s->insert = 0;
     if (flush == Z_FINISH) {
         FLUSH_BLOCK(s, 1);
         return finish_done;

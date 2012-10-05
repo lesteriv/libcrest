@@ -58,12 +58,6 @@ typedef z_stream FAR *z_streamp;
 #define Z_BEST_COMPRESSION       9
 #define Z_DEFAULT_COMPRESSION  (-1)
 
-#define Z_FILTERED            1
-#define Z_HUFFMAN_ONLY        2
-#define Z_RLE                 3
-#define Z_FIXED               4
-#define Z_DEFAULT_STRATEGY    0
-
 #define Z_BINARY   0
 #define Z_TEXT     1
 #define Z_ASCII    Z_TEXT

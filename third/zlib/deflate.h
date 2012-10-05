@@ -120,8 +120,6 @@ typedef struct internal_state {
     
 
     int level;    
-    int strategy; 
-
     struct ct_data_s dyn_ltree[HEAP_SIZE];   
     struct ct_data_s dyn_dtree[2*D_CODES+1]; 
     struct ct_data_s bl_tree[2*BL_CODES+1];  
