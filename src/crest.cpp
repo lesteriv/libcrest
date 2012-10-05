@@ -61,9 +61,8 @@ static size_t				g_log_size;
 
 
 /**********************************************************************************************/
-extern "C" int __cxa_guard_acquire( void ) { return 0; }
-extern "C" int __cxa_guard_release( int  ) { return 0; }
-extern "C" unsigned long __fdelt_chk( unsigned long d ) { return d; }
+extern "C" int __cxa_guard_acquire( int* guard ) { return !*guard; }
+extern "C" int __cxa_guard_release( int* guard ) { return *guard = 1; }
 
 
 //////////////////////////////////////////////////////////////////////////
