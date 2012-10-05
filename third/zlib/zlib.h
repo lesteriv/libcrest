@@ -16,7 +16,7 @@ extern "C" {
 struct internal_state;
 
 typedef struct z_stream_s {
-    z_const Bytef *next_in;
+    const Bytef *next_in;
     uInt     avail_in;
 
     Bytef    *next_out;
@@ -53,12 +53,12 @@ typedef z_stream *z_streamp;
 #define Z_NULL  0
 
 
-ZEXTERN int deflate OF((z_streamp strm));
-ZEXTERN int deflateEnd OF((z_streamp strm));
-ZEXTERN int deflateInit_ OF((z_streamp strm,
-                                     const char *version, int stream_size));
+extern int deflate (z_streamp strm);
+extern int deflateEnd (z_streamp strm);
+extern int deflateInit_ (z_streamp strm,
+                                     const char *version, int stream_size);
 
-ZEXTERN uLong adler32 OF((uLong adler, const Bytef *buf, uInt len));
+extern uLong adler32 (uLong adler, const Bytef *buf, uInt len);
 
 #define deflateInit(strm) \
         deflateInit_((strm), ZLIB_VERSION, (int)sizeof(z_stream))

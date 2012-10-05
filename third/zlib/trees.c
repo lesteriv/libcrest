@@ -45,24 +45,24 @@ static static_tree_desc  static_bl_desc =
 
 
 
-static void init_block     OF((deflate_state *s));
-static void pqdownheap     OF((deflate_state *s, ct_data *tree, int k));
-static void gen_bitlen     OF((deflate_state *s, tree_desc *desc));
-static void gen_codes      OF((ct_data *tree, int max_code, ushf *bl_count));
-static void build_tree     OF((deflate_state *s, tree_desc *desc));
-static void scan_tree      OF((deflate_state *s, ct_data *tree, int max_code));
-static void send_tree      OF((deflate_state *s, ct_data *tree, int max_code));
-static int  build_bl_tree  OF((deflate_state *s));
-static void send_all_trees OF((deflate_state *s, int lcodes, int dcodes,
-                              int blcodes));
-static void compress_block OF((deflate_state *s, ct_data *ltree,
-                              ct_data *dtree));
-static int  detect_data_type OF((deflate_state *s));
-static unsigned bi_reverse OF((unsigned value, int length));
-static void bi_windup      OF((deflate_state *s));
-static void bi_flush       OF((deflate_state *s));
-static void copy_block     OF((deflate_state *s, charf *buf, unsigned len,
-                              int header));
+static void init_block     (deflate_state *s);
+static void pqdownheap     (deflate_state *s, ct_data *tree, int k);
+static void gen_bitlen     (deflate_state *s, tree_desc *desc);
+static void gen_codes      (ct_data *tree, int max_code, ushf *bl_count);
+static void build_tree     (deflate_state *s, tree_desc *desc);
+static void scan_tree      (deflate_state *s, ct_data *tree, int max_code);
+static void send_tree      (deflate_state *s, ct_data *tree, int max_code);
+static int  build_bl_tree  (deflate_state *s);
+static void send_all_trees (deflate_state *s, int lcodes, int dcodes,
+                              int blcodes);
+static void compress_block (deflate_state *s, ct_data *ltree,
+                              ct_data *dtree);
+static int  detect_data_type (deflate_state *s);
+static unsigned bi_reverse (unsigned value, int length);
+static void bi_windup      (deflate_state *s);
+static void bi_flush       (deflate_state *s);
+static void copy_block     (deflate_state *s, charf *buf, unsigned len,
+                              int header);
 
 #  define send_code(s, c, tree) send_bits(s, tree[c].Code, tree[c].Len)
 
