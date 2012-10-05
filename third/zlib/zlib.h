@@ -22,14 +22,13 @@ typedef struct z_stream_s {
     Bytef    *next_out;
     uInt     avail_out;
 
-    struct internal_state FAR *state;
+    struct internal_state *state;
 
     uLong   adler;
-    uLong   reserved;
 } z_stream;
 
 
-typedef z_stream FAR *z_streamp;
+typedef z_stream *z_streamp;
 
 
 #define Z_NO_FLUSH      0
@@ -49,11 +48,6 @@ typedef z_stream FAR *z_streamp;
 #define Z_MEM_ERROR    (-4)
 #define Z_BUF_ERROR    (-5)
 #define Z_VERSION_ERROR (-6)
-
-#define Z_NO_COMPRESSION         0
-#define Z_BEST_SPEED             1
-#define Z_BEST_COMPRESSION       9
-#define Z_DEFAULT_COMPRESSION  (-1)
 
 #define Z_DEFLATED   8
 #define Z_NULL  0

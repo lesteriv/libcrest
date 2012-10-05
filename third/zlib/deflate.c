@@ -125,7 +125,7 @@ static int deflateInit2_(strm, method, windowBits, memLevel,
     if (windowBits == 8) windowBits = 9;  
     s = (deflate_state *) ZALLOC(1, sizeof(deflate_state));
     if (s == Z_NULL) return Z_MEM_ERROR;
-    strm->state = (struct internal_state FAR *)s;
+    strm->state = (struct internal_state *)s;
     s->strm = strm;
 
     s->wrap = wrap;

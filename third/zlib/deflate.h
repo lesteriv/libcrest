@@ -31,7 +31,7 @@ typedef struct ct_data_s {
         ush  dad;        
         ush  len;        
     } dl;
-} FAR ct_data;
+} ct_data;
 
 #define Freq fc.freq
 #define Code fc.code
@@ -44,10 +44,10 @@ typedef struct tree_desc_s {
     ct_data *dyn_tree;           
     int     max_code;            
     static_tree_desc *stat_desc; 
-} FAR tree_desc;
+} tree_desc;
 
 typedef ush Pos;
-typedef Pos FAR Posf;
+typedef Pos Posf;
 typedef unsigned IPos;
 
 
@@ -141,7 +141,7 @@ typedef struct internal_state {
     ulg high_water;
     
 
-} FAR deflate_state;
+} deflate_state;
 
 
 #define put_byte(s, c) {s->pending_buf[s->pending++] = (c);}

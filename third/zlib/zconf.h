@@ -88,10 +88,6 @@
 #  define ZEXTERN extern
 #endif
 
-#ifndef FAR
-#  define FAR
-#endif
-
 #if !defined(__MACTYPES__)
 typedef unsigned char  Byte;
 #endif
@@ -100,22 +96,22 @@ typedef unsigned long  uLong;
 
 #ifdef SMALL_MEDIUM
 
-#  define Bytef Byte FAR
+#  define Bytef Byte
 #else
-   typedef Byte  FAR Bytef;
+   typedef Byte Bytef;
 #endif
-typedef char  FAR charf;
-typedef int   FAR intf;
-typedef uInt  FAR uIntf;
-typedef uLong FAR uLongf;
+typedef char  charf;
+typedef int   intf;
+typedef uInt  uIntf;
+typedef uLong uLongf;
 
 #ifdef STDC
    typedef void const *voidpc;
-   typedef void FAR   *voidpf;
+   typedef void       *voidpf;
    typedef void       *voidp;
 #else
    typedef Byte const *voidpc;
-   typedef Byte FAR   *voidpf;
+   typedef Byte       *voidpf;
    typedef Byte       *voidp;
 #endif
 

@@ -7,9 +7,9 @@
 
 
 typedef unsigned char  uch;
-typedef uch FAR uchf;
+typedef uch uchf;
 typedef unsigned short ush;
-typedef ush FAR ushf;
+typedef ush ushf;
 typedef unsigned long  ulg;
 
 
