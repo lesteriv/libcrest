@@ -110,7 +110,7 @@ void crest_connection::respond(
 {
 	// Compress data if need
 #ifndef NO_DEFLATE	
-	if( data && data_len > 1 )
+	if( data && data_len > 128 )
 	{
 		const char* enc_header = mg_get_header( conn_, "Accept-Encoding" );
 		if( enc_header && strstr( enc_header, "deflate" ) )
