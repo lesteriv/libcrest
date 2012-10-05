@@ -24,7 +24,7 @@
 #define MOD63(a) a %= BASE
 
 /* ========================================================================= */
-uLong ZEXPORT adler32(adler, buf, len)
+uLong adler32(adler, buf, len)
     uLong adler;
     const Bytef *buf;
     uInt len;

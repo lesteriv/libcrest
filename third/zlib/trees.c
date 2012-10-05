@@ -1,17 +1,9 @@
 #include "deflate.h"
 
 #define MAX_BL_BITS 7
-
-
 #define END_BLOCK 256
-
-
 #define REP_3_6      16
-
-
 #define REPZ_3_10    17
-
-
 #define REPZ_11_138  18
 
 
@@ -581,24 +573,6 @@ int _tr_tally (s, dist, lc)
         s->dyn_dtree[d_code(dist)].Freq++;
     }
 
-#ifdef TRUNCATE_BLOCK
-    
-    if ((s->last_lit & 0x1fff) == 0 && s->level > 2) {
-        
-        ulg out_length = (ulg)s->last_lit*8L;
-        ulg in_length = (ulg)((long)s->strstart - s->block_start);
-        int dcode;
-        for (dcode = 0; dcode < D_CODES; dcode++) {
-            out_length += (ulg)s->dyn_dtree[dcode].Freq *
-                (5L+extra_dbits[dcode]);
-        }
-        out_length >>= 3;
-        Tracev((stderr,"\nlast_lit %u, in %ld, out ~%ld(%ld%%) ",
-               s->last_lit, in_length, out_length,
-               100L - out_length*100L/in_length));
-        if (s->matches < s->last_lit/2 && out_length < in_length/2) return 1;
-    }
-#endif
     return (s->last_lit == s->lit_bufsize-1);
     
 }

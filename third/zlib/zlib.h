@@ -95,115 +95,82 @@ typedef gz_header FAR *gz_headerp;
 
 
 
-ZEXTERN int ZEXPORT deflate OF((z_streamp strm, int flush));
+ZEXTERN int deflate OF((z_streamp strm, int flush));
 
-ZEXTERN int ZEXPORT deflateEnd OF((z_streamp strm));
+ZEXTERN int deflateEnd OF((z_streamp strm));
 
-ZEXTERN int ZEXPORT inflate OF((z_streamp strm, int flush));
+ZEXTERN int inflate OF((z_streamp strm, int flush));
 
-ZEXTERN int ZEXPORT inflateEnd OF((z_streamp strm));
+ZEXTERN int inflateEnd OF((z_streamp strm));
 
-ZEXTERN int ZEXPORT deflateCopy OF((z_streamp dest,
+ZEXTERN int deflateCopy OF((z_streamp dest,
                                     z_streamp source));
 
-ZEXTERN int ZEXPORT deflateReset OF((z_streamp strm));
+ZEXTERN int deflateReset OF((z_streamp strm));
 
-ZEXTERN int ZEXPORT deflateParams OF((z_streamp strm,
+ZEXTERN int deflateParams OF((z_streamp strm,
                                       int level,
                                       int strategy));
 
-ZEXTERN int ZEXPORT deflateTune OF((z_streamp strm,
+ZEXTERN int deflateTune OF((z_streamp strm,
                                     int good_length,
                                     int max_lazy,
                                     int nice_length,
                                     int max_chain));
 
-ZEXTERN uLong ZEXPORT deflateBound OF((z_streamp strm,
+ZEXTERN uLong deflateBound OF((z_streamp strm,
                                        uLong sourceLen));
 
-ZEXTERN int ZEXPORT deflatePending OF((z_streamp strm,
+ZEXTERN int deflatePending OF((z_streamp strm,
                                        unsigned *pending,
                                        int *bits));
 
-ZEXTERN int ZEXPORT deflatePrime OF((z_streamp strm,
+ZEXTERN int deflatePrime OF((z_streamp strm,
                                      int bits,
                                      int value));
 
-ZEXTERN int ZEXPORT deflateSetHeader OF((z_streamp strm,
+ZEXTERN int deflateSetHeader OF((z_streamp strm,
                                          gz_headerp head));
 
-ZEXTERN int ZEXPORT inflateSetDictionary OF((z_streamp strm,
+ZEXTERN int inflateSetDictionary OF((z_streamp strm,
                                              const Bytef *dictionary,
                                              uInt  dictLength));
 
-ZEXTERN int ZEXPORT inflateSync OF((z_streamp strm));
+ZEXTERN int inflateSync OF((z_streamp strm));
 
-ZEXTERN int ZEXPORT inflateCopy OF((z_streamp dest,
+ZEXTERN int inflateCopy OF((z_streamp dest,
                                     z_streamp source));
 
-ZEXTERN int ZEXPORT inflateReset OF((z_streamp strm));
+ZEXTERN int inflateReset OF((z_streamp strm));
 
-ZEXTERN int ZEXPORT inflateReset2 OF((z_streamp strm,
+ZEXTERN int inflateReset2 OF((z_streamp strm,
                                       int windowBits));
 
-ZEXTERN int ZEXPORT inflatePrime OF((z_streamp strm,
+ZEXTERN int inflatePrime OF((z_streamp strm,
                                      int bits,
                                      int value));
 
-ZEXTERN long ZEXPORT inflateMark OF((z_streamp strm));
+ZEXTERN long inflateMark OF((z_streamp strm));
 
-ZEXTERN int ZEXPORT inflateGetHeader OF((z_streamp strm,
+ZEXTERN int inflateGetHeader OF((z_streamp strm,
                                          gz_headerp head));
 
 typedef unsigned (*in_func) OF((void FAR *, unsigned char FAR * FAR *));
 typedef int (*out_func) OF((void FAR *, unsigned char FAR *, unsigned));
 
-ZEXTERN int ZEXPORT inflateBack OF((z_streamp strm,
+ZEXTERN int inflateBack OF((z_streamp strm,
                                     in_func in, void FAR *in_desc,
                                     out_func out, void FAR *out_desc));
 
-ZEXTERN int ZEXPORT inflateBackEnd OF((z_streamp strm));
+ZEXTERN int inflateBackEnd OF((z_streamp strm));
 
-ZEXTERN uLong ZEXPORT adler32 OF((uLong adler, const Bytef *buf, uInt len));
+ZEXTERN uLong adler32 OF((uLong adler, const Bytef *buf, uInt len));
 
 
-ZEXTERN int ZEXPORT deflateInit_ OF((z_streamp strm, int level,
+ZEXTERN int deflateInit_ OF((z_streamp strm, int level,
                                      const char *version, int stream_size));
-ZEXTERN int ZEXPORT inflateInit_ OF((z_streamp strm,
-                                     const char *version, int stream_size));
-ZEXTERN int ZEXPORT deflateInit2_ OF((z_streamp strm, int  level, int  method,
-                                      int windowBits, int memLevel,
-                                      int strategy, const char *version,
-                                      int stream_size));
-ZEXTERN int ZEXPORT inflateInit2_ OF((z_streamp strm, int  windowBits,
-                                      const char *version, int stream_size));
-ZEXTERN int ZEXPORT inflateBackInit_ OF((z_streamp strm, int windowBits,
-                                         unsigned char FAR *window,
-                                         const char *version,
-                                         int stream_size));
 #define deflateInit(strm, level) \
         deflateInit_((strm), (level), ZLIB_VERSION, (int)sizeof(z_stream))
-#define inflateInit(strm) \
-        inflateInit_((strm), ZLIB_VERSION, (int)sizeof(z_stream))
-#define deflateInit2(strm, level, method, windowBits, memLevel, strategy) \
-        deflateInit2_((strm),(level),(method),(windowBits),(memLevel),\
-                      (strategy), ZLIB_VERSION, (int)sizeof(z_stream))
-#define inflateInit2(strm, windowBits) \
-        inflateInit2_((strm), (windowBits), ZLIB_VERSION, \
-                      (int)sizeof(z_stream))
-#define inflateBackInit(strm, windowBits, window) \
-        inflateBackInit_((strm), (windowBits), (window), \
-                      ZLIB_VERSION, (int)sizeof(z_stream))
-
-#if !defined(ZUTIL_H) && !defined(NO_DUMMY_DECL)
-    struct internal_state {int dummy;};
-#endif
-
-ZEXTERN int            ZEXPORT inflateSyncPoint OF((z_streamp));
-ZEXTERN const z_crc_t FAR * ZEXPORT get_crc_table    OF((void));
-ZEXTERN int            ZEXPORT inflateUndermine OF((z_streamp, int));
-ZEXTERN int            ZEXPORT inflateResetKeep OF((z_streamp));
-ZEXTERN int            ZEXPORT deflateResetKeep OF((z_streamp));
 
 static inline uLong compressBound (uLong sourceLen)
 {

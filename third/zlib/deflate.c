@@ -70,7 +70,7 @@ struct static_tree_desc_s {int dummy;};
     zmemzero((Bytef *)s->head, (unsigned)(s->hash_size-1)*sizeof(*s->head));
 
 
-int ZEXPORT deflateInit_(strm, level, version, stream_size)
+int deflateInit_(strm, level, version, stream_size)
     z_streamp strm;
     int level;
     const char *version;
@@ -82,7 +82,7 @@ int ZEXPORT deflateInit_(strm, level, version, stream_size)
 }
 
 
-int ZEXPORT deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
+int deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
                   version, stream_size)
     z_streamp strm;
     int  level;
@@ -162,7 +162,7 @@ int ZEXPORT deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
     return deflateReset(strm);
 }
 
-int ZEXPORT deflateResetKeep (strm)
+int deflateResetKeep (strm)
     z_streamp strm;
 {
     deflate_state *s;
@@ -192,7 +192,7 @@ int ZEXPORT deflateResetKeep (strm)
 }
 
 
-int ZEXPORT deflateReset (strm)
+int deflateReset (strm)
     z_streamp strm;
 {
     int ret;
@@ -204,7 +204,7 @@ int ZEXPORT deflateReset (strm)
 }
 
 
-int ZEXPORT deflateSetHeader (strm, head)
+int deflateSetHeader (strm, head)
     z_streamp strm;
     gz_headerp head;
 {
@@ -215,7 +215,7 @@ int ZEXPORT deflateSetHeader (strm, head)
 }
 
 
-int ZEXPORT deflatePending (strm, pending, bits)
+int deflatePending (strm, pending, bits)
     unsigned *pending;
     int *bits;
     z_streamp strm;
@@ -229,7 +229,7 @@ int ZEXPORT deflatePending (strm, pending, bits)
 }
 
 
-int ZEXPORT deflatePrime (strm, bits, value)
+int deflatePrime (strm, bits, value)
     z_streamp strm;
     int bits;
     int value;
@@ -255,7 +255,7 @@ int ZEXPORT deflatePrime (strm, bits, value)
 }
 
 
-int ZEXPORT deflateParams(strm, level, strategy)
+int deflateParams(strm, level, strategy)
     z_streamp strm;
     int level;
     int strategy;
@@ -290,7 +290,7 @@ int ZEXPORT deflateParams(strm, level, strategy)
 }
 
 
-int ZEXPORT deflateTune(strm, good_length, max_lazy, nice_length, max_chain)
+int deflateTune(strm, good_length, max_lazy, nice_length, max_chain)
     z_streamp strm;
     int good_length;
     int max_lazy;
@@ -309,7 +309,7 @@ int ZEXPORT deflateTune(strm, good_length, max_lazy, nice_length, max_chain)
 }
 
 
-uLong ZEXPORT deflateBound(strm, sourceLen)
+uLong deflateBound(strm, sourceLen)
     z_streamp strm;
     uLong sourceLen;
 {
@@ -399,7 +399,7 @@ local void flush_pending(strm)
 }
 
 
-int ZEXPORT deflate (strm, flush)
+int deflate (strm, flush)
     z_streamp strm;
     int flush;
 {
@@ -528,7 +528,7 @@ int ZEXPORT deflate (strm, flush)
 }
 
 
-int ZEXPORT deflateEnd (strm)
+int deflateEnd (strm)
     z_streamp strm;
 {
     int status;
@@ -559,7 +559,7 @@ int ZEXPORT deflateEnd (strm)
 }
 
 
-int ZEXPORT deflateCopy (dest, source)
+int deflateCopy (dest, source)
     z_streamp dest;
     z_streamp source;
 {

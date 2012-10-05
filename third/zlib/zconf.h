@@ -100,42 +100,8 @@
 #  endif
 #endif
 
-#if defined(WINDOWS) || defined(WIN32)
-
-#  ifdef ZLIB_DLL
-#    if defined(WIN32) && (!defined(__BORLANDC__) || (__BORLANDC__ >= 0x500))
-#      ifdef ZLIB_INTERNAL
-#        define ZEXTERN extern __declspec(dllexport)
-#      else
-#        define ZEXTERN extern __declspec(dllimport)
-#      endif
-#    endif
-#  endif
-
-#  ifdef ZLIB_WINAPI
-#    ifdef FAR
-#      undef FAR
-#    endif
-#    include <windows.h>
-
-
-#    define ZEXPORT WINAPI
-#    ifdef WIN32
-#      define ZEXPORTVA WINAPIV
-#    else
-#      define ZEXPORTVA FAR CDECL
-#    endif
-#  endif
-#endif
-
 #ifndef ZEXTERN
 #  define ZEXTERN extern
-#endif
-#ifndef ZEXPORT
-#  define ZEXPORT
-#endif
-#ifndef ZEXPORTVA
-#  define ZEXPORTVA
 #endif
 
 #ifndef FAR
