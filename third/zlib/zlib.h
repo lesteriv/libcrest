@@ -1,6 +1,7 @@
 #pragma once
 
-#include "zconf.h"
+// STD
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,6 +15,21 @@ extern "C" {
 #define ZLIB_VER_SUBREVISION 0
 
 struct internal_state;
+
+typedef unsigned char  Byte;
+typedef unsigned int   uInt;
+typedef unsigned long  uLong;
+
+typedef Byte		Bytef;
+typedef char		charf;
+typedef int			intf;
+typedef uInt		uIntf;
+typedef uLong		uLongf;
+
+typedef void const *voidpc;
+typedef void       *voidpf;
+typedef void       *voidp;
+typedef uint32_t	z_crc_t;
 
 typedef struct z_stream_s {
     const Bytef *next_in;

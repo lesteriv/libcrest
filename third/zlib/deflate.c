@@ -110,7 +110,7 @@ static int deflateInit2_(strm, method, windowBits, memLevel,
         wrap = 0;
         windowBits = -windowBits;
     }
-    if (memLevel < 1 || memLevel > MAX_MEM_LEVEL || method != Z_DEFLATED ||
+    if (memLevel < 1 || method != Z_DEFLATED ||
         windowBits < 8 || windowBits > 15) {
         return Z_STREAM_ERROR;
     }
@@ -158,7 +158,7 @@ int deflateInit_(strm, version, stream_size)
     const char *version;
     int stream_size;
 {
-    return deflateInit2_(strm, Z_DEFLATED, MAX_WBITS, 8,
+    return deflateInit2_(strm, Z_DEFLATED, 15, 8,
                          version, stream_size);
     
 }
