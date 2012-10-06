@@ -8,32 +8,33 @@
 #pragma once
 
 // CREST
-#include "internal/crest_handler_register.h"
-#include "crest_user_manager.h"
-#include "crest_connection.h"
+#include "internal/cr_handler_register.h"
+#include "cr_connection.h"
+#include "cr_mutex.h"
+#include "cr_user_manager.h"
 
 
 /**********************************************************************************************/
 // Macroses
 
 								/** Register handlers for 'usual' resources. */
-#define DELETE( name )			CREST_CPP_HANDLER( CREST_METHOD_DELETE	, false, false, #name )
-#define GET( name )				CREST_CPP_HANDLER( CREST_METHOD_GET		, false, false, #name )
-#define POST( name )			CREST_CPP_HANDLER( CREST_METHOD_POST	, false, false, #name )
-#define PUT( name )				CREST_CPP_HANDLER( CREST_METHOD_PUT		, false, false, #name )
+#define DELETE( name )			CR_CPP_HANDLER( CR_METHOD_DELETE	, false, false, #name )
+#define GET( name )				CR_CPP_HANDLER( CR_METHOD_GET		, false, false, #name )
+#define POST( name )			CR_CPP_HANDLER( CR_METHOD_POST	, false, false, #name )
+#define PUT( name )				CR_CPP_HANDLER( CR_METHOD_PUT		, false, false, #name )
 
 								/** Register handlers for resources for administrators only. */
-#define DELETE_ADMIN( name )	CREST_CPP_HANDLER( CREST_METHOD_DELETE	,  true, false, #name )
-#define GET_ADMIN( name )		CREST_CPP_HANDLER( CREST_METHOD_GET		,  true, false, #name )
-#define POST_ADMIN( name )		CREST_CPP_HANDLER( CREST_METHOD_POST	,  true, false, #name )
-#define PUT_ADMIN( name )		CREST_CPP_HANDLER( CREST_METHOD_PUT		,  true, false, #name )
+#define DELETE_ADMIN( name )	CR_CPP_HANDLER( CR_METHOD_DELETE	,  true, false, #name )
+#define GET_ADMIN( name )		CR_CPP_HANDLER( CR_METHOD_GET		,  true, false, #name )
+#define POST_ADMIN( name )		CR_CPP_HANDLER( CR_METHOD_POST	,  true, false, #name )
+#define PUT_ADMIN( name )		CR_CPP_HANDLER( CR_METHOD_PUT		,  true, false, #name )
 
 								/** Register handlers for public resources, that's always can
 								 *  be accessed without authentification. */
-#define DELETE_PUBLIC( name )	CREST_CPP_HANDLER( CREST_METHOD_GET		, false,  true, #name )
-#define GET_PUBLIC( name )		CREST_CPP_HANDLER( CREST_METHOD_GET		, false,  true, #name )
-#define POST_PUBLIC( name )		CREST_CPP_HANDLER( CREST_METHOD_GET		, false,  true, #name )
-#define PUT_PUBLIC( name )		CREST_CPP_HANDLER( CREST_METHOD_GET		, false,  true, #name )
+#define DELETE_PUBLIC( name )	CR_CPP_HANDLER( CR_METHOD_GET		, false,  true, #name )
+#define GET_PUBLIC( name )		CR_CPP_HANDLER( CR_METHOD_GET		, false,  true, #name )
+#define POST_PUBLIC( name )		CR_CPP_HANDLER( CR_METHOD_GET		, false,  true, #name )
+#define PUT_PUBLIC( name )		CR_CPP_HANDLER( CR_METHOD_GET		, false,  true, #name )
 
 
 /**********************************************************************************************/
@@ -41,40 +42,40 @@
 
 				/** Returns error description if crest unable to start,
 				 *  empty string otherwise. */
-const char*		crest_error_string( void );
+const char*		cr_error_string( void );
 
 				/** Returns kind of authorization is required for each request. */
-crest_http_auth	crest_get_auth_kind( void );
-void			crest_set_auth_kind( crest_http_auth auth );
+cr_http_auth	cr_get_auth_kind( void );
+void			cr_set_auth_kind( cr_http_auth auth );
 
 				/** Returns TRUE if all requests are logging into file. */
-bool			crest_get_log_enabled( void );
-void			crest_set_log_enabled( bool value );
+bool			cr_get_log_enabled( void );
+void			cr_set_log_enabled( bool value );
 
 				/** Register resource handler. */
-void			crest_register_handler(
-					crest_http_method	 method,
+void			cr_register_handler(
+					cr_http_method	 method,
 					const char*			 resource_name,
-					crest_api_callback_t handler,
+					cr_api_callback_t handler,
 					bool				 for_admin_only	 = false,
 					bool			 	 public_resource = false );
 	
 				/** Returns total count of processed requests. */
-size_t			crest_request_count( void );
+size_t			cr_request_count( void );
 
 				/** Starts server, returns FALSE if cannot start,
 				 *  @ports is comma separated list of [ip_address:]port[s] values,
 				 *  examples: 80, 443s, 127.0.0.1:3128, 1.2.3.4:8080s. */
-bool			crest_start(
+bool			cr_start(
 					const char*		ports		= "8080",
-					crest_http_auth	auth_kind	= CREST_AUTH_BASIC,
+					cr_http_auth	auth_kind	= CR_AUTH_BASIC,
 					const char*		auth_file	= "",
 					bool			log_enabled	= true,
 					const char*		log_file	= "",
 					const char*		pem_file	= "" );
 
 				/** Stops running server. */
-void			crest_stop( void );
+void			cr_stop( void );
 
 				/** Returns version of library. */
-const char*		crest_version( void );
+const char*		cr_version( void );

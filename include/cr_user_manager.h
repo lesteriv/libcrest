@@ -1,5 +1,5 @@
 /**********************************************************************************************/
-/* user_manager.h																			  */
+/* cr_user_manager.h																		  */
 /*                                                                       					  */
 /* Igor Nikitin, 2012																		  */
 /* MIT license			                                                  					  */
@@ -8,19 +8,19 @@
 #pragma once
 
 // CREST
-#include "internal/crest_user_manager_internal.h"
+#include "internal/cr_user_manager_internal.h"
 
 /**********************************************************************************************/
 #ifndef NO_AUTH
 
 /**********************************************************************************************/
-#define the_crest_user_manager ( crest_user_manager::instance() )
+#define the_cr_user_manager ( cr_user_manager::instance() )
 
 
 /**********************************************************************************************/
 // Class to manage users and it's passwords
 //
-class crest_user_manager : public crest_user_manager_internal
+class cr_user_manager : public cr_user_manager_internal
 {
 	public://////////////////////////////////////////////////////////////////////////
 
@@ -69,7 +69,7 @@ class crest_user_manager : public crest_user_manager_internal
 								char*		pass );
 		
 							/** Returns singleton. */
-static	crest_user_manager&	instance( void );
+static	cr_user_manager&	instance( void );
 		
 							/** Changes user's flags, returns error's description on fail,
 							 *  and NULL on success. */

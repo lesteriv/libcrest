@@ -1,5 +1,5 @@
 /**********************************************************************************************/
-/* connection_internal.h			                                                   		  */
+/* cr_user_manager_internal.h  		                                               			  */
 /*                                                                       					  */
 /* Igor Nikitin, 2012																		  */
 /* MIT license			                                                  					  */
@@ -9,43 +9,53 @@
 
 // STD
 #include <stddef.h>
-#include <time.h>
-
-// CREST
-#include "../crest_types.h"
 
 /**********************************************************************************************/
-struct mg_connection;
-
-/**********************************************************************************************/
-struct crest_string_array
-{
-	size_t	count_;
-	char**	items_;
-};
+#ifndef NO_AUTH
 
 
 /**********************************************************************************************/
-// Internal members for connection
+// Internal structure to store single user's info
 //
-class crest_connection_internal
+struct crest_user
+{
+	bool	admin_;
+	char*	name_;
+	size_t	name_len_;
+	char	password_[ 16 ];
+};
+
+
+/**********************************************************************************************/
+// Internal members for user_manager
+//
+class cr_user_manager_internal
 {
 	protected://////////////////////////////////////////////////////////////////////////
-		
-								~crest_connection_internal( void );
 	
+							cr_user_manager_internal( void );
+
 	protected://////////////////////////////////////////////////////////////////////////
 		
-// References
+	// ---------------------
+	// Internal methods		
 		
-		mg_connection*			conn_;
+		crest_user*			create_user( const char* name );
+		crest_user*			find_user( const char* name ) const;
+		void				flush( void );
+		void				load( void );
 
-
-// Properties
-
-		crest_string_array		path_params_;
 		
-mutable	size_t					query_params_count_;
-mutable	char*					query_params_names_[ 64 ];
-mutable	char*					query_params_values_[ 64 ];
+	protected://////////////////////////////////////////////////////////////////////////
+
+// Properties		
+		
+		char*				auth_file_;
+		void*				mutex_;
+		size_t				users_count_;
+		crest_user*			users_;
 };
+
+
+/**********************************************************************************************/
+#endif // NO_AUTH
