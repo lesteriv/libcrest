@@ -1,3 +1,10 @@
+/**********************************************************************************************/
+/* mongoose.cpp		  		                                                   				  */
+/*                                                                       					  */
+/* (c) 2004-2012 Sergey Lyubka																  */
+/* MIT license   																		  	  */
+/**********************************************************************************************/
+
 // Copyright (c) 2004-2012 Sergey Lyubka
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,10 +25,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifdef _WIN32
-#    define _CRT_SECURE_NO_WARNINGS // Disable deprecation warning in VS2005
-#endif
-
+// STD
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -33,6 +37,7 @@
 
 
 #if defined(_WIN32) // Windows specific
+#    define _CRT_SECURE_NO_WARNINGS // Disable deprecation warning in VS2005
 #    define _WIN32_WINNT 0x0400 // To make it link in VS2005
 #    include <windows.h>
 
