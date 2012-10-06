@@ -13,5 +13,5 @@
 
 			/** Makes basic autorization. */
 bool		auth_basic(
-				crest_connection&	conn,
+				cr_connection&	conn,
 				bool				admin );

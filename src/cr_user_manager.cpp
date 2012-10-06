@@ -1,5 +1,5 @@
 /**********************************************************************************************/
-/* user_manager.cpp																			  */
+/* cr_user_manager.cpp																		  */
 /*                                                                       					  */
 /* Igor Nikitin, 2012																		  */
 /* MIT license			                                                  					  */
@@ -33,31 +33,31 @@
 
 
 /**********************************************************************************************/
-const char* crest_user_manager::get_auth_file( void ) const
+const char* cr_user_manager::get_auth_file( void ) const
 {
 	return auth_file_;
 }
 
 /**********************************************************************************************/
-void crest_user_manager::set_auth_file( const char* file )
+void cr_user_manager::set_auth_file( const char* file )
 {
 	clean();
 	
 	mg_mutex_lock( mutex_ );
-	auth_file_ = crest_strdup( file );
+	auth_file_ = cr_strdup( file );
 	mg_mutex_unlock( mutex_ );
 	
 	load();
 }
 
 /**********************************************************************************************/
-size_t crest_user_manager::get_user_count( void ) const
+size_t cr_user_manager::get_user_count( void ) const
 {
 	return users_count_;
 }
 
 /**********************************************************************************************/
-bool crest_user_manager::get_user_is_admin( const char* name ) const
+bool cr_user_manager::get_user_is_admin( const char* name ) const
 {
 	bool res = false;
 	
@@ -73,7 +73,7 @@ bool crest_user_manager::get_user_is_admin( const char* name ) const
 }
 
 /**********************************************************************************************/
-void crest_user_manager::get_users( 
+void cr_user_manager::get_users( 
 	size_t&		count,
 	char**&		names ) const
 {
@@ -104,7 +104,7 @@ void crest_user_manager::get_users(
 
 
 /**********************************************************************************************/
-const char* crest_user_manager::add_user(
+const char* cr_user_manager::add_user(
 	const char*	name,
 	const char*	pass,
 	bool		admin )
@@ -132,7 +132,7 @@ const char* crest_user_manager::add_user(
 	char buf[ 16 ];
 	const char* data[] = { name, ":", "", ":", pass };
 	size_t len[] = { name_len, 1, 0, 1, pass_len };
-	md5( buf, 5, data, len );	
+	cr_md5( buf, 5, data, len );	
 
 	mg_mutex_lock( mutex_ ); // -----------------------------
 	
@@ -154,7 +154,7 @@ const char* crest_user_manager::add_user(
 }
 
 /**********************************************************************************************/
-void crest_user_manager::clean( void )
+void cr_user_manager::clean( void )
 {
 	mg_mutex_lock( mutex_ ); // -----------------------------
 	
@@ -172,7 +172,7 @@ void crest_user_manager::clean( void )
 }
 
 /**********************************************************************************************/
-const char* crest_user_manager::delete_user( const char* name )
+const char* cr_user_manager::delete_user( const char* name )
 {
 	// Check parameters
 	
@@ -206,7 +206,7 @@ const char* crest_user_manager::delete_user( const char* name )
 }
 
 /**********************************************************************************************/
-bool crest_user_manager::get_password( 
+bool cr_user_manager::get_password( 
 	const char*	name,
 	char*		pass )
 {
@@ -227,14 +227,14 @@ bool crest_user_manager::get_password(
 }
 
 /**********************************************************************************************/
-crest_user_manager& crest_user_manager::instance( void )
+cr_user_manager& cr_user_manager::instance( void )
 {
-	static crest_user_manager res;
+	static cr_user_manager res;
 	return res;
 }
 
 /**********************************************************************************************/
-const char* crest_user_manager::update_user_is_admin(
+const char* cr_user_manager::update_user_is_admin(
 	const char*	name,
 	bool		value )
 {
@@ -261,7 +261,7 @@ const char* crest_user_manager::update_user_is_admin(
 }
 
 /**********************************************************************************************/
-const char* crest_user_manager::update_user_password(
+const char* cr_user_manager::update_user_password(
 	const char*	name,
 	const char*	pass )
 {
@@ -279,7 +279,7 @@ const char* crest_user_manager::update_user_password(
 	char buf[ 16 ];
 	const char* data[] = { name, ":", "", ":", pass };
 	size_t len[] = { name_len, 1, 0, 1, pass_len };	
-	md5( buf, 5, data, len );	
+	cr_md5( buf, 5, data, len );	
 	
 	mg_mutex_lock( mutex_ ); // -----------------------------
 	
@@ -303,7 +303,7 @@ const char* crest_user_manager::update_user_password(
 
 
 /**********************************************************************************************/
-crest_user_manager_internal::crest_user_manager_internal( void )
+cr_user_manager_internal::cr_user_manager_internal( void )
 {
 	auth_file_		= 0;
 	mutex_			= mg_mutex_create();
@@ -312,7 +312,7 @@ crest_user_manager_internal::crest_user_manager_internal( void )
 }
 
 /**********************************************************************************************/
-crest_user* crest_user_manager_internal::create_user( const char* name )
+crest_user* cr_user_manager_internal::create_user( const char* name )
 {
 	++users_count_;
 	
@@ -320,7 +320,7 @@ crest_user* crest_user_manager_internal::create_user( const char* name )
 	{
 		users_ = (crest_user*) malloc( sizeof( crest_user ) );
 		users_->name_len_ = strlen( name );
-		users_->name_ = crest_strdup( name, users_->name_len_ );
+		users_->name_ = cr_strdup( name, users_->name_len_ );
 		
 		return users_;
 	}
@@ -328,13 +328,13 @@ crest_user* crest_user_manager_internal::create_user( const char* name )
 	users_ = (crest_user*) realloc( users_, sizeof( crest_user ) * users_count_ );
 	crest_user* last = users_ + users_count_ - 1;
 	last->name_len_ = strlen( name );
-	last->name_ = crest_strdup( name, last->name_len_ );
+	last->name_ = cr_strdup( name, last->name_len_ );
 	
 	return last;
 }
 
 /**********************************************************************************************/
-crest_user* crest_user_manager_internal::find_user( const char* name ) const
+crest_user* cr_user_manager_internal::find_user( const char* name ) const
 {
 	for( size_t i = 0 ; i < users_count_ ; ++i )
 	{
@@ -346,7 +346,7 @@ crest_user* crest_user_manager_internal::find_user( const char* name ) const
 }
 
 /**********************************************************************************************/
-void crest_user_manager_internal::flush( void )
+void cr_user_manager_internal::flush( void )
 {
 	mg_mutex_lock( mutex_ ); // -----------------------------
 
@@ -383,7 +383,7 @@ void crest_user_manager_internal::flush( void )
 }
 
 /**********************************************************************************************/
-void crest_user_manager_internal::load( void )
+void cr_user_manager_internal::load( void )
 {
 	bool need_flush = false;
 	
@@ -442,7 +442,7 @@ void crest_user_manager_internal::load( void )
 			
 			const char* data[] = { "root", ":", "", ":", "" };
 			size_t len[] = { 4, 1, 0, 1, 0 };	
-			md5( user->password_, 5, data, len );		
+			cr_md5( user->password_, 5, data, len );		
 
 			need_flush = true;
 		}

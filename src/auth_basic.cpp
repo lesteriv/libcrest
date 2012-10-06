@@ -35,7 +35,7 @@ bool parse_basic_auth(
 		return false;
 	
 	auth += 6;
-	size_t len = base64_decode( buf, auth, auth_len - 6 );
+	size_t len = cr_base64_decode( buf, auth, auth_len - 6 );
 	buf[ len ] = 0;
 
 	char* sp = strchr( buf, ':' );
@@ -57,7 +57,7 @@ bool parse_basic_auth(
 
 /**********************************************************************************************/
 bool auth_basic(
-	crest_connection&	conn,
+	cr_connection&	conn,
 	bool				admin )
 {
 	bool res = false;
@@ -69,16 +69,16 @@ bool auth_basic(
 
 	if( auth && parse_basic_auth( auth, auth_len, buf, user, pass ) )
 	{
-		if( !admin || the_crest_user_manager.get_user_is_admin( user ) )
+		if( !admin || the_cr_user_manager.get_user_is_admin( user ) )
 		{
 			char stored_hash[ 16 ];
-			if( the_crest_user_manager.get_password( user, stored_hash ) )
+			if( the_cr_user_manager.get_password( user, stored_hash ) )
 			{
 				const char* data[] = { user, ":", "", ":", pass };
 				size_t len[] = { strlen( user ), 1, 0, 1, strlen( pass ) };
 				
 				char auth_hash[ 16 ];
-				md5( auth_hash, 5, data, len );
+				cr_md5( auth_hash, 5, data, len );
 				
 				res = !memcmp( stored_hash, auth_hash, 16 );
 			}

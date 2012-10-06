@@ -33,7 +33,7 @@
 
 
 /**********************************************************************************************/
-static crest_connection*	g_conns[ 20 ];
+static cr_connection*	g_conns[ 20 ];
 static mg_mutex				g_conns_mutex;
 static const char*			g_error;
 static size_t				g_request_count;
@@ -42,7 +42,7 @@ static time_t				g_time_start;
 
 /**********************************************************************************************/
 #ifndef NO_AUTH
-static crest_http_auth		g_auth_kind;
+static cr_http_auth		g_auth_kind;
 #endif // NO_AUTH
 
 /**********************************************************************************************/
@@ -56,7 +56,7 @@ static size_t				g_log_size;
 
 
 //////////////////////////////////////////////////////////////////////////
-// to work on old glibc and without libstdc++
+// to work without libstdc++, we don't need for 'fair' guard
 //////////////////////////////////////////////////////////////////////////
 
 
@@ -74,7 +74,7 @@ extern "C" int __cxa_guard_release( int* guard ) { return *guard = 1; }
 struct resource
 {
 	bool					admin_;
-	crest_api_callback_t	handler_;
+	cr_api_callback_t	handler_;
 	crest_string_array		keys_;
 	bool					public_;
 };
@@ -127,7 +127,7 @@ inline void sort_resource_array( resource_array& arr )
 }
 
 /**********************************************************************************************/
-struct sl_connection : public crest_connection
+struct sl_connection : public cr_connection
 {
 	sl_connection( 
 		mg_connection*		conn,
@@ -176,7 +176,7 @@ struct sl_connection : public crest_connection
 				size_t glen = strlen( g_log_file_path );
 				
 				char* nfile = 0;
-				char* rfile = crest_strdup( g_log_file_path, glen );
+				char* rfile = cr_strdup( g_log_file_path, glen );
 				rfile[ glen - 4 ] = 0;
 
 				int index = 0;
@@ -191,7 +191,7 @@ struct sl_connection : public crest_connection
 
 					if( !file_exists( buf ) )
 					{
-						nfile = crest_strdup( buf );
+						nfile = cr_strdup( buf );
 						break;
 					}
 				}
@@ -259,26 +259,26 @@ static crest_string_array parse_resource_name(
 /**********************************************************************************************/
 static resource_array& resources( int method )
 {
-	static resource_array r[ CREST_METHOD_COUNT ];
+	static resource_array r[ CR_METHOD_COUNT ];
 	return r[ method ];
 }
 
 /**********************************************************************************************/
 static resource* default_resource( int method )
 {
-	static resource r[ CREST_METHOD_COUNT ];
+	static resource r[ CR_METHOD_COUNT ];
 	return &r[ method ];
 }
 
 /**********************************************************************************************/
-crest_auto_handler_register::crest_auto_handler_register(
-	crest_http_method	 method,
+cr_auto_handler_register::cr_auto_handler_register(
+	cr_http_method	 method,
 	const char*			 name,
-	crest_api_callback_t func,
+	cr_api_callback_t func,
 	bool				 for_admin_only,
 	bool			 	 publ )
 {
-	crest_register_handler( method, name, func, for_admin_only, publ );
+	cr_register_handler( method, name, func, for_admin_only, publ );
 }
 
 /**********************************************************************************************/
@@ -292,12 +292,12 @@ void event_handler( mg_connection* conn )
 
 	// Get method
 
-	crest_http_method method;
+	cr_http_method method;
 
-	if( !strcmp( method_name, "DELETE" ) ) method = CREST_METHOD_DELETE;
-	else if( !strcmp( method_name, "GET" ) ) method = CREST_METHOD_GET;
-	else if( !strcmp( method_name, "POST" ) ) method = CREST_METHOD_POST;
-	else if( !strcmp( method_name, "PUT" ) ) method = CREST_METHOD_PUT;
+	if( !strcmp( method_name, "DELETE" ) ) method = CR_METHOD_DELETE;
+	else if( !strcmp( method_name, "GET" ) ) method = CR_METHOD_GET;
+	else if( !strcmp( method_name, "POST" ) ) method = CR_METHOD_POST;
+	else if( !strcmp( method_name, "PUT" ) ) method = CR_METHOD_PUT;
 	else
 	{
 		mg_write( conn, "HTTP/1.1 400 Bad Request\r\nContent-Length: 20\r\n\r\nNon-supported method", 68 );
@@ -323,10 +323,10 @@ void event_handler( mg_connection* conn )
 		
 		if( !it->public_ )
 		{
-			if( g_auth_kind == CREST_AUTH_BASIC && !auth_basic( sconn, it->admin_ ) )
+			if( g_auth_kind == CR_AUTH_BASIC && !auth_basic( sconn, it->admin_ ) )
 				return;
 
-			if( g_auth_kind == CREST_AUTH_DIGEST && !auth_digest( sconn, it->admin_ ) )
+			if( g_auth_kind == CR_AUTH_DIGEST && !auth_digest( sconn, it->admin_ ) )
 				return;
 		}
 		
@@ -369,7 +369,7 @@ void event_handler( mg_connection* conn )
 	}
 	else
 	{
-		for( size_t i = 0 ; i < CREST_METHOD_COUNT ; ++i )
+		for( size_t i = 0 ; i < CR_METHOD_COUNT ; ++i )
 		{
 			if( i != method )
 			{
@@ -393,7 +393,7 @@ void event_handler( mg_connection* conn )
 
 
 /**********************************************************************************************/
-const char* crest_error_string( void )
+const char* cr_error_string( void )
 {
 	return g_error ? g_error : "";
 }
@@ -403,15 +403,15 @@ const char* crest_error_string( void )
 #ifndef NO_AUTH
 
 /**********************************************************************************************/
-crest_http_auth crest_get_auth_kind( void )
+cr_http_auth cr_get_auth_kind( void )
 {
 	return g_auth_kind;
 }
 
 /**********************************************************************************************/
-void crest_set_auth_kind( crest_http_auth auth )
+void crest_set_auth_kind( cr_http_auth auth )
 {
-	if( the_crest_user_manager.get_auth_file() )
+	if( the_cr_user_manager.get_auth_file() )
 		g_auth_kind = auth;
 }
 
@@ -423,7 +423,7 @@ void crest_set_auth_kind( crest_http_auth auth )
 #ifndef NO_LOG
 
 /**********************************************************************************************/
-bool crest_get_log_enabled( void )
+bool cr_get_log_enabled( void )
 {
 	return g_log_enabled;
 }
@@ -439,10 +439,10 @@ void crest_set_log_enabled( bool value )
 
 
 /**********************************************************************************************/
-void crest_register_handler(
-	crest_http_method	 method,
+void cr_register_handler(
+	cr_http_method	 method,
 	const char*			 name,
-	crest_api_callback_t func,
+	cr_api_callback_t func,
 	bool				 for_admin_only,
 	bool			 	 publ )
 {
@@ -484,15 +484,15 @@ void crest_register_handler(
 }
 
 /**********************************************************************************************/
-size_t crest_request_count( void )
+size_t cr_request_count( void )
 {
 	return g_request_count;
 }
 
 /**********************************************************************************************/
-bool crest_start(
+bool cr_start(
 	const char*		ports,
-	crest_http_auth	auth_kind,
+	cr_http_auth	auth_kind,
 	const char*		auth_file,
 	bool			log_enabled,
 	const char*		log_file,
@@ -505,7 +505,7 @@ bool crest_start(
 	
 	if( g_time_start )
 	{
-		g_error = crest_strdup( "Server already running" );
+		g_error = cr_strdup( "Server already running" );
 		return false;
 	}
 
@@ -513,14 +513,14 @@ bool crest_start(
 	g_conns_mutex = mg_mutex_create();
 	
 	// Prepare resources
-	for( size_t i = 0 ; i < CREST_METHOD_COUNT ; ++i )
+	for( size_t i = 0 ; i < CR_METHOD_COUNT ; ++i )
 		sort_resource_array( resources( i ) );
 	
 	// Init authentification
 #ifndef NO_AUTH
 
-	g_auth_kind = auth_file ? auth_kind : CREST_AUTH_NONE;
-	the_crest_user_manager.set_auth_file( auth_file );
+	g_auth_kind = auth_file && *auth_file ? auth_kind : CR_AUTH_NONE;
+	the_cr_user_manager.set_auth_file( auth_file );
 
 #endif // NO_AUTH
 	
@@ -531,7 +531,7 @@ bool crest_start(
 	g_log_mutex   = mg_mutex_create();
 	
 	if( log_file && *log_file )
-		g_log_file_path = crest_strdup( log_file );
+		g_log_file_path = cr_strdup( log_file );
 	
 	if( g_log_file_path )
 	{
@@ -570,7 +570,7 @@ bool crest_start(
 
 #ifndef NO_AUTH
 
-	the_crest_user_manager.clean();
+	the_cr_user_manager.clean();
 
 #endif // NO_AUTH
 
@@ -593,13 +593,13 @@ bool crest_start(
 }
 
 /**********************************************************************************************/
-void crest_stop( void )
+void cr_stop( void )
 {
 	g_shutdown = true;
 }
 
 /**********************************************************************************************/
-const char* crest_version( void )
+const char* cr_version( void )
 {
-	return "0.01";
+	return "0.1";
 }

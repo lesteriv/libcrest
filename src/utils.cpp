@@ -52,7 +52,7 @@ static const unsigned char BASE64_TABLE[] =
 };
 
 /**********************************************************************************************/
-static const char* const RESPONCE_PREFIX[ CREST_HTTP_STATUS_COUNT ] =
+static const char* const RESPONCE_PREFIX[ CR_HTTP_STATUS_COUNT ] =
 {
 	"HTTP/1.1 200 OK\r\nContent-Length: ",
 	"HTTP/1.1 201 Created\r\nContent-Length: ",
@@ -66,7 +66,7 @@ static const char* const RESPONCE_PREFIX[ CREST_HTTP_STATUS_COUNT ] =
 };
 
 /**********************************************************************************************/
-static const size_t RESPONCE_PREFIX_SIZE[ CREST_HTTP_STATUS_COUNT ] =
+static const size_t RESPONCE_PREFIX_SIZE[ CR_HTTP_STATUS_COUNT ] =
 {
 	33,	38,	39,	42,	43,	40,	49,	46,	51
 };
@@ -90,7 +90,7 @@ inline char hex_to_int( char ch )
 
 
 /**********************************************************************************************/
-size_t base64_decode(
+size_t cr_base64_decode(
 	char*		vout,
 	const char*	vdata,
 	size_t		data_size )
@@ -131,7 +131,7 @@ size_t base64_decode(
 void create_responce(
 	char*&				out,
 	size_t&				out_len,
-	crest_http_status	status,
+	cr_http_status	status,
 	const char*			content,
 	size_t				content_len,
 	bool				deflated )
@@ -156,7 +156,7 @@ void create_responce(
 void create_responce_header(
 	char*				out,
 	size_t&				out_len,
-	crest_http_status	status,
+	cr_http_status	status,
 	size_t				content_len,
 	bool				deflated )
 {
@@ -173,7 +173,7 @@ void create_responce_header(
 }
 
 /**********************************************************************************************/
-char* crest_strdup( 
+char* cr_strdup( 
 	const char* str,
 	int			len )
 {
@@ -386,7 +386,7 @@ static void md5_transform(
 }
 
 /**********************************************************************************************/
-void md5(
+void cr_md5(
 	char			hash[ 16 ],
 	size_t			data_count,
 	const char**	adata,

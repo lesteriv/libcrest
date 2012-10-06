@@ -13,5 +13,5 @@
 
 			/** Makes digest autorization. */
 bool		auth_digest(
-				crest_connection&	conn,
+				cr_connection&	conn,
 				bool				admin );

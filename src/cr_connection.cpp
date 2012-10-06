@@ -1,5 +1,5 @@
 /**********************************************************************************************/
-/* Connection.cpp				                                                  			  */
+/* cr_connection.cpp				                                                  		  */
 /*                                                                       					  */
 /* Igor Nikitin, 2012																		  */
 /* MIT license			                                                  					  */
@@ -32,31 +32,31 @@
 
 
 /**********************************************************************************************/
-time_t crest_connection::get_birth_time( void ) const
+time_t cr_connection::get_birth_time( void ) const
 {
 	return mg_get_birth_time( conn_ );
 }
 
 /**********************************************************************************************/
-size_t crest_connection::get_content_length( void ) const
+size_t cr_connection::get_content_length( void ) const
 {
 	return mg_get_content_len( conn_ );
 }
 
 /**********************************************************************************************/
-const char* crest_connection::get_http_header( const char* name ) const
+const char* cr_connection::get_http_header( const char* name ) const
 {
 	return mg_get_header( conn_, name );
 }
 
 /**********************************************************************************************/
-const char*	crest_connection::get_http_method( void ) const
+const char*	cr_connection::get_http_method( void ) const
 {
 	return mg_get_request_info( conn_ )->method_;
 }
 
 /**********************************************************************************************/
-const char* crest_connection::get_path_parameter( size_t index ) const
+const char* cr_connection::get_path_parameter( size_t index ) const
 {
 	return path_params_.count_ > index ?
 		path_params_.items_[ index ] :
@@ -64,7 +64,7 @@ const char* crest_connection::get_path_parameter( size_t index ) const
 }
 
 /**********************************************************************************************/
-const char* crest_connection::get_query_parameter( const char* name ) const
+const char* cr_connection::get_query_parameter( const char* name ) const
 {
 	if( query_params_count_ == (size_t) -1 )
 	{
@@ -85,7 +85,7 @@ const char* crest_connection::get_query_parameter( const char* name ) const
 }
 
 /**********************************************************************************************/
-const char* crest_connection::get_url( void ) const
+const char* cr_connection::get_url( void ) const
 {
 	return mg_get_request_info( conn_ )->uri_;
 }
@@ -97,14 +97,14 @@ const char* crest_connection::get_url( void ) const
 
 
 /**********************************************************************************************/
-size_t crest_connection::read( char* buf, size_t len )
+size_t cr_connection::read( char* buf, size_t len )
 {
 	return mg_read( conn_, buf, len );
 }
 
 /**********************************************************************************************/
-void crest_connection::respond(
-	crest_http_status	rc,
+void cr_connection::respond(
+	cr_http_status	rc,
 	const char*			data,
 	size_t				data_len )
 {
@@ -139,12 +139,12 @@ void crest_connection::respond(
 }
 
 /**********************************************************************************************/
-void crest_connection::send_file( const char* path )
+void cr_connection::send_file( const char* path )
 {
 	FILE* f = fopen( path, "rb" );
 	if( !f )
 	{
-		respond( CREST_HTTP_NOT_FOUND, 0, 0 );
+		respond( CR_HTTP_NOT_FOUND, 0, 0 );
 		return;
 	}
 
@@ -153,7 +153,7 @@ void crest_connection::send_file( const char* path )
 	// Header
 	char header[ 128 ];
 	size_t header_len;
-	create_responce_header( header, header_len, CREST_HTTP_OK, ftell( f ) );
+	create_responce_header( header, header_len, CR_HTTP_OK, ftell( f ) );
 	mg_write( conn_, header, header_len );
 
 	fseek( f, 0, SEEK_SET );
@@ -175,7 +175,7 @@ void crest_connection::send_file( const char* path )
 }
 
 /**********************************************************************************************/
-int crest_connection::write( const char* buf, size_t len )
+int cr_connection::write( const char* buf, size_t len )
 {
 	return mg_write( conn_, buf, len );
 }
@@ -187,7 +187,7 @@ int crest_connection::write( const char* buf, size_t len )
 
 
 /**********************************************************************************************/
-crest_connection_internal::~crest_connection_internal( void )
+cr_connection_internal::~cr_connection_internal( void )
 {
 	// Free temporary data
 	free( path_params_.items_ );

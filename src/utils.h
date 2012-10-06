@@ -11,7 +11,7 @@
 #include <stddef.h>
 
 // CREST
-#include "../include/crest_types.h"
+#include "../include/cr_types.h"
 
 
 /**********************************************************************************************/
@@ -28,30 +28,30 @@ inline char*	add_string(
 				}
 
 				/** Decode base64-encoded data, return count of bytes in result. */
-size_t			base64_decode(
+size_t			cr_base64_decode(
 					char*			out,
 					const char*		data,
 					size_t			data_size );
 
 				/** Returns string with status code, 'Content-Length' header and content. */
 void			create_responce(
-					char*&				out,
-					size_t&				out_len,
-					crest_http_status	status,
-					const char*			content,
-					size_t				content_len,
-					bool				deflated = false );
+					char*&			out,
+					size_t&			out_len,
+					cr_http_status	status,
+					const char*		content,
+					size_t			content_len,
+					bool			deflated = false );
 
 				/** Returns string with status code and 'Content-Length' header. */
 void			create_responce_header(
-					char*				out,
-					size_t&				out_len,
-					crest_http_status	status,
-					size_t				content_len,
-					bool				deflated = false );
+					char*			out,
+					size_t&			out_len,
+					cr_http_status	status,
+					size_t			content_len,
+					bool			deflated = false );
 
 				/** The same as strdup. */
-char*			crest_strdup( const char* str, int en = -1 );
+char*			cr_strdup( const char* str, int en = -1 );
 
 				/** Compress data. */
 size_t			deflate(
@@ -67,7 +67,7 @@ bool			file_exists( const char* path );
 size_t			file_size( const char* path );
 
 				/** Calculate md5 hash. */
-void			md5(
+void			cr_md5(
 					char			hash[ 16 ],
 					size_t			data_count,
 					const char**	data,
