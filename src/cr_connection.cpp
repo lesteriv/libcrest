@@ -112,7 +112,7 @@ void cr_connection::respond(
 #ifndef NO_DEFLATE	
 	if( data && data_len > 128 )
 	{
-		const char* enc_header = mg_get_header( conn_, "Accept-Encoding" );
+		const char* enc_header = mg_get_header( conn_, "accept-encoding" );
 		if( enc_header && strstr( enc_header, "deflate" ) )
 		{
 			size_t out_len = compressBound( data_len );
