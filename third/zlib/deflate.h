@@ -39,6 +39,7 @@
 #include "zlib.h"
 
 
+/**********************************************************************************************/
 #define LENGTH_CODES 29
 #define LITERALS  256
 #define L_CODES (LITERALS+1+LENGTH_CODES)
@@ -48,7 +49,7 @@
 #define MAX_BITS 15
 #define Buf_size 16
 
-
+/**********************************************************************************************/
 #define INIT_STATE    42
 #define EXTRA_STATE   69
 #define NAME_STATE    73
@@ -57,26 +58,35 @@
 #define BUSY_STATE   113
 #define FINISH_STATE 666
 
-
-typedef struct ct_data_s {
-    union {
+/**********************************************************************************************/
+typedef struct ct_data_s
+{
+    union
+	{
         unsigned short  freq;       
         unsigned short  code;       
-    } fc;
-    union {
+    }
+	fc;
+    
+	union
+	{
         unsigned short  dad;        
         unsigned short  len;        
-    } dl;
-} ct_data;
+    } 
+	dl;
+}
+ct_data;
 
-
+/**********************************************************************************************/
 #define Freq fc.freq
 #define Code fc.code
 #define Dad  dl.dad
 #define Len  dl.len
 
+/**********************************************************************************************/
 typedef struct static_tree_desc_s  static_tree_desc;
 
+/**********************************************************************************************/
 typedef struct tree_desc_s {
     ct_data *dyn_tree;           
     int     max_code;            
@@ -84,25 +94,25 @@ typedef struct tree_desc_s {
 }
 tree_desc;
 
-
+/**********************************************************************************************/
 typedef unsigned short Pos;
 typedef Pos Posf;
 typedef unsigned IPos;
 
-
+/**********************************************************************************************/
 typedef struct internal_state {
     z_stream* strm;      
     int   status;        
-    Byte *pending_buf;  
+    byte *pending_buf;  
     unsigned long   pending_buf_size; 
-    Byte *pending_out;  
+    byte *pending_out;  
     unsigned int   pending;      
     int   wrap;          
 
     unsigned int  w_size;        
     unsigned int  w_bits;        
 
-    Byte *window;
+    byte *window;
     unsigned long window_size;
 
     Posf *prev;
@@ -150,28 +160,30 @@ typedef struct internal_state {
     unsigned short bi_buf;
     int bi_valid;
     unsigned long high_water;
-} deflate_state;
+}
+deflate_state;
 
-
+/**********************************************************************************************/
 #define put_byte(s, c) {s->pending_buf[s->pending++] = (c);}
-#define MIN_LOOKAHEAD (MAX_MATCH+MIN_MATCH+1)
+#define MIN_LOOKAHEAD (258+3+1)
 #define MAX_DIST(s)  ((s)->w_size-MIN_LOOKAHEAD)
-#define WIN_INIT MAX_MATCH
-
+#define WIN_INIT 258
         
-void _tr_init (deflate_state *s);
-void _tr_flush_block (deflate_state *s, char *buf,
-                        unsigned long stored_len, int last);
-void _tr_flush_bits (deflate_state *s);
-void _tr_stored_block (deflate_state *s, char *buf,
-                        unsigned long stored_len, int last);
+/**********************************************************************************************/
+void _tr_init			( deflate_state* s );
+void _tr_flush_block	( deflate_state* s, char *buf, size_t stored_len, int last );
+void _tr_flush_bits		( deflate_state* s );
+void _tr_stored_block	( deflate_state* s, char *buf, size_t stored_len, int last );
 
+/**********************************************************************************************/
 #define d_code(dist) \
    ((dist) < 256 ? _dist_code[dist] : _dist_code[256+((dist)>>7)])
 
+/**********************************************************************************************/
 extern const unsigned char _length_code[];
 extern const unsigned char _dist_code[];
 
+/**********************************************************************************************/
 # define _tr_tally_lit(s, c, flush) \
   { unsigned char cc = (c); \
     s->d_buf[s->last_lit] = 0; \
@@ -180,7 +192,8 @@ extern const unsigned char _dist_code[];
     flush = (s->last_lit == s->lit_bufsize-1); \
    }
 
-# define _tr_tally_dist(s, distance, length, flush) \
+/**********************************************************************************************/
+#define _tr_tally_dist(s, distance, length, flush) \
   { unsigned char len = (length); \
     unsigned short dist = (distance); \
     s->d_buf[s->last_lit] = dist; \

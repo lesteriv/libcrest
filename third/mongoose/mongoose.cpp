@@ -240,7 +240,7 @@ struct mg_socket
 #ifndef NO_SSL	
 	bool		is_ssl; // Is socket SSL-ed
 #endif // NO_SSL
-} ;
+};
 
 static const char* error_string;
 
@@ -252,7 +252,7 @@ struct mg_context
 #endif // NO_SLL
 	mg_socket*		listening_sockets;
 	volatile int	num_threads;		// Number of threads
-	mg_socket		queue[ 20 ];		// Accepted sockets
+	mg_socket		queue[ 64 ];		// Accepted sockets
 	pthread_cond_t	sq_empty;			// Signaled when socket is consumed
 	pthread_cond_t	sq_full;			// Signaled when socket is produced
 	volatile int	sq_head;			// Head of the socket queue
@@ -288,9 +288,9 @@ time_t mg_get_birth_time( mg_connection* conn )
 }
 
 /**********************************************************************************************/
-int mg_get_content_len( mg_connection* conn )
+size_t mg_get_content_len( mg_connection* conn )
 {
-	return conn->content_len;
+	return conn->content_len >= 0 ? conn->content_len : 0;
 }
 
 /**********************************************************************************************/
@@ -360,8 +360,8 @@ static int should_keep_alive( mg_connection *conn )
 	if( conn->must_close )
 		return 0;
 
-	const char* header = mg_get_header( conn, "Connection" );
-	if( conn->must_close || !header || strcmp( header, "Keep-Alive" ) )
+	const char* header = mg_get_header( conn, "connection" );
+	if( !header || ( *header != 'k' && *header != 'K' ) )
 		return 0;
 
 	return 1;
@@ -697,14 +697,16 @@ static int get_request_len( const char *buf, int buflen )
 
 static void parse_http_headers( char **buf, mg_request_info *ri )
 {
-	int i;
-
-	for ( i = 0; i < (int) ARRAY_SIZE( ri->headers_ ); i++ )
+	for( int i = 0 ; i < (int) ARRAY_SIZE( ri->headers_ ) ; ++i )
 	{
-		ri->headers_[i].name_ = skip_quoted( buf, ":", " " );
-		ri->headers_[i].value_ = skip( buf, "\r\n" );
-		if ( ri->headers_[i].name_[0] == '\0' )
+		char* s = skip_quoted( buf, ":", " " );
+		ri->headers_[ i ].name_ = s;
+		while( *s ) { *s = tolower( *s ); ++s; }
+		
+		ri->headers_[ i ].value_ = skip( buf, "\r\n" );
+		if( *ri->headers_[ i ].name_ == '\0' )
 			break;
+		
 		ri->headers_count_ = i + 1;
 	}
 }
@@ -1130,7 +1132,7 @@ static void process_new_connection( mg_connection *conn )
 	mg_request_info *ri = &conn->request_info;
 	int discard_len;
 	const char *cl;
-
+	
 	do
 	{
 		reset_per_request_attributes( conn );
@@ -1153,7 +1155,7 @@ static void process_new_connection( mg_connection *conn )
 		else
 		{
 			// Request is valid, handle it
-			if ( ( cl = get_header( ri, "Content-Length" ) ) != NULL )
+			if ( ( cl = get_header( ri, "content-length" ) ) != NULL )
 				conn->content_len = strtol( cl, NULL, 10 );
 			else if ( !strcmp( ri->method_, "POST" ) || !strcmp( ri->method_, "PUT" ) )
 				conn->content_len = -1;
@@ -1183,10 +1185,8 @@ static int consume_socket( mg_context *ctx, mg_socket *sp )
 	pthread_mutex_lock( &ctx->mutex );
 
 	// If the queue is empty, wait. We're idle at this point.
-	while ( ctx->sq_head == ctx->sq_tail && ctx->stop_flag == 0 )
-	{
+	while( ctx->sq_head == ctx->sq_tail && ctx->stop_flag == 0 )
 		pthread_cond_wait( &ctx->sq_full, &ctx->mutex );
-	}
 
 	// If we're stopping, sq_head may be equal to sq_tail.
 	if ( ctx->sq_head > ctx->sq_tail )
@@ -1413,11 +1413,11 @@ void mg_stop( mg_context *ctx )
 }
 
 mg_context *mg_start(
-					  const char* ports, const char* pem_file )
+	const char* ports,
+	const char* pem_file,
+	size_t		thread_count )
 {
 	mg_context *ctx;
-	int i;
-
 	error_string = "";
 
 #if defined(_WIN32)
@@ -1459,7 +1459,7 @@ mg_context *mg_start(
 	mg_start_thread( (mg_thread_func_t) master_thread, ctx );
 
 	// Start worker threads
-	for ( i = 0; i < 20; i++ )
+	for( size_t i = 0 ; i < thread_count ; i++ )
 	{
 		if ( mg_start_thread( (mg_thread_func_t) worker_thread, ctx ) == 0 )
 			ctx->num_threads++;

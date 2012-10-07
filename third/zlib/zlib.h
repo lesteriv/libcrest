@@ -37,34 +37,31 @@
 
 // STD
 #include <stddef.h>
+#include <stdint.h>
 
 /**********************************************************************************************/
-typedef unsigned char Byte;
+typedef unsigned char byte;
 
 /**********************************************************************************************/
 struct internal_state;
 
+
 /**********************************************************************************************/
 struct z_stream
 {
-    unsigned long   adler;
-    unsigned int    avail_in;
-    unsigned int	avail_out;
-    const Byte*		next_in;
-    Byte*			next_out;
+    uint32_t		adler;
+    size_t			avail_in;
+    size_t			avail_out;
+    const byte*		next_in;
+    byte*			next_out;
     internal_state*	state;
 };
-
-/**********************************************************************************************/
-#define MAX_MATCH	258
-#define MIN_MATCH	3
-
 
 /**********************************************************************************************/
 extern void deflate( z_stream* strm );
 
 /**********************************************************************************************/
-static inline size_t compressBound( size_t sourceLen )
+static inline size_t compress_bound( size_t len )
 {
-    return sourceLen + (sourceLen >> 12) + (sourceLen >> 14) + (sourceLen >> 25) + 13;
+    return len + ( len >> 12 ) + ( len >> 14 ) + ( len >> 25 ) + 13;
 }
