@@ -12,6 +12,7 @@
 
 // CREST
 #include "internal/cr_connection_internal.h"
+#include "cr_headers.h"
 
 
 /**********************************************************************************************/
@@ -54,7 +55,35 @@ class cr_connection : public cr_connection_internal
 		
 	// ---------------------
 	// Methods
+
+								/** Fetch data from remote HTTP server. */
+		bool					fetch(
+									const char*	url,
+									char*&		out,
+									size_t&		out_len,
+									cr_headers*	headers = NULL );
 		
+								/** The same method for str::string. */
+								template< class T >
+		bool					fetch(
+									const T&	url,
+									T&			out,
+									cr_headers*	headers = NULL )
+								{
+									char* data;
+									size_t len;
+									
+									if( fetch( url.c_str(), data, len, headers ) )
+									{
+										out.assign( data, len );
+										free( data );
+										
+										return true;
+									}
+
+									return false;
+								}
+								
 								/** Reads data from the remote end, return number of bytes read. */
 		size_t					read( char* buf, size_t len );
 		
@@ -73,17 +102,19 @@ class cr_connection : public cr_connection_internal
 								 *  status code, data-length header and data. */
 		void					respond(
 									cr_http_status	rc,
-									const char*			data	 = NULL,
-									size_t				data_len = 0 );
+									const char*		data	 = NULL,
+									size_t			data_len = 0,
+									cr_headers*		headers	 = NULL );
 
 								/** Generates and sends HTTP server responce with 
 								 *  status code, data-length header and data from string/vector. */
 								template< class T >
 		void					respond(
 									cr_http_status	rc,
-									const T&			data )
+									const T&		data,
+									cr_headers*		headers = NULL )
 								{
-									respond( rc, data.c_str(), data.size() );
+									respond( rc, data.c_str(), data.size(), headers );
 								}
 		
 								/** Sends content of file, or respond HTTP_BAD_REQUEST if
@@ -96,4 +127,12 @@ class cr_connection : public cr_connection_internal
 								 *  -1 on error,
 								 *  or number of bytes written on success. */
 		int						write( const char* buf, size_t len );
+		
+								/** The same method to send data from string. */
+								template< class T >
+		int						write( const T&	data )
+								{
+									return write( data.c_str(), data.size() );
+								}
+								
 };

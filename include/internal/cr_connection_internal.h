@@ -43,6 +43,7 @@ class cr_connection_internal
 
 // Properties
 
+		char					buf_headers_[ 16384 ];
 		crest_string_array		path_params_;
 		
 mutable	size_t					query_params_count_;

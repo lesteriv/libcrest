@@ -11,6 +11,7 @@
 #include "internal/cr_handler_register.h"
 #include "cr_connection.h"
 #include "cr_mutex.h"
+#include "cr_options.h"
 #include "cr_user_manager.h"
 
 
@@ -20,13 +21,13 @@
 								/** Register handlers for 'usual' resources. */
 #define DELETE( name )			CR_CPP_HANDLER( CR_METHOD_DELETE	, false, false, #name )
 #define GET( name )				CR_CPP_HANDLER( CR_METHOD_GET		, false, false, #name )
-#define POST( name )			CR_CPP_HANDLER( CR_METHOD_POST	, false, false, #name )
+#define POST( name )			CR_CPP_HANDLER( CR_METHOD_POST		, false, false, #name )
 #define PUT( name )				CR_CPP_HANDLER( CR_METHOD_PUT		, false, false, #name )
 
 								/** Register handlers for resources for administrators only. */
 #define DELETE_ADMIN( name )	CR_CPP_HANDLER( CR_METHOD_DELETE	,  true, false, #name )
 #define GET_ADMIN( name )		CR_CPP_HANDLER( CR_METHOD_GET		,  true, false, #name )
-#define POST_ADMIN( name )		CR_CPP_HANDLER( CR_METHOD_POST	,  true, false, #name )
+#define POST_ADMIN( name )		CR_CPP_HANDLER( CR_METHOD_POST		,  true, false, #name )
 #define PUT_ADMIN( name )		CR_CPP_HANDLER( CR_METHOD_PUT		,  true, false, #name )
 
 								/** Register handlers for public resources, that's always can
@@ -54,25 +55,17 @@ void			cr_set_log_enabled( bool value );
 
 				/** Register resource handler. */
 void			cr_register_handler(
-					cr_http_method	 method,
-					const char*			 resource_name,
-					cr_api_callback_t handler,
-					bool				 for_admin_only	 = false,
-					bool			 	 public_resource = false );
+					cr_http_method		method,
+					const char*			resource_name,
+					cr_api_callback_t	handler,
+					bool				for_admin_only	= false,
+					bool			 	public_resource = false );
 	
 				/** Returns total count of processed requests. */
 size_t			cr_request_count( void );
 
-				/** Starts server, returns FALSE if cannot start,
-				 *  @ports is comma separated list of [ip_address:]port[s] values,
-				 *  examples: 80, 443s, 127.0.0.1:3128, 1.2.3.4:8080s. */
-bool			cr_start(
-					const char*		ports		= "8080",
-					cr_http_auth	auth_kind	= CR_AUTH_BASIC,
-					const char*		auth_file	= "",
-					bool			log_enabled	= true,
-					const char*		log_file	= "",
-					const char*		pem_file	= "" );
+				/** Starts server, returns FALSE if cannot start. */
+bool			cr_start( cr_options& opts );
 
 				/** Stops running server. */
 void			cr_stop( void );
