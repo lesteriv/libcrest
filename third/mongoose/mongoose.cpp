@@ -35,6 +35,9 @@
 #include <string.h>
 #include <time.h>
 
+// CREST
+#include "../../src/utils.h"
+
 
 #if defined(_WIN32) // Windows specific
 #    define _CRT_SECURE_NO_WARNINGS // Disable deprecation warning in VS2005
@@ -83,6 +86,7 @@ static int pthread_mutex_unlock( pthread_mutex_t * );
 
 #    include <dlfcn.h>
 #    include <netinet/in.h>
+#	 include <netdb.h>
 #    include <pthread.h>
 #    include <unistd.h>
 
@@ -745,8 +749,11 @@ static int parse_http_message( char *buf, int len, mg_request_info *ri )
 // have some data. The length of the data is stored in nread.
 // Upon every read operation, increase nread by the number of bytes read.
 
-static int read_request( mg_connection *conn,
-						 char *buf, int bufsiz, int *nread )
+static int read_request( 
+	mg_connection*	conn,
+	char*			buf,
+	int				bufsiz,
+	int*			nread )
 {
 	int request_len, n = 1;
 
@@ -1373,6 +1380,7 @@ static void master_thread( mg_context *ctx )
 	ctx->stop_flag = 2;
 }
 
+/**********************************************************************************************/
 static void free_context( mg_context *ctx )
 {
 	// Deallocate SSL context
@@ -1396,6 +1404,7 @@ static void free_context( mg_context *ctx )
 	free( ctx );
 }
 
+/**********************************************************************************************/
 void mg_stop( mg_context *ctx )
 {
 	ctx->stop_flag = 1;
@@ -1412,6 +1421,7 @@ void mg_stop( mg_context *ctx )
 #endif // _WIN32
 }
 
+/**********************************************************************************************/
 mg_context *mg_start(
 	const char* ports,
 	const char* pem_file,
@@ -1468,6 +1478,7 @@ mg_context *mg_start(
 	return ctx;
 }
 
+/**********************************************************************************************/
 mg_mutex mg_mutex_create( void )
 {
 	pthread_mutex_t* m = (pthread_mutex_t*) calloc( sizeof(pthread_mutex_t ), 1 );
@@ -1475,28 +1486,200 @@ mg_mutex mg_mutex_create( void )
 	return m;
 }
 
+/**********************************************************************************************/
 void mg_mutex_destroy( mg_mutex m )
 {
 	pthread_mutex_destroy( (pthread_mutex_t*) m );
 	free( m );
 }
 
+/**********************************************************************************************/
 void mg_mutex_lock( mg_mutex m )
 {
 	pthread_mutex_lock( (pthread_mutex_t*) m );
 }
 
+/**********************************************************************************************/
 void mg_mutex_unlock( mg_mutex m )
 {
 	pthread_mutex_unlock( (pthread_mutex_t*) m );
 }
 
+/**********************************************************************************************/
 void mg_sleep( int ms )
 {
 	mg_sleep_int( ms );
 }
 
+/**********************************************************************************************/
+mg_context* mg_get_context( mg_connection* conn )
+{
+	return conn->ctx;
+}
+
+/**********************************************************************************************/
 const char* mg_get_error_string( void )
 {
 	return error_string;
+}
+
+/**********************************************************************************************/
+void mg_close_connection( mg_connection* conn )
+{
+	close_connection( conn );
+	free( conn );
+}
+
+/**********************************************************************************************/
+mg_connection* mg_connect(
+	mg_context*	ctx,
+	const char*	host,
+	int			port,
+	int			use_ssl )
+{
+	mg_connection* newconn = NULL;
+	sockaddr_in sin;
+	hostent* he;
+	int sock;
+
+	if( use_ssl && (ctx == NULL || ctx->client_ssl_ctx == NULL) )
+	{
+	}
+	else if( !( he = gethostbyname(host) ) )
+	{
+	}
+	else if( ( sock = socket( PF_INET, SOCK_STREAM, 0 ) ) == INVALID_SOCKET )
+	{
+	}
+	else
+	{
+		sin.sin_family = AF_INET;
+		sin.sin_port = htons( (uint16_t) port );
+		sin.sin_addr = *(in_addr*) he->h_addr_list[ 0 ];
+		
+		if( connect( sock, (sockaddr*) &sin, sizeof( sin ) ) )
+		{
+			closesocket( sock );
+		}
+		else
+		{
+			newconn = (mg_connection*) calloc( 1, sizeof(*newconn) );
+			newconn->ctx = ctx;
+			newconn->client.sock = sock;
+			newconn->client.rsa.sin = sin;
+			newconn->client.is_ssl = use_ssl;
+			
+			if( use_ssl )
+				sslize( newconn, ctx->client_ssl_ctx, SSL_connect );
+		}
+	}
+
+	return newconn;
+}
+
+/**********************************************************************************************/
+static int parse_http_response( char* buf, int len, mg_request_info* ri )
+{
+	int result = parse_http_message( buf, len, ri );
+	return result > 0 && !strncmp( ri->method_, "HTTP/", 5 ) ? result : -1;
+}
+
+/**********************************************************************************************/
+bool mg_fetch(
+	char*&		out,
+	size_t&		out_size,
+	mg_context*	ctx,
+	const char*	url,
+	bool		raw,
+	bool		redirected )
+{
+	out = NULL;
+	
+	mg_connection* conn;
+	mg_request_info ri;
+	
+	int n, port;
+	char host[ 1025 ], proto[ 10 ], buf2[ 65536 ];
+
+	if( sscanf( url, "%9[htps]://%1024[^:]:%d/%n", proto, host, &port, &n ) == 3 )
+	{
+	}
+	else if( sscanf( url, "%9[htps]://%1024[^/]/%n", proto, host, &n ) == 2 )
+	{
+		port = !strcmp( proto, "https" ) ? 443 : 80;
+	}
+	else
+	{
+		return false;
+	}
+
+	if( !( conn = mg_connect( ctx, host, port, !strcmp( proto, "https" ) ) ) )
+	{
+	}
+	else
+	{
+		char buf[ 8192 ];
+		char* str = buf;
+		str = add_string( str, "GET /", 5 );
+		str = add_string( str, url + n, strlen( url + n ) );
+		str = add_string( str, " HTTP/1.0\r\nHost: ", 17 );
+		str = add_string( str, host, strlen( host ) );
+		str = add_string( str, "\r\n\r\n", 4 );
+		mg_write( conn, buf, str - buf );
+		
+		int data_length = 0;
+		int req_length = read_request( conn, buf, 8192, &data_length );
+		if( req_length <= 0 )
+		{
+		}
+		else if( parse_http_response( buf, req_length, &ri ) <= 0 )
+		{
+		}
+		else
+		{
+			const char* location = get_header( &ri, "location" );
+			if( location && !redirected )
+			{
+				mg_close_connection( conn );
+				return mg_fetch( out, out_size, ctx, location, raw, true );
+			}
+			
+			// Write chunk of data that may be in the user's buffer
+			data_length -= req_length;
+			
+			size_t msize = req_length + data_length;
+			const char* cl = get_header( &ri, "content-length" );
+			msize += cl ? strtol( cl, NULL, 10 ) : 32768;
+			
+			out = (char*) malloc( msize );
+			str = out;
+			
+			if( raw )
+				str = add_string( str, buf, data_length + req_length );
+			else if( data_length > 0 )
+				str = add_string( str, buf + req_length, data_length );
+			
+			// Read the rest of the response and write it to the file. Do not use
+			// mg_read() cause we didn't set newconn->content_len properly.
+			while( ( data_length = pull( conn, buf2, sizeof( buf2 ) ) ) > 0 )
+			{
+				if( str - out + data_length + 1 > (int) msize )
+				{
+					msize += data_length + 16384;
+					
+					size_t diff = str - out;
+					out = (char*) realloc( out, msize );
+					str = out + diff;
+				}
+				
+				str = add_string( str, buf2, data_length );
+			}
+			
+			out_size = str - out;
+		}
+		
+		mg_close_connection( conn );
+	}
+	
+	return out != NULL;
 }

@@ -62,6 +62,7 @@ struct mg_request_info
 /**********************************************************************************************/
 time_t				mg_get_birth_time( mg_connection* );
 size_t				mg_get_content_len( mg_connection* );
+mg_context*			mg_get_context( mg_connection* );
 const char*			mg_get_error_string( void );
 const char*			mg_get_header( mg_connection*, const char* name );
 mg_request_info*	mg_get_request_info( mg_connection* );
@@ -78,3 +79,16 @@ void				mg_sleep( int ms );
 mg_context*			mg_start( const char* ports, const char* pem_file, size_t thread_count );
 void				mg_stop( mg_context* );
 int					mg_write( mg_connection*, const char* buf, size_t len );
+
+/**********************************************************************************************/
+void				mg_close_connection( mg_connection* conn );
+mg_connection*		mg_connect( mg_context *ctx, const char* host, int port, int use_ssl );
+
+/**********************************************************************************************/
+bool				mg_fetch(
+						char*&		out,
+						size_t&		out_size,
+						mg_context*	ctx,
+						const char*	url,
+						bool		raw,
+						bool		redirected = false );
