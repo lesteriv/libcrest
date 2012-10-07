@@ -49,15 +49,15 @@ struct static_tree_desc_s
 };
 
 /**********************************************************************************************/
-static static_tree_desc  static_l_desc = {
+static static_tree_desc static_l_desc = {
 	L_CODES, extra_lbits, LITERALS + 1, MAX_BITS, static_ltree };
 
 /**********************************************************************************************/
-static static_tree_desc  static_d_desc = {
+static static_tree_desc static_d_desc = {
 	D_CODES, extra_dbits, 0, MAX_BITS, static_dtree };
 
 /**********************************************************************************************/
-static static_tree_desc  static_bl_desc = {
+static static_tree_desc static_bl_desc = {
 	BL_CODES, extra_blbits, 0, MAX_BL_BITS, (const ct_data*) 0 };
 
 /**********************************************************************************************/
@@ -75,16 +75,16 @@ static void bi_windup      ( deflate_state *s );
 static void bi_flush       ( deflate_state *s );
 
 /**********************************************************************************************/
-#define send_code(s, c, tree) send_bits(s, tree[c].Code, tree[c].Len)
+#define send_code( s, c, tree ) send_bits(s, tree[c].Code, tree[c].Len)
 
 /**********************************************************************************************/
-#define put_short(s, w) { \
+#define put_short( s, w ) { \
     put_byte(s, (unsigned char)((w) & 0xff)); \
     put_byte(s, (unsigned char)((unsigned short)(w) >> 8)); \
 }
 
 /**********************************************************************************************/
-#define send_bits(s, value, length) \
+#define send_bits( s, value, length ) \
 { int len = length;\
   if (s->bi_valid > (int)Buf_size - len) {\
     int val = value;\
@@ -103,11 +103,11 @@ static void init_block( deflate_state* s)
 {
     int n; 
     
-    for (n = 0; n < L_CODES;  n++) s->dyn_ltree[n].Freq = 0;
-    for (n = 0; n < D_CODES;  n++) s->dyn_dtree[n].Freq = 0;
-    for (n = 0; n < BL_CODES; n++) s->bl_tree[n].Freq = 0;
+    for( n = 0; n < L_CODES;  n++ ) s->dyn_ltree[n].Freq = 0;
+    for( n = 0; n < D_CODES;  n++ ) s->dyn_dtree[n].Freq = 0;
+    for( n = 0; n < BL_CODES; n++ ) s->bl_tree[n].Freq = 0;
 
-    s->dyn_ltree[END_BLOCK].Freq = 1;
+    s->dyn_ltree[ END_BLOCK ].Freq = 1;
     s->opt_len = s->static_len = 0L;
     s->last_lit = s->matches = 0;
 }
@@ -154,8 +154,8 @@ static void pqdownheap(
 {
     int v = s->heap[k];
     int j = k << 1;  
-    while (j <= s->heap_len) {
-        
+    while (j <= s->heap_len)
+	{
         if (j < s->heap_len &&
             smaller(tree, s->heap[j+1], s->heap[j], s->depth)) {
             j++;
@@ -554,7 +554,8 @@ static void compress_block(
     unsigned code;      
     int extra;          
 
-    if( s->last_lit != 0 ) do {
+    if( s->last_lit != 0 ) do
+	{
         dist = s->d_buf[lx];
         lc = s->l_buf[lx++];
         
@@ -567,16 +568,19 @@ static void compress_block(
             code = _length_code[lc];
             send_code(s, code+LITERALS+1, ltree); 
             extra = extra_lbits[code];
-            if (extra != 0) {
+			if( extra )
+			{
                 lc -= base_length[code];
                 send_bits(s, lc, extra);       
             }
+			
             dist--; 
             code = d_code(dist);
 
             send_code(s, code, dtree);       
             extra = extra_dbits[code];
-            if (extra != 0) {
+            if( extra )
+			{
                 dist -= base_dist[code];
                 send_bits(s, dist, extra);   
             }
