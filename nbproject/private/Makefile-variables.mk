@@ -9,5 +9,4 @@
 # release_64 configuration
 # examples configuration
 # examples_debug configuration
-# examples_minimal configuration
 # tests configuration

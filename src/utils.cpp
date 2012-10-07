@@ -149,9 +149,9 @@ void create_responce(
 		size_t count = headers->count();
 		for( size_t i = 0 ; i < count ; ++i )
 		{
-			str = add_string( str, headers->name( i ), strlen( headers->name( i ) ) );
+			str = add_string( str, headers->name( i ), headers->name_len( i ) );
 			str = add_string( str, ": ", 2 );
-			str = add_string( str, headers->value( i ), strlen( headers->value( i ) ) );
+			str = add_string( str, headers->value( i ), headers->value_len( i ) );
 			str = add_string ( str, "\r\n", 2 );
 		}
 	}
@@ -181,9 +181,9 @@ void create_responce_header(
 		size_t count = headers->count();
 		for( size_t i = 0 ; i < count ; ++i )
 		{
-			str = add_string( str, headers->name( i ), strlen( headers->name( i ) ) );
+			str = add_string( str, headers->name( i ), headers->name_len( i ) );
 			str = add_string( str, ": ", 2 );
-			str = add_string( str, headers->value( i ), strlen( headers->value( i ) ) );
+			str = add_string( str, headers->value( i ), headers->value_len( i ) );
 			str = add_string ( str, "\r\n", 2 );
 		}
 	}

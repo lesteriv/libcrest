@@ -44,6 +44,10 @@ class cr_headers : public cr_headers_internal
 		size_t				size( void );
 		
 		const char*			value( size_t index ) const;
-		const char*			value( const char* name ) const;
+		
+		const char*			value( 
+								const char* name,
+								size_t		name_len = (size_t) -1 ) const;
+		
 		size_t				value_len( size_t index ) const;
 };

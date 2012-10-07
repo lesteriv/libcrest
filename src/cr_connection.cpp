@@ -50,9 +50,11 @@ size_t cr_connection::get_content_length( void ) const
 }
 
 /**********************************************************************************************/
-const char* cr_connection::get_http_header( const char* name ) const
+const char* cr_connection::get_http_header(
+	const char*	name,
+	size_t		name_len ) const
 {
-	return mg_get_header( conn_, name );
+	return mg_get_request_info( conn_ )->headers_.value( name, name_len );
 }
 
 /**********************************************************************************************/
@@ -129,7 +131,7 @@ void cr_connection::respond(
 #ifndef NO_DEFLATE	
 	if( g_deflate && data && data_len > 128 )
 	{
-		const char* enc_header = mg_get_header( conn_, "accept-encoding" );
+		const char* enc_header = get_http_header( "accept-encoding", 15 );
 		if( enc_header && strstr( enc_header, "deflate" ) )
 		{
 			size_t out_len = compress_bound( data_len );

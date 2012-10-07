@@ -9,9 +9,7 @@
             <header-extensions>h</header-extensions>
             <sourceEncoding>UTF-8</sourceEncoding>
             <make-dep-projects/>
-            <sourceRootList>
-                <sourceRootElem>third/zlib</sourceRootElem>
-            </sourceRootList>
+            <sourceRootList/>
             <confList>
                 <confElem>
                     <name>debug_native</name>
@@ -35,10 +33,6 @@
                 </confElem>
                 <confElem>
                     <name>examples_debug</name>
-                    <type>1</type>
-                </confElem>
-                <confElem>
-                    <name>examples_minimal</name>
                     <type>1</type>
                 </confElem>
                 <confElem>

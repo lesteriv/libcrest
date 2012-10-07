@@ -34,15 +34,17 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/src/cr_connection.o \
+	${OBJECTDIR}/examples/cache_proxy.o \
 	${OBJECTDIR}/src/utils.o \
 	${OBJECTDIR}/third/zlib/trees.o \
 	${OBJECTDIR}/third/zlib/deflate.o \
-	${OBJECTDIR}/src/crest_user_manager.o \
 	${OBJECTDIR}/src/crest.o \
+	${OBJECTDIR}/src/cr_user_manager.o \
+	${OBJECTDIR}/src/cr_headers.o \
 	${OBJECTDIR}/src/auth_digest.o \
-	${OBJECTDIR}/examples/proc.o \
+	${OBJECTDIR}/src/cr_mutex.o \
 	${OBJECTDIR}/third/mongoose/mongoose.o \
-	${OBJECTDIR}/src/crest_connection.o \
 	${OBJECTDIR}/src/auth_basic.o
 
 
@@ -64,11 +66,21 @@ LDLIBSOPTIONS=-lpthread -ldl
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
-	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc
+	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/storage
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc: ${OBJECTFILES}
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/storage: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	gcc -fno-exceptions -fno-rtti -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc ${OBJECTFILES} ${LDLIBSOPTIONS} 
+	g++ -fno-exceptions -fno-rtti -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/storage ${OBJECTFILES} ${LDLIBSOPTIONS} 
+
+${OBJECTDIR}/src/cr_connection.o: src/cr_connection.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_connection.o src/cr_connection.cpp
+
+${OBJECTDIR}/examples/cache_proxy.o: examples/cache_proxy.cpp 
+	${MKDIR} -p ${OBJECTDIR}/examples
+	${RM} $@.d
+	$(COMPILE.cc) -g -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/cache_proxy.o examples/cache_proxy.cpp
 
 ${OBJECTDIR}/src/utils.o: src/utils.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
@@ -85,35 +97,35 @@ ${OBJECTDIR}/third/zlib/deflate.o: third/zlib/deflate.cpp
 	${RM} $@.d
 	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/zlib/deflate.o third/zlib/deflate.cpp
 
-${OBJECTDIR}/src/crest_user_manager.o: src/crest_user_manager.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_user_manager.o src/crest_user_manager.cpp
-
 ${OBJECTDIR}/src/crest.o: src/crest.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest.o src/crest.cpp
+
+${OBJECTDIR}/src/cr_user_manager.o: src/cr_user_manager.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_user_manager.o src/cr_user_manager.cpp
+
+${OBJECTDIR}/src/cr_headers.o: src/cr_headers.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_headers.o src/cr_headers.cpp
 
 ${OBJECTDIR}/src/auth_digest.o: src/auth_digest.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/auth_digest.o src/auth_digest.cpp
 
-${OBJECTDIR}/examples/proc.o: examples/proc.cpp 
-	${MKDIR} -p ${OBJECTDIR}/examples
+${OBJECTDIR}/src/cr_mutex.o: src/cr_mutex.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/proc.o examples/proc.cpp
+	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_mutex.o src/cr_mutex.cpp
 
 ${OBJECTDIR}/third/mongoose/mongoose.o: third/mongoose/mongoose.cpp 
 	${MKDIR} -p ${OBJECTDIR}/third/mongoose
 	${RM} $@.d
 	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.cpp
-
-${OBJECTDIR}/src/crest_connection.o: src/crest_connection.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest_connection.o src/crest_connection.cpp
 
 ${OBJECTDIR}/src/auth_basic.o: src/auth_basic.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
@@ -126,7 +138,7 @@ ${OBJECTDIR}/src/auth_basic.o: src/auth_basic.cpp
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
 	${RM} -r ${CND_BUILDDIR}/${CND_CONF}
-	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc
+	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/storage
 
 # Subprojects
 .clean-subprojects:

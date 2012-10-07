@@ -98,11 +98,16 @@ const char* cr_headers::value( size_t index ) const
 }
 
 /**********************************************************************************************/
-const char* cr_headers::value( const char* name ) const
+const char* cr_headers::value( 
+	const char*	name,
+	size_t		name_len ) const
 {
+	if( name_len  == (size_t) -1 )
+		name_len = strlen( name );
+	
 	for( size_t i = 0 ; i < count_ ; ++i )
 	{
-		if( !strcmp( names_[ i ], name ) )
+		if( names_len_[ i ] == name_len && !strcmp( names_[ i ], name ) )
 			return values_[ i ];
 	}
 	

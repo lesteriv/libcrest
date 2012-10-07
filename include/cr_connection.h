@@ -35,7 +35,9 @@ class cr_connection : public cr_connection_internal
 		
 								/** Returns value of request header by name,
 								 *  name must be in lower case. */
-		const char*				get_http_header( const char* name ) const;
+		const char*				get_http_header( 
+									const char*	name,
+									size_t		name_len = (size_t) -1 ) const;
 
 								/** Returns request's method. */
 		const char*				get_http_method( void ) const;

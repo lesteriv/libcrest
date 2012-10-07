@@ -31,7 +31,7 @@ DEFAULTCONF=debug_native
 CONF=${DEFAULTCONF}
 
 # All Configurations
-ALLCONFS=debug_native release_native release_32 release_64 examples examples_debug examples_minimal tests 
+ALLCONFS=debug_native release_native release_32 release_64 examples examples_debug tests 
 
 
 # build

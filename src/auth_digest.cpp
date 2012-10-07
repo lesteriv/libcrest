@@ -87,7 +87,7 @@ static bool parse_auth_header(
 {
 	memset( &adata, 0, sizeof( adata ) );
 	
-	char* s = (char*) conn.get_http_header( "authorization" );
+	char* s = (char*) conn.get_http_header( "authorization", 13 );
 	if( !s )
 		return false;
 	

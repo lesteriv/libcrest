@@ -61,7 +61,7 @@ bool auth_basic(
 	bool			admin )
 {
 	bool res = false;
-	const char* auth = conn.get_http_header( "authorization" );
+	const char* auth = conn.get_http_header( "authorization", 13 );
 	
 	size_t auth_len = auth ? strlen( auth ) : 0;
 	char *buf = (char*) alloca( auth_len + 1 );
