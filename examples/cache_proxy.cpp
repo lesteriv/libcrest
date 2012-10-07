@@ -33,12 +33,12 @@ using namespace std;
 
 /**********************************************************************************************/
 static unordered_map<string,shared_ptr<string>> g_cache;
-static string	g_etag = "0";
-static int64_t	g_etag_counter = 0;
+static int64_t	g_etag_counter 	= time( NULL );
+static string	g_etag 			= to_string( g_etag_counter );
 static cr_mutex g_mutex_cache;
 static cr_mutex g_mutex_etag;
 static cr_mutex g_mutex_source;
-static string	g_source = "http://www.ubuntu.com";
+static string	g_source 		= "http://www.ubuntu.com";
 
 
 //////////////////////////////////////////////////////////////////////////
