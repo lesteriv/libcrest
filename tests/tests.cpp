@@ -35,85 +35,85 @@ int main( void )
 	// user_manager
 	// -----------------------------------------------------------------------
 	
-	TEST( crest_user_manager::crest_user_manager )
+	TEST( cr_user_manager::cr_user_manager )
 	{
-		the_crest_user_manager.clean();
+		the_cr_user_manager.clean();
 		
-		RETURN( the_crest_user_manager.get_user_count() == 0 );
+		RETURN( the_cr_user_manager.get_user_count() == 0 );
 	}
 
-	TEST( crest_user_manager::flush )
+	TEST( cr_user_manager::flush )
 	{
-		the_crest_user_manager.clean();
+		the_cr_user_manager.clean();
 		
-		the_crest_user_manager.set_auth_file( "/tmp/auth.passwd" );
+		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd" );
 		bool res = file_exists( "/tmp/auth.passwd" );
 		
 		remove( "/tmp/auth.passwd" );
 		RETURN( res );
 	}
 	
-	TEST( crest_user_manager::load )
+	TEST( cr_user_manager::load )
 	{
-		the_crest_user_manager.clean();
+		the_cr_user_manager.clean();
 		
-		the_crest_user_manager.set_auth_file( "/tmp/auth.passwd" );
-		the_crest_user_manager.update_user_password( "root", "qwerty" );
-		the_crest_user_manager.set_auth_file( "/tmp/auth.passwd2" );
+		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd" );
+		the_cr_user_manager.update_user_password( "root", "qwerty" );
+		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd2" );
 		
-		bool res = !the_crest_user_manager.auth( "root", "qwerty", false );
-		the_crest_user_manager.set_auth_file( "/tmp/auth.passwd" );
-		res = res && the_crest_user_manager.auth( "root", "qwerty", false );
+		bool res = !the_cr_user_manager.auth( "root", "qwerty", false );
+		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd" );
+		res = res && the_cr_user_manager.auth( "root", "qwerty", false );
 		
 		remove( "/tmp/auth.passwd" );
 		remove( "/tmp/auth.passwd2" );
 		RETURN( res );
 	}
 	
-	TEST( crest_user_manager::get_auth_file and
-		  crest_user_manager::set_auth_file )
+	TEST( cr_user_manager::get_auth_file and
+		  cr_user_manager::set_auth_file )
 	{
-		the_crest_user_manager.clean();
+		the_cr_user_manager.clean();
 		
-		the_crest_user_manager.set_auth_file( "/tmp/auth.passwd" );
-		bool res = !strcmp( "/tmp/auth.passwd", the_crest_user_manager.get_auth_file() );
+		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd" );
+		bool res = !strcmp( "/tmp/auth.passwd", the_cr_user_manager.get_auth_file() );
 		
 		remove( "/tmp/auth.passwd" );
 		RETURN( res );
 	}
 	
-	TEST( crest_user_manager::get_user_count )
+	TEST( cr_user_manager::get_user_count )
 	{
-		the_crest_user_manager.clean();
+		the_cr_user_manager.clean();
 		
-		bool res = the_crest_user_manager.get_user_count() == 0;
-		the_crest_user_manager.set_auth_file( "/tmp/auth.passwd" );
-		res = res && the_crest_user_manager.get_user_count() == 1;
+		bool res = the_cr_user_manager.get_user_count() == 0;
+		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd" );
+		res = res && the_cr_user_manager.get_user_count() == 1;
 		
 		remove( "/tmp/auth.passwd" );
 		RETURN( res );
 	}
 	
-	TEST( crest_user_manager::get_user_flags )
+	TEST( cr_user_manager::get_user_flags )
 	{
-		the_crest_user_manager.clean();
+		the_cr_user_manager.clean();
 		
-		the_crest_user_manager.set_auth_file( "/tmp/auth.passwd" );
-		bool res = the_crest_user_manager.get_user_is_admin( "root" );
+		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd" );
+		bool res = the_cr_user_manager.get_user_is_admin( "root" );
 		
 		remove( "/tmp/auth.passwd" );
 		RETURN( res );
 	}
 	
-	TEST( crest_user_manager::get_users )
+	TEST( cr_user_manager::get_users )
 	{
-		the_crest_user_manager.clean();
+		the_cr_user_manager.clean();
 		
-		the_crest_user_manager.set_auth_file( "/tmp/auth.passwd" );
+		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd" );
 		
 		size_t count;
 		char** users;
-		the_crest_user_manager.get_users( count, users );
+		the_cr_user_manager.get_users( count, users );
 		
 		bool res = ( count == 1 ) && ( !strcmp( users[ 0 ], "root" ) );
 		free( users );
@@ -122,66 +122,66 @@ int main( void )
 		RETURN( res );
 	}
 
-	TEST( crest_user_manager::add_user and
-		  crest_user_manager::auth	   and
-		  crest_user_manager::clean )
+	TEST( cr_user_manager::add_user and
+		  cr_user_manager::auth	   and
+		  cr_user_manager::clean )
 	{
-		the_crest_user_manager.clean();
+		the_cr_user_manager.clean();
 		
-		the_crest_user_manager.set_auth_file( "/tmp/auth.passwd" );
-		the_crest_user_manager.add_user( "test", "qwerty", true );
+		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd" );
+		the_cr_user_manager.add_user( "test", "qwerty", true );
 		
-		bool res = the_crest_user_manager.get_user_count() == 2;
-		res = res && the_crest_user_manager.auth( "test", "qwerty", true );
+		bool res = the_cr_user_manager.get_user_count() == 2;
+		res = res && the_cr_user_manager.auth( "test", "qwerty", true );
 	
-		the_crest_user_manager.clean();
-		res = res && !the_crest_user_manager.get_auth_file();
-		res = res && !the_crest_user_manager.get_user_count();
+		the_cr_user_manager.clean();
+		res = res && !the_cr_user_manager.get_auth_file();
+		res = res && !the_cr_user_manager.get_user_count();
 		
 		remove( "/tmp/auth.passwd" );
 		RETURN( res );
 	}
 
-	TEST( crest_user_manager::delete_user )
+	TEST( cr_user_manager::delete_user )
 	{
-		the_crest_user_manager.clean();
+		the_cr_user_manager.clean();
 		
-		the_crest_user_manager.set_auth_file( "/tmp/auth.passwd" );
-		the_crest_user_manager.add_user( "test", "qwerty", true );
+		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd" );
+		the_cr_user_manager.add_user( "test", "qwerty", true );
 		
-		bool res = the_crest_user_manager.get_user_count() == 2;
-		the_crest_user_manager.delete_user( "test" );
-		res = res && the_crest_user_manager.get_user_count() == 1;
+		bool res = the_cr_user_manager.get_user_count() == 2;
+		the_cr_user_manager.delete_user( "test" );
+		res = res && the_cr_user_manager.get_user_count() == 1;
 		
 		remove( "/tmp/auth.passwd" );
 		RETURN( res );
 	}
 	
-	TEST( crest_user_manager::update_user_flags )
+	TEST( cr_user_manager::update_user_flags )
 	{
-		the_crest_user_manager.clean();
+		the_cr_user_manager.clean();
 		
-		the_crest_user_manager.set_auth_file( "/tmp/auth.passwd" );
-		the_crest_user_manager.add_user( "test", "qwerty", false );
+		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd" );
+		the_cr_user_manager.add_user( "test", "qwerty", false );
 		
-		the_crest_user_manager.update_user_is_admin( "test", true );
-		bool res = the_crest_user_manager.get_user_is_admin( "test" );
+		the_cr_user_manager.update_user_is_admin( "test", true );
+		bool res = the_cr_user_manager.get_user_is_admin( "test" );
 		
 		remove( "/tmp/auth.passwd" );
 		RETURN( res );
 	}
 	
-	TEST( crest_user_manager::update_user_password )
+	TEST( cr_user_manager::update_user_password )
 	{
-		the_crest_user_manager.clean();
+		the_cr_user_manager.clean();
 		
-		the_crest_user_manager.set_auth_file( "/tmp/auth.passwd" );
-		the_crest_user_manager.add_user( "test", "qwerty", false );
+		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd" );
+		the_cr_user_manager.add_user( "test", "qwerty", false );
 		
-		bool res = the_crest_user_manager.auth( "test", "qwerty", false );
+		bool res = the_cr_user_manager.auth( "test", "qwerty", false );
 		
-		the_crest_user_manager.update_user_password( "test", "ytrewq" );
-		res = res && the_crest_user_manager.auth( "test", "ytrewq", false );
+		the_cr_user_manager.update_user_password( "test", "ytrewq" );
+		res = res && the_cr_user_manager.auth( "test", "ytrewq", false );
 		
 		remove( "/tmp/auth.passwd" );
 		RETURN( res );
