@@ -95,9 +95,9 @@ GET( * )( cr_connection& conn )
 		if( conn.fetch( curl.c_str(), content, content_size, &headers ) )
 		{
 			cr_headers cache_headers;
-			const char* type = headers.value( "content-type" );
+			const char* type = headers.value( "content-type", 12 );
 			if( type )
-				cache_headers.add( "content-type", type );
+				cache_headers.add( "content-type", type, 12 );
 			
 			LOCK_ETAG
 			
@@ -177,6 +177,8 @@ PUT( _source )( cr_connection& conn )
 int main( void )
 {
 	cr_options opts;
+	opts.thread_count = 64;
+	
 	if( !cr_start( opts ) )
 		fputs( cr_error_string(), stdout );
 }
