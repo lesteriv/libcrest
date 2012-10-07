@@ -17,6 +17,17 @@
 /**********************************************************************************************/
 // Functions
 
+				/** Adds char to string. */
+inline char*	add_char(
+					char*			dest,
+					char			c )
+				{
+					*dest++ = c;
+					*dest = 0;
+					
+					return dest;
+				}
+
 				/** Adds string to another. */
 inline char*	add_string(
 					char*			dest,
@@ -28,7 +39,7 @@ inline char*	add_string(
 				}
 
 				/** Decode base64-encoded data, return count of bytes in result. */
-size_t			cr_base64_decode(
+size_t			base64_decode(
 					char*			out,
 					const char*		data,
 					size_t			data_size );
@@ -67,7 +78,7 @@ bool			file_exists( const char* path );
 size_t			file_size( const char* path );
 
 				/** Calculate md5 hash. */
-void			cr_md5(
+void			md5(
 					char			hash[ 16 ],
 					size_t			data_count,
 					const char**	data,

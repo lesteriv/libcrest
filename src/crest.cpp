@@ -34,11 +34,11 @@
 
 /**********************************************************************************************/
 static cr_connection*	g_conns[ 20 ];
-static mg_mutex				g_conns_mutex;
-static const char*			g_error;
-static size_t				g_request_count;
-static bool					g_shutdown;
-static time_t				g_time_start;
+static mg_mutex			g_conns_mutex;
+static const char*		g_error;
+static size_t			g_request_count;
+static bool				g_shutdown;
+static time_t			g_time_start;
 
 /**********************************************************************************************/
 #ifndef NO_AUTH
@@ -46,12 +46,17 @@ static cr_http_auth		g_auth_kind;
 #endif // NO_AUTH
 
 /**********************************************************************************************/
+#ifndef NO_DEFLATE
+bool g_deflate;
+#endif // NO_DEFLATE
+
+/**********************************************************************************************/
 #ifndef NO_LOG
-static bool					g_log_enabled;
-static FILE*				g_log_file;
-static char*				g_log_file_path;
-static mg_mutex				g_log_mutex;
-static size_t				g_log_size;
+static bool				g_log_enabled;
+static FILE*			g_log_file;
+static char*			g_log_file_path;
+static mg_mutex			g_log_mutex;
+static size_t			g_log_size;
 #endif // NO_LOG
 
 
@@ -149,19 +154,33 @@ struct sl_connection : public cr_connection
 		
 		char stime[ 32 ];
 		tm* lt = localtime( &t );
-		strftime( stime, 32, "%y-%m-%d %H:%M:%S", lt );
+		strftime( stime, 32, "%y-%m-%d %H:%M:%S ", lt );
 
-		char buf[ 128 ];
-		int blen = snprintf( 
-			buf, 127, "%s %-6s %-40s from %d.%d.%d.%d:%d\n",
-			stime, request->method_, request->uri_,
-			int( request->remote_ip_ >> 24 ),
-			int( ( request->remote_ip_ >> 16 ) & 0xFF ),
-			int( ( request->remote_ip_ >> 8  ) & 0xFF ),
-			int( request->remote_ip_ & 0xFF ),
-			int( request->remote_port_ ) );
+		size_t mlen = strlen( request->method_ );
+		if( mlen > 10 ) mlen = 10;
 
-		buf[ 127 ] = 0;
+		size_t ulen = strlen( request->uri_ );
+		if( ulen > 128 ) mlen = 128;
+		
+		char buf[ 256 ];
+		char* str = buf;
+		str = add_string( str, stime, strlen( stime ) );
+		str = add_string( str, request->method_, mlen );
+		str = add_char	( str, ' ' );
+		str = add_string( str, request->uri_, ulen );
+		str = add_string( str, " from ", 6 );
+		str = to_string	( str, request->remote_ip_ >> 24 );
+		str = add_char	( str, '.' );
+		str = to_string	( str, ( request->remote_ip_ >> 16 ) & 0xFF );
+		str = add_char	( str, '.' );
+		str = to_string	( str, ( request->remote_ip_ >> 8  ) & 0xFF );
+		str = add_char	( str, '.' );
+		str = to_string	( str, request->remote_ip_ & 0xFF );
+		str = add_char	( str, ':' );
+		str = to_string	( str, request->remote_port_ );
+		str = add_char	( str, '\n' );
+		int blen = str - buf;
+
 		mg_mutex_lock( g_log_mutex ); // ------------------------
 
 		if( g_log_file_path && *g_log_file_path )
@@ -171,7 +190,7 @@ struct sl_connection : public cr_connection
 
 			// Move too big log file
 			g_log_size += blen;
-			if( g_log_size > 100000 )
+			if( g_log_size > 10000000 )
 			{
 				size_t glen = strlen( g_log_file_path );
 				
@@ -490,18 +509,8 @@ size_t cr_request_count( void )
 }
 
 /**********************************************************************************************/
-bool cr_start(
-	const char*		ports,
-	cr_http_auth	auth_kind,
-	const char*		auth_file,
-	bool			log_enabled,
-	const char*		log_file,
-	const char*		pem_file )
+bool cr_start( cr_options& opts )
 {
-	(void) auth_kind;
-	(void) auth_file;
-	(void) log_enabled;
-	(void) log_file;
 	
 	if( g_time_start )
 	{
@@ -509,6 +518,12 @@ bool cr_start(
 		return false;
 	}
 
+	if( !opts.thread_count || opts.thread_count > 128 )
+	{
+		g_error = cr_strdup( "Invalid thread count" );
+		return false;
+	}
+	
 	// Allocate mutexes
 	g_conns_mutex = mg_mutex_create();
 	
@@ -519,19 +534,23 @@ bool cr_start(
 	// Init authentification
 #ifndef NO_AUTH
 
-	g_auth_kind = auth_file && *auth_file ? auth_kind : CR_AUTH_NONE;
-	the_cr_user_manager.set_auth_file( auth_file );
+	g_auth_kind = opts.auth_file && *opts.auth_file ? opts.auth_kind : CR_AUTH_NONE;
+	the_cr_user_manager.set_auth_file( opts.auth_file );
 
 #endif // NO_AUTH
 	
+#ifndef NO_DEFLATE	
+	g_deflate = opts.deflate;
+#endif // NO_DEFLATE
+		
 	// Init logging
 #ifndef NO_LOG
 
-	g_log_enabled = log_enabled && log_file;
+	g_log_enabled = opts.log_enabled && opts.log_file && *opts.log_file;
 	g_log_mutex   = mg_mutex_create();
 	
-	if( log_file && *log_file )
-		g_log_file_path = cr_strdup( log_file );
+	if( opts.log_file && *opts.log_file )
+		g_log_file_path = cr_strdup( opts.log_file );
 	
 	if( g_log_file_path )
 	{
@@ -549,7 +568,7 @@ bool cr_start(
 #endif // NO_LOG
 	
 	// Start server
-	mg_context* ctx = mg_start( ports, pem_file );
+	mg_context* ctx = mg_start( opts.ports, opts.pem_file, opts.thread_count );
 	if( ctx )
 	{	
 		g_time_start = time( NULL );

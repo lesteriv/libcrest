@@ -132,7 +132,7 @@ const char* cr_user_manager::add_user(
 	char buf[ 16 ];
 	const char* data[] = { name, ":", "", ":", pass };
 	size_t len[] = { name_len, 1, 0, 1, pass_len };
-	cr_md5( buf, 5, data, len );	
+	md5( buf, 5, data, len );	
 
 	mg_mutex_lock( mutex_ ); // -----------------------------
 	
@@ -279,7 +279,7 @@ const char* cr_user_manager::update_user_password(
 	char buf[ 16 ];
 	const char* data[] = { name, ":", "", ":", pass };
 	size_t len[] = { name_len, 1, 0, 1, pass_len };	
-	cr_md5( buf, 5, data, len );	
+	md5( buf, 5, data, len );	
 	
 	mg_mutex_lock( mutex_ ); // -----------------------------
 	
@@ -442,7 +442,7 @@ void cr_user_manager_internal::load( void )
 			
 			const char* data[] = { "root", ":", "", ":", "" };
 			size_t len[] = { 4, 1, 0, 1, 0 };	
-			cr_md5( user->password_, 5, data, len );		
+			md5( user->password_, 5, data, len );		
 
 			need_flush = true;
 		}

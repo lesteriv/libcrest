@@ -90,7 +90,7 @@ inline char hex_to_int( char ch )
 
 
 /**********************************************************************************************/
-size_t cr_base64_decode(
+size_t base64_decode(
 	char*		vout,
 	const char*	vdata,
 	size_t		data_size )
@@ -199,9 +199,9 @@ size_t deflate(
 {
 	z_stream zstream;
 	zstream.avail_in	= (unsigned int) len;
-	zstream.next_in		= (Byte*) buf;
+	zstream.next_in		= (byte*) buf;
 	zstream.avail_out	= out_len;
-	zstream.next_out	= (Byte*) out;
+	zstream.next_out	= (byte*) out;
 	deflate( &zstream );
 
 	return (char*) zstream.next_out - out;
@@ -386,7 +386,7 @@ static void md5_transform(
 }
 
 /**********************************************************************************************/
-void cr_md5(
+void md5(
 	char			hash[ 16 ],
 	size_t			data_count,
 	const char**	adata,

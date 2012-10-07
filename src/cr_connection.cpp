@@ -25,6 +25,9 @@
 #pragma warning( disable: 4996 )
 #endif // _WIN32
 
+/**********************************************************************************************/
+extern bool g_deflate;
+
 
 //////////////////////////////////////////////////////////////////////////
 // properties
@@ -110,12 +113,12 @@ void cr_connection::respond(
 {
 	// Compress data if need
 #ifndef NO_DEFLATE	
-	if( data && data_len > 128 )
+	if( g_deflate && data && data_len > 128 )
 	{
 		const char* enc_header = mg_get_header( conn_, "accept-encoding" );
 		if( enc_header && strstr( enc_header, "deflate" ) )
 		{
-			size_t out_len = compressBound( data_len );
+			size_t out_len = compress_bound( data_len );
 			char* out = (char*) alloca( out_len );
 			data_len = deflate( data, data_len, out, out_len );
 

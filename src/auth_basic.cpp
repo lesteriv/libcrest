@@ -35,7 +35,7 @@ bool parse_basic_auth(
 		return false;
 	
 	auth += 6;
-	size_t len = cr_base64_decode( buf, auth, auth_len - 6 );
+	size_t len = base64_decode( buf, auth, auth_len - 6 );
 	buf[ len ] = 0;
 
 	char* sp = strchr( buf, ':' );
@@ -78,7 +78,7 @@ bool auth_basic(
 				size_t len[] = { strlen( user ), 1, 0, 1, strlen( pass ) };
 				
 				char auth_hash[ 16 ];
-				cr_md5( auth_hash, 5, data, len );
+				md5( auth_hash, 5, data, len );
 				
 				res = !memcmp( stored_hash, auth_hash, 16 );
 			}
