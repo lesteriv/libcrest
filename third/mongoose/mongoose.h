@@ -60,7 +60,6 @@ time_t				mg_get_birth_time( mg_connection* );
 size_t				mg_get_content_len( mg_connection* );
 mg_context*			mg_get_context( mg_connection* );
 const char*			mg_get_error_string( void );
-const char*			mg_get_header( mg_connection*, const char* name );
 mg_request_info*	mg_get_request_info( mg_connection* );
 
 /**********************************************************************************************/

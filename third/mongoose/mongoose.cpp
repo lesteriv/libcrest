@@ -334,20 +334,6 @@ static char* skip( char** buf, const char* delimiters )
 	return skip_quoted( buf, delimiters, delimiters );
 }
 
-/**********************************************************************************************/
-static const char* get_header(
-	const mg_request_info*	ri,
-	const char*				name )
-{
-	return ri->headers_.value( name );
-}
-
-/**********************************************************************************************/
-const char* mg_get_header( mg_connection* conn, const char* name )
-{
-	return get_header( &conn->request_info, name );
-}
-
 // HTTP 1.1 assumes keep alive if "Connection:" header is not set
 // This function must tolerate situations when connection info is not
 // set up, for example if request parsing failed.
@@ -358,7 +344,7 @@ static int should_keep_alive( mg_connection *conn )
 	if( 1 || conn->must_close )
 		return 0;
 
-	const char* header = mg_get_header( conn, "connection" );
+	const char* header = conn->request_info.headers_.value( "connection", 10 );
 	if( !header || ( *header != 'k' && *header != 'K' ) )
 		return 0;
 
@@ -1163,7 +1149,7 @@ static void process_new_connection( mg_connection *conn )
 		else
 		{
 			// Request is valid, handle it
-			if ( ( cl = get_header( ri, "content-length" ) ) != NULL )
+			if ( ( cl = ri->headers_.value( "content-length", 14 ) ) != NULL )
 				conn->content_len = strtol( cl, NULL, 10 );
 			else if ( !strcmp( ri->method_, "POST" ) || !strcmp( ri->method_, "PUT" ) )
 				conn->content_len = -1;
@@ -1646,7 +1632,7 @@ bool mg_fetch(
 			if( headers )
 				*headers = ri.headers_;
 			
-			const char* location = get_header( &ri, "location" );
+			const char* location = ri.headers_.value( "location", 8 );
 			if( location && !redirected )
 			{
 				mg_close_connection( conn );
@@ -1657,7 +1643,7 @@ bool mg_fetch(
 			data_length -= req_length;
 			
 			size_t msize = req_length + data_length;
-			const char* cl = get_header( &ri, "content-length" );
+			const char* cl = ri.headers_.value( "content-length", 14 );
 			msize += cl ? strtol( cl, NULL, 10 ) : 32768;
 			
 			out = (char*) malloc( msize );
