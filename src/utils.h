@@ -11,6 +11,7 @@
 #include <stddef.h>
 
 // CREST
+#include "../include/cr_headers.h"
 #include "../include/cr_types.h"
 
 
@@ -23,8 +24,6 @@ inline char*	add_char(
 					char			c )
 				{
 					*dest++ = c;
-					*dest = 0;
-					
 					return dest;
 				}
 
@@ -51,7 +50,7 @@ void			create_responce(
 					cr_http_status	status,
 					const char*		content,
 					size_t			content_len,
-					bool			deflated = false );
+					cr_headers*		headers = NULL );
 
 				/** Returns string with status code and 'Content-Length' header. */
 void			create_responce_header(
@@ -59,7 +58,7 @@ void			create_responce_header(
 					size_t&			out_len,
 					cr_http_status	status,
 					size_t			content_len,
-					bool			deflated = false );
+					cr_headers*		headers = NULL );
 
 				/** The same as strdup. */
 char*			cr_strdup( const char* str, int en = -1 );

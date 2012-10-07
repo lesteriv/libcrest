@@ -58,10 +58,10 @@ bool parse_basic_auth(
 /**********************************************************************************************/
 bool auth_basic(
 	cr_connection&	conn,
-	bool				admin )
+	bool			admin )
 {
 	bool res = false;
-	const char* auth = conn.get_http_header( "Authorization" );
+	const char* auth = conn.get_http_header( "authorization" );
 	
 	size_t auth_len = auth ? strlen( auth ) : 0;
 	char *buf = (char*) alloca( auth_len + 1 );

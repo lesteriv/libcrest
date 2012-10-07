@@ -57,6 +57,7 @@ static const char* const RESPONCE_PREFIX[ CR_HTTP_STATUS_COUNT ] =
 	"HTTP/1.1 200 OK\r\nContent-Length: ",
 	"HTTP/1.1 201 Created\r\nContent-Length: ",
 	"HTTP/1.1 202 Accepted\r\nContent-Length: ",
+	"HTTP/1.1 304 Not Modified\r\nContent-Length: ",
 	"HTTP/1.1 400 Bad Request\r\nContent-Length: ",
 	"HTTP/1.1 401 Unauthorized\r\nContent-Length: ",
 	"HTTP/1.1 404 Not Found\r\nContent-Length: ",
@@ -68,7 +69,7 @@ static const char* const RESPONCE_PREFIX[ CR_HTTP_STATUS_COUNT ] =
 /**********************************************************************************************/
 static const size_t RESPONCE_PREFIX_SIZE[ CR_HTTP_STATUS_COUNT ] =
 {
-	33,	38,	39,	42,	43,	40,	49,	46,	51
+	33,	38,	39,	43, 42,	43,	40,	49,	46,	51
 };
 
 
@@ -129,45 +130,65 @@ size_t base64_decode(
 
 /**********************************************************************************************/
 void create_responce(
-	char*&				out,
-	size_t&				out_len,
+	char*&			out,
+	size_t&			out_len,
 	cr_http_status	status,
-	const char*			content,
-	size_t				content_len,
-	bool				deflated )
+	const char*		content,
+	size_t			content_len,
+	cr_headers*		headers )
 {
-	out = (char*) malloc( content_len + 85 );
+	out = (char*) malloc( content_len + 128 + headers->size() );
 	
 	char* str = out;
 	str = add_string ( str, RESPONCE_PREFIX[ status ], RESPONCE_PREFIX_SIZE[ status ] );
 	str = to_string	 ( str, (int) content_len );
+	str = add_string ( str, "\r\n", 2 );
 	
-	if( deflated )
-		str = add_string ( str, "\r\nContent-Encoding: deflate", 27 );
+	if( headers )
+	{
+		size_t count = headers->count();
+		for( size_t i = 0 ; i < count ; ++i )
+		{
+			str = add_string( str, headers->name( i ), strlen( headers->name( i ) ) );
+			str = add_string( str, ": ", 2 );
+			str = add_string( str, headers->value( i ), strlen( headers->value( i ) ) );
+			str = add_string ( str, "\r\n", 2 );
+		}
+	}
 	
-	str = add_string ( str, "\r\n\r\n", 4 );
-	str = add_string ( str, content, content_len );
+	str = add_string ( str, "\r\n", 2 );
+	str = add_string ( str, content, content_len);
 	
-	*++str = 0;
-	out_len = str - out - 1;
+	*str = 0;
+	out_len = str - out;
 }
 
 /**********************************************************************************************/
 void create_responce_header(
-	char*				out,
-	size_t&				out_len,
+	char*			out,
+	size_t&			out_len,
 	cr_http_status	status,
-	size_t				content_len,
-	bool				deflated )
+	size_t			content_len,
+	cr_headers*		headers )
 {
 	char* str = out;
 	str = add_string ( str, RESPONCE_PREFIX[ status ], RESPONCE_PREFIX_SIZE[ status ] );
 	str = to_string  ( str, (int) content_len );
+	str = add_string ( str, "\r\n", 2 );
 	
-	if( deflated )
-		str = add_string ( str, "\r\nContent-Encoding: deflate", 27 );
+	if( headers )
+	{
+		size_t count = headers->count();
+		for( size_t i = 0 ; i < count ; ++i )
+		{
+			str = add_string( str, headers->name( i ), strlen( headers->name( i ) ) );
+			str = add_string( str, ": ", 2 );
+			str = add_string( str, headers->value( i ), strlen( headers->value( i ) ) );
+			str = add_string ( str, "\r\n", 2 );
+		}
+	}
 	
-	str = add_string ( str, "\r\n\r\n", 5 );
+	str = add_string( str, "\r\n", 3 );
 	
 	out_len = str - out - 1;
 }

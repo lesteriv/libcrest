@@ -28,6 +28,9 @@
 /**********************************************************************************************/
 extern bool g_deflate;
 
+/**********************************************************************************************/
+static cr_headers g_deflate_headers( "Content-Encoding", "deflate" );
+
 
 //////////////////////////////////////////////////////////////////////////
 // properties
@@ -100,6 +103,16 @@ const char* cr_connection::get_url( void ) const
 
 
 /**********************************************************************************************/
+bool cr_connection::fetch(
+	const char*	url,
+	char*&		out,
+	size_t&		out_len,
+	cr_headers*	headers )
+{
+	return mg_fetch( buf_headers_, out, out_len, mg_get_context( conn_ ), url, headers );
+}
+		
+/**********************************************************************************************/
 size_t cr_connection::read( char* buf, size_t len )
 {
 	return mg_read( conn_, buf, len );
@@ -108,8 +121,9 @@ size_t cr_connection::read( char* buf, size_t len )
 /**********************************************************************************************/
 void cr_connection::respond(
 	cr_http_status	rc,
-	const char*			data,
-	size_t				data_len )
+	const char*		data,
+	size_t			data_len,
+	cr_headers*		headers )
 {
 	// Compress data if need
 #ifndef NO_DEFLATE	
@@ -122,9 +136,14 @@ void cr_connection::respond(
 			char* out = (char*) alloca( out_len );
 			data_len = deflate( data, data_len, out, out_len );
 
-			char header[ 128 ];
+			if( !headers )
+				headers = &g_deflate_headers;
+			else						
+				headers->add( "Content-Encoding", "deflate", 16, 7 );
+			
+			char header[ 16384 ];
 			size_t header_len;
-			create_responce_header( header, header_len, rc, data_len, true );
+			create_responce_header( header, header_len, rc, data_len, headers );
 			mg_write( conn_, header, header_len );
 			mg_write( conn_, out, data_len );
 			
@@ -134,9 +153,9 @@ void cr_connection::respond(
 #endif // NO_DEFLATE	
 	
 	// Write non-compressed data
-	char header[ 128 ];
+	char header[ 16384 ];
 	size_t header_len;
-	create_responce_header( header, header_len, rc, data_len );
+	create_responce_header( header, header_len, rc, data_len, headers );
 	mg_write( conn_, header, header_len );
 	mg_write( conn_, data, data_len );
 }
@@ -147,7 +166,7 @@ void cr_connection::send_file( const char* path )
 	FILE* f = fopen( path, "rb" );
 	if( !f )
 	{
-		respond( CR_HTTP_NOT_FOUND, 0, 0 );
+		respond( CR_HTTP_NOT_FOUND );
 		return;
 	}
 

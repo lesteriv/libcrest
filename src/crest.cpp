@@ -179,6 +179,7 @@ struct sl_connection : public cr_connection
 		str = add_char	( str, ':' );
 		str = to_string	( str, request->remote_port_ );
 		str = add_char	( str, '\n' );
+		*str = 0;
 		int blen = str - buf;
 
 		mg_mutex_lock( g_log_mutex ); // ------------------------

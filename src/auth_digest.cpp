@@ -12,9 +12,6 @@
 #include <string.h>
 #include <time.h>
 
-// MONGOOSE
-#include "../third/mongoose/mongoose.h"
-
 // CREST
 #include "../include/crest.h"
 #include "utils.h"
@@ -90,7 +87,7 @@ static bool parse_auth_header(
 {
 	memset( &adata, 0, sizeof( adata ) );
 	
-	char* s = (char*) conn.get_http_header( "Authorization" );
+	char* s = (char*) conn.get_http_header( "authorization" );
 	if( !s )
 		return false;
 	
@@ -172,7 +169,7 @@ static bool parse_auth_header(
 /**********************************************************************************************/
 bool auth_digest(
 	cr_connection&	conn,
-	bool				admin )
+	bool			admin )
 {
 	bool res = false;
 	bool stale = false;
