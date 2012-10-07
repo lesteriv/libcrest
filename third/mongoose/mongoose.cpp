@@ -270,19 +270,19 @@ struct mg_context
 /**********************************************************************************************/
 struct mg_connection
 {
-	time_t			birth_time;			// Time when request was received
-	mg_socket		client;				// Connected client
+	time_t			birth_time;				// Time when request was received
+	mg_socket		client;					// Connected client
 	mg_context*		ctx;
 	mg_request_info	request_info;
 #ifndef NO_SSL	
-	void*			ssl;				// SSL descriptor
+	void*			ssl;					// SSL descriptor
 #endif // NO_SSL
-	int				content_len;		// Content-Length header value
-	int				consumed_content;   // How many bytes of content have been read
-	char*			buf;				// Buffer for received data
-	int				must_close;			// 1 if connection must be closed
-	int				request_len;		// Size of the request + headers in a buffer
-	int				data_len;			// Total size of data in a buffer
+	int				content_len;			// Content-Length header value
+	int				consumed_content;		// How many bytes of content have been read
+	char*			buf;					// Buffer for received data
+	int				must_close;				// 1 if connection must be closed
+	int				request_len;			// Size of the request + headers in a buffer
+	int				data_len;				// Total size of data in a buffer
 } ;
 
 /**********************************************************************************************/
@@ -339,13 +339,7 @@ static const char* get_header(
 	const mg_request_info*	ri,
 	const char*				name )
 {
-	for( int i = 0 ; i < ri->headers_count_ ; ++i )
-	{
-		if( !strcmp( name, ri->headers_[ i ].name_ ) )
-			return ri->headers_[ i ].value_;
-	}
-
-	return NULL;
+	return ri->headers_.value( name );
 }
 
 /**********************************************************************************************/
@@ -361,7 +355,7 @@ const char* mg_get_header( mg_connection* conn, const char* name )
 /**********************************************************************************************/
 static int should_keep_alive( mg_connection *conn )
 {
-	if( conn->must_close )
+	if( 1 || conn->must_close )
 		return 0;
 
 	const char* header = mg_get_header( conn, "connection" );
@@ -701,17 +695,24 @@ static int get_request_len( const char *buf, int buflen )
 
 static void parse_http_headers( char **buf, mg_request_info *ri )
 {
-	for( int i = 0 ; i < (int) ARRAY_SIZE( ri->headers_ ) ; ++i )
+	for( int i = 0 ; i < 64 ; ++i )
 	{
-		char* s = skip_quoted( buf, ":", " " );
-		ri->headers_[ i ].name_ = s;
-		while( *s ) { *s = tolower( *s ); ++s; }
+		char* name = skip_quoted( buf, ":", " " );
+		char* value = skip( buf, "\r\n" );
 		
-		ri->headers_[ i ].value_ = skip( buf, "\r\n" );
-		if( *ri->headers_[ i ].name_ == '\0' )
+		if( name && *name )
+		{
+			ri->headers_.add( name, value );
+			while( *name )
+			{
+				*name = tolower( *name );
+				++name;
+			}
+		}
+		else
+		{
 			break;
-		
-		ri->headers_count_ = i + 1;
+		}
 	}
 }
 
@@ -726,7 +727,7 @@ static int parse_http_message( char *buf, int len, mg_request_info *ri )
 	{
 		// Reset attributes. DO NOT TOUCH is_ssl, remote_ip, remote_port
 		ri->method_ = ri->uri_ = NULL;
-		ri->headers_count_ = 0;
+		ri->headers_.reset();
 
 		buf[request_length - 1] = '\0';
 
@@ -1542,10 +1543,13 @@ mg_connection* mg_connect(
 	hostent* he;
 	int sock;
 
+#ifndef NO_SSL	
 	if( use_ssl && (ctx == NULL || ctx->client_ssl_ctx == NULL) )
 	{
 	}
-	else if( !( he = gethostbyname(host) ) )
+	else
+#endif // NO_SSL	
+	if( !( he = gethostbyname(host) ) )
 	{
 	}
 	else if( ( sock = socket( PF_INET, SOCK_STREAM, 0 ) ) == INVALID_SOCKET )
@@ -1567,10 +1571,12 @@ mg_connection* mg_connect(
 			newconn->ctx = ctx;
 			newconn->client.sock = sock;
 			newconn->client.rsa.sin = sin;
-			newconn->client.is_ssl = use_ssl;
 			
+#ifndef NO_SSL				
+			newconn->client.is_ssl = use_ssl;
 			if( use_ssl )
 				sslize( newconn, ctx->client_ssl_ctx, SSL_connect );
+#endif // NO_SSL			
 		}
 	}
 
@@ -1586,11 +1592,12 @@ static int parse_http_response( char* buf, int len, mg_request_info* ri )
 
 /**********************************************************************************************/
 bool mg_fetch(
+	char*		buf,
 	char*&		out,
 	size_t&		out_size,
 	mg_context*	ctx,
 	const char*	url,
-	bool		raw,
+	cr_headers*	headers,
 	bool		redirected )
 {
 	out = NULL;
@@ -1599,7 +1606,7 @@ bool mg_fetch(
 	mg_request_info ri;
 	
 	int n, port;
-	char host[ 1025 ], proto[ 10 ], buf2[ 65536 ];
+	char host[ 1025 ], proto[ 10 ];
 
 	if( sscanf( url, "%9[htps]://%1024[^:]:%d/%n", proto, host, &port, &n ) == 3 )
 	{
@@ -1618,7 +1625,6 @@ bool mg_fetch(
 	}
 	else
 	{
-		char buf[ 8192 ];
 		char* str = buf;
 		str = add_string( str, "GET /", 5 );
 		str = add_string( str, url + n, strlen( url + n ) );
@@ -1637,13 +1643,16 @@ bool mg_fetch(
 		}
 		else
 		{
+			if( headers )
+				*headers = ri.headers_;
+			
 			const char* location = get_header( &ri, "location" );
 			if( location && !redirected )
 			{
 				mg_close_connection( conn );
-				return mg_fetch( out, out_size, ctx, location, raw, true );
+				return mg_fetch( buf, out, out_size, ctx, location, headers, true );
 			}
-			
+		
 			// Write chunk of data that may be in the user's buffer
 			data_length -= req_length;
 			
@@ -1654,13 +1663,12 @@ bool mg_fetch(
 			out = (char*) malloc( msize );
 			str = out;
 			
-			if( raw )
-				str = add_string( str, buf, data_length + req_length );
-			else if( data_length > 0 )
+			if( data_length > 0 )
 				str = add_string( str, buf + req_length, data_length );
 			
 			// Read the rest of the response and write it to the file. Do not use
 			// mg_read() cause we didn't set newconn->content_len properly.
+			char buf2[ 65536 ];
 			while( ( data_length = pull( conn, buf2, sizeof( buf2 ) ) ) > 0 )
 			{
 				if( str - out + data_length + 1 > (int) msize )

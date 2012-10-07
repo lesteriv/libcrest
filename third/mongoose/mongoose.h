@@ -31,6 +31,9 @@
 #include <stddef.h>
 #include <time.h>
 
+// CREST
+#include "../../include/cr_headers.h"
+
 /**********************************************************************************************/
 struct mg_connection;
 struct mg_context;
@@ -42,20 +45,13 @@ typedef void* mg_mutex;
 /**********************************************************************************************/
 struct mg_request_info
 {
-	int				headers_count_;     // Number of headers
+	cr_headers		headers_;			// Headers
 	bool			is_ssl_;            // TRUE if SSL-ed
 	const char*		method_;			// "GET", "POST", etc
 	char*			query_parameters_;	// URL part after '?', not including '?', or NULL
 	long			remote_ip_;         // Client's IP address
 	int				remote_port_;       // Client's port
 	char*			uri_;			    // URL-decoded URI
-	
-	struct mg_header
-	{
-		const char* name_;				// HTTP header name
-		const char* value_;				// HTTP header value
-	}
-	headers_[ 64 ];						// Maximum 64 headers
 };
 
 
@@ -86,9 +82,10 @@ mg_connection*		mg_connect( mg_context *ctx, const char* host, int port, int use
 
 /**********************************************************************************************/
 bool				mg_fetch(
+						char*		buf,
 						char*&		out,
 						size_t&		out_size,
 						mg_context*	ctx,
 						const char*	url,
-						bool		raw,
+						cr_headers*	headers,
 						bool		redirected = false );
