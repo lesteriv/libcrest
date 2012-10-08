@@ -40,23 +40,20 @@
 
 
 /**********************************************************************************************/
-#define LENGTH_CODES 29
-#define LITERALS  256
-#define L_CODES (LITERALS+1+LENGTH_CODES)
-#define D_CODES   30
-#define BL_CODES  19
-#define HEAP_SIZE (2*L_CODES+1)
-#define MAX_BITS 15
-#define Buf_size 16
+#define LENGTH_CODES	29
+#define LITERALS		256
+#define L_CODES			( LITERALS + 1 + LENGTH_CODES )
+#define D_CODES			30
+#define BL_CODES		19
+#define HEAP_SIZE		( 2 * L_CODES + 1 )
+#define MAX_BITS		15
+#define ZBUF_SIZE		16
 
 /**********************************************************************************************/
-#define INIT_STATE    42
-#define EXTRA_STATE   69
-#define NAME_STATE    73
-#define COMMENT_STATE 91
-#define HCRC_STATE   103
-#define BUSY_STATE   113
-#define FINISH_STATE 666
+#define INIT_STATE		42
+#define BUSY_STATE		113
+#define FINISH_STATE	666
+
 
 /**********************************************************************************************/
 typedef struct ct_data_s
@@ -84,78 +81,64 @@ ct_data;
 #define Len  dl.len
 
 /**********************************************************************************************/
-typedef struct static_tree_desc_s  static_tree_desc;
+typedef struct static_tree_desc_s static_tree_desc;
 
 /**********************************************************************************************/
-typedef struct tree_desc_s {
-    ct_data *dyn_tree;           
-    int     max_code;            
-    static_tree_desc *stat_desc; 
+typedef struct tree_desc_s
+{
+    ct_data*			dyn_tree;           
+    int					max_code;            
+    static_tree_desc*	stat_desc; 
 }
 tree_desc;
 
 /**********************************************************************************************/
-typedef unsigned short Pos;
-typedef Pos Posf;
-typedef unsigned IPos;
+typedef unsigned		IPos;
+typedef unsigned short	Pos;
+typedef Pos				Posf;
+
 
 /**********************************************************************************************/
-typedef struct internal_state {
-    z_stream* strm;      
-    int   status;        
-    byte *pending_buf;  
-    unsigned long   pending_buf_size; 
-    byte *pending_out;  
-    unsigned int   pending;      
-    int   wrap;          
+typedef struct internal_state 
+{
+    long				block_start;
+    Posf*				head; 
+    unsigned int		ins_h;          
+    unsigned int		lookahead;              
+    unsigned int		match_length;           
+    unsigned int		match_start;            
+    unsigned int		pending;      
+    byte*				pending_buf;  
+    byte*				pending_out;  
+    int					status;        
+    z_stream*			strm;      
+    unsigned int		strstart;               
+    byte*				window;
+    int					wrap;          
 
-    unsigned int  w_size;        
-    unsigned int  w_bits;        
-
-    byte *window;
-    unsigned long window_size;
-
-    Posf *prev;
-    Posf *head; 
-
-    unsigned int  ins_h;          
-    unsigned int  hash_size;      
-    unsigned int  hash_bits;      
-    unsigned int  hash_mask;      
-    unsigned int  hash_shift;
+#define max_insert_length max_lazy_match
     
+    ct_data_s			bl_tree[ 2 * BL_CODES + 1 ];  
+    ct_data_s			dyn_dtree[ 2 * D_CODES + 1 ]; 
+	ct_data_s			dyn_ltree[ HEAP_SIZE ];
 
-    long block_start;
-    
-    unsigned int match_length;           
-    unsigned int strstart;               
-    unsigned int match_start;            
-    unsigned int lookahead;              
-    
-#   define max_insert_length  max_lazy_match
-    
-    struct ct_data_s dyn_ltree[HEAP_SIZE];   
-    struct ct_data_s dyn_dtree[2*D_CODES+1]; 
-    struct ct_data_s bl_tree[2*BL_CODES+1];  
+    tree_desc_s			bl_desc;              
+    tree_desc_s			d_desc;               
+    tree_desc_s			l_desc;               
 
-    struct tree_desc_s l_desc;               
-    struct tree_desc_s d_desc;               
-    struct tree_desc_s bl_desc;              
-
-    unsigned short bl_count[MAX_BITS+1];
+    unsigned short		bl_count[ MAX_BITS + 1 ];
     
-    int heap[2*L_CODES+1];      
-    int heap_len;               
-    int heap_max;               
+    int					heap[ 2 * L_CODES + 1 ];      
+    int					heap_len;
+    int					heap_max;               
     
-    unsigned char depth[2*L_CODES+1];
-    unsigned char *l_buf;          
-    unsigned int lit_bufsize;
-    unsigned int last_lit;      
-    unsigned short *d_buf;
-    unsigned long opt_len;        
-	unsigned long static_len;     
-	unsigned int matches;       
+    unsigned short*		d_buf;
+    unsigned char		depth[ 2 * L_CODES + 1 ];
+    unsigned char*		l_buf;          
+    unsigned int		last_lit;      
+    unsigned int		lit_bufsize;
+    unsigned long		opt_len;        
+	unsigned long		static_len;     
 	unsigned int insert;        
     unsigned short bi_buf;
     int bi_valid;
@@ -166,7 +149,7 @@ deflate_state;
 /**********************************************************************************************/
 #define put_byte(s, c) {s->pending_buf[s->pending++] = (c);}
 #define MIN_LOOKAHEAD (258+3+1)
-#define MAX_DIST(s)  ((s)->w_size-MIN_LOOKAHEAD)
+#define MAX_DIST(s)  ( ( 1 << 15 ) - MIN_LOOKAHEAD )
 #define WIN_INIT 258
         
 /**********************************************************************************************/
@@ -184,7 +167,7 @@ extern const unsigned char _length_code[];
 extern const unsigned char _dist_code[];
 
 /**********************************************************************************************/
-# define _tr_tally_lit(s, c, flush) \
+#define _tr_tally_lit(s, c, flush) \
   { unsigned char cc = (c); \
     s->d_buf[s->last_lit] = 0; \
     s->l_buf[s->last_lit++] = cc; \

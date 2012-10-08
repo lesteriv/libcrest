@@ -86,12 +86,12 @@ static void bi_flush       ( deflate_state *s );
 /**********************************************************************************************/
 #define send_bits( s, value, length ) \
 { int len = length;\
-  if (s->bi_valid > (int)Buf_size - len) {\
+  if (s->bi_valid > (int)ZBUF_SIZE - len) {\
     int val = value;\
     s->bi_buf |= (unsigned short)val << s->bi_valid;\
     put_short(s, s->bi_buf);\
-    s->bi_buf = (unsigned short)val >> (Buf_size - s->bi_valid);\
-    s->bi_valid += len - Buf_size;\
+    s->bi_buf = (unsigned short)val >> (ZBUF_SIZE - s->bi_valid);\
+    s->bi_valid += len - ZBUF_SIZE;\
   } else {\
     s->bi_buf |= (unsigned short)(value) << s->bi_valid;\
     s->bi_valid += len;\
@@ -109,7 +109,7 @@ static void init_block( deflate_state* s)
 
     s->dyn_ltree[ END_BLOCK ].Freq = 1;
     s->opt_len = s->static_len = 0L;
-    s->last_lit = s->matches = 0;
+    s->last_lit = 0;
 }
 
 /**********************************************************************************************/
