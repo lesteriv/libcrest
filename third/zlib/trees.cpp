@@ -58,29 +58,22 @@ static static_tree_desc static_d_desc = {
 
 /**********************************************************************************************/
 static static_tree_desc static_bl_desc = {
-	BL_CODES, extra_blbits, 0, MAX_BL_BITS, (const ct_data*) 0 };
+	BL_CODES, extra_blbits, 0, MAX_BL_BITS, 0 };
 
 /**********************************************************************************************/
-static void pqdownheap     ( deflate_state *s, ct_data *tree, int k );
-static void gen_bitlen     ( deflate_state *s, tree_desc *desc );
-static void gen_codes      ( ct_data *tree, int max_code, unsigned short *bl_count );
-static void build_tree     ( deflate_state *s, tree_desc *desc );
-static void scan_tree      ( deflate_state *s, ct_data *tree, int max_code );
-static void send_tree      ( deflate_state *s, ct_data *tree, int max_code );
-static int  build_bl_tree  ( deflate_state *s );
-static void send_all_trees ( deflate_state *s, int lcodes, int dcodes, int blcodes );
 static void compress_block ( deflate_state *s, ct_data *ltree, ct_data *dtree );
 static unsigned bi_reverse ( unsigned value, int length );
 static void bi_windup      ( deflate_state *s );
 static void bi_flush       ( deflate_state *s );
 
 /**********************************************************************************************/
-#define send_code( s, c, tree ) send_bits(s, tree[c].Code, tree[c].Len)
+#define send_code( s, c, tree ) send_bits( s, tree[ c ].Code, tree[ c ].Len )
 
 /**********************************************************************************************/
-#define put_short( s, w ) { \
-    put_byte(s, (unsigned char)((w) & 0xff)); \
-    put_byte(s, (unsigned char)((unsigned short)(w) >> 8)); \
+#define put_short( s, w ) \
+{ \
+    put_byte( s, (unsigned char) ((w) & 0xff)); \
+    put_byte( s, (unsigned char) ((unsigned short)(w) >> 8)); \
 }
 
 /**********************************************************************************************/
