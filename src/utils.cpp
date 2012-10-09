@@ -6,6 +6,7 @@
 /**********************************************************************************************/
 
 // STD
+#include <sys/stat.h>
 #include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -22,6 +23,7 @@
 /**********************************************************************************************/
 #ifdef _MSC_VER
 #pragma warning( disable: 4996 )
+#define stat _stat
 #endif // _WIN32
 
 
@@ -60,6 +62,7 @@ static const char* const RESPONCE_PREFIX[ CR_HTTP_STATUS_COUNT ] =
 	"HTTP/1.1 304 Not Modified\r\nContent-Length: ",
 	"HTTP/1.1 400 Bad Request\r\nContent-Length: ",
 	"HTTP/1.1 401 Unauthorized\r\nContent-Length: ",
+	"HTTP/1.1 403 Forbidden\r\nContent-Length: "
 	"HTTP/1.1 404 Not Found\r\nContent-Length: ",
 	"HTTP/1.1 405 Method Not Allowed\r\nContent-Length: ",
 	"HTTP/1.1 411 Length Required\r\nContent-Length: ",
@@ -69,7 +72,7 @@ static const char* const RESPONCE_PREFIX[ CR_HTTP_STATUS_COUNT ] =
 /**********************************************************************************************/
 static const size_t RESPONCE_PREFIX_SIZE[ CR_HTTP_STATUS_COUNT ] =
 {
-	33,	38,	39,	43, 42,	43,	40,	49,	46,	51
+	33,	38,	39,	43, 42,	43, 40, 40, 49, 46, 51
 };
 
 
@@ -231,11 +234,17 @@ size_t deflate(
 /**********************************************************************************************/
 bool file_exists( const char* path )
 {
-	FILE* f = fopen( path, "rb" );
-	if( f )
-		fclose( f );
-	
-	return f != NULL;
+	struct stat st;
+	return stat( path, &st ) == 0 && ( st.st_mode & S_IFREG );
+}
+
+/**********************************************************************************************/
+time_t file_modification_time( const char* path )
+{
+	struct stat st;
+	return ( stat( path, &st ) == 0 ) ?
+		st.st_mtime :
+		0;
 }
 
 /**********************************************************************************************/

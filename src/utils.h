@@ -73,6 +73,9 @@ size_t			deflate(
 				/** Returns TRUE if this file exists. */
 bool			file_exists( const char* path );
 
+				/** Returns time of last file modification. */
+time_t			file_modification_time( const char* path );
+
 				/** Returns file's size. */
 size_t			file_size( const char* path );
 
