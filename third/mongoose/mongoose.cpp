@@ -818,10 +818,11 @@ static void handle_request( mg_connection *conn )
 	event_handler( conn );
 }
 
-static void close_all_listening_sockets( mg_context *ctx )
+/**********************************************************************************************/
+static void close_all_listening_sockets( mg_context* ctx )
 {
 	mg_socket *sp, *tmp;
-	for ( sp = ctx->listening_sockets; sp ; sp = tmp )
+	for( sp = ctx->listening_sockets ; sp ; sp = tmp )
 	{
 		tmp = sp->next;
 		closesocket( sp->sock );
@@ -829,37 +830,37 @@ static void close_all_listening_sockets( mg_context *ctx )
 	}
 }
 
+/**********************************************************************************************/
 // Valid listening port specification is: [ip_address:]port[s]
 // Examples: 80, 443s, 127.0.0.1:3128, 1.2.3.4:8080s
 // TODO(lsm): add parsing of the IPv6 address
-
-static int parse_port_string( const vec *vec, mg_socket *so )
+//
+static int parse_port_string( const vec* vec, mg_socket* so )
 {
-	int a, b, c, d, port, len;
-
 	// MacOS needs that. If we do not zero it, subsequent bind() will fail.
 	// Also, all-zeroes in the socket address means binding to all addresses
 	// for both IPv4 and IPv6 (INADDR_ANY and IN6ADDR_ANY_INIT).
-	memset( so, 0, sizeof(*so ) );
+	memset( so, 0, sizeof( *so ) );
 
-	if ( sscanf( vec->ptr, "%d.%d.%d.%d:%d%n", &a, &b, &c, &d, &port, &len ) == 5 )
+	int a, b, c, d, port, len;
+	if( sscanf( vec->ptr, "%d.%d.%d.%d:%d%n", &a, &b, &c, &d, &port, &len ) == 5 )
 	{
 		// Bind to a specific IPv4 address
 		so->lsa.sin.sin_addr.s_addr = htonl( ( a << 24 ) | ( b << 16 ) | ( c << 8 ) | d );
 	}
-	else if ( sscanf( vec->ptr, "%d%n", &port, &len ) != 1 ||
-		  len <= 0 ||
-		  len > (int) vec->len ||
-		  ( vec->ptr[len] && vec->ptr[len] != 's' && vec->ptr[len] != ',' ) )
+	else if(
+		sscanf( vec->ptr, "%d%n", &port, &len ) != 1 ||
+		len <= 0 || len > (int) vec->len ||
+		( vec->ptr[ len ] && vec->ptr[ len ] != 's' && vec->ptr[ len ] != ',' ) )
 	{
 		return 0;
 	}
 
 #ifndef NO_SSL  
-	so->is_ssl = vec->ptr[len] == 's';
+	so->is_ssl = vec->ptr[ len ] == 's';
 #endif // NO_SSL
 
-#if defined(USE_IPV6)
+#ifdef USE_IPV6
 	so->lsa.sin6.sin6_family = AF_INET6;
 	so->lsa.sin6.sin6_port = htons( (uint16_t) port );
 #else
@@ -870,6 +871,7 @@ static int parse_port_string( const vec *vec, mg_socket *so )
 	return 1;
 }
 
+/**********************************************************************************************/
 static const char* next_option( const char* str, vec& vc )
 {
 	if( !str || !*str )
@@ -882,6 +884,7 @@ static const char* next_option( const char* str, vec& vc )
 		str + ( vc.len = strlen( str ) );
 }
 
+/**********************************************************************************************/
 static int set_ports_option( mg_context* ctx, const char* list, const char* pem_file )
 {
 	int on = 1, success = 1;
@@ -893,38 +896,37 @@ static int set_ports_option( mg_context* ctx, const char* list, const char* pem_
 	(void) pem_file;
 #endif // NO_SSL
 
-	while ( success && ( list = next_option( list, vc ) ) != NULL )
+	while( success && ( list = next_option( list, vc ) ) )
 	{
-		if ( !parse_port_string( &vc, &so ) )
+		if( !parse_port_string( &vc, &so ) )
 		{
 			error_string = "Invalid port spec. Expecting list of: [IP_ADDRESS:]PORT[s|p]";
 			success = 0;
+			
 #ifndef NO_SSL	  
 		}
-		else if ( so.is_ssl &&
-		  ( ctx->ssl_ctx == NULL || pem_file == NULL ) )
+		else if ( so.is_ssl && ( !ctx->ssl_ctx || !pem_file ) )
 		{
 			error_string = "Cannot add SSL socket, is ssl certificate option set?";
 			success = 0;
 #endif // NO_SSL	  
+
 		}
-		else if ( ( sock = socket( so.lsa.sa.sa_family, SOCK_STREAM, 6 ) ) ==
-		  INVALID_SOCKET ||
-		  // On Windows, SO_REUSEADDR is recommended only for
-		  // broadcast UDP sockets
-		  setsockopt( sock, SOL_SOCKET, SO_REUSEADDR, (const char *) &on,
-					  sizeof(on ) ) != 0 ||
-		  // Set TCP keep-alive. This is needed because if HTTP-level
-		  // keep-alive is enabled, and client resets the connection,
-		  // server won't get TCP FIN or RST and will keep the connection
-		  // open forever. With TCP keep-alive, next keep-alive
-		  // handshake will figure out that the client is down and
-		  // will close the server end.
-		  // Thanks to Igor Klopov who suggested the patch.
-		  setsockopt( sock, SOL_SOCKET, SO_KEEPALIVE, (char *) &on,
-					  sizeof(on ) ) != 0 ||
-		  bind( sock, &so.lsa.sa, sizeof(so.lsa ) ) != 0 ||
-		  listen( sock, SOMAXCONN ) != 0 )
+		else if( ( sock = socket( so.lsa.sa.sa_family, SOCK_STREAM, 6 ) ) == INVALID_SOCKET ||
+			 
+			// On Windows, SO_REUSEADDR is recommended only for
+			// broadcast UDP sockets
+			setsockopt( sock, SOL_SOCKET, SO_REUSEADDR, (const char *) &on, sizeof( on ) ) != 0 ||
+
+			// Set TCP keep-alive. This is needed because if HTTP-level
+			// keep-alive is enabled, and client resets the connection,
+			// server won't get TCP FIN or RST and will keep the connection
+			// open forever. With TCP keep-alive, next keep-alive
+			// handshake will figure out that the client is down and
+			// will close the server end.
+			// Thanks to Igor Klopov who suggested the patch.
+			setsockopt( sock, SOL_SOCKET, SO_KEEPALIVE, (char *) &on, sizeof(on ) ) != 0 ||
+			bind( sock, &so.lsa.sa, sizeof(so.lsa ) ) != 0 || listen( sock, SOMAXCONN ) != 0 )
 		{
 			closesocket( sock );
 			error_string = "Cannot bind socket, another socket is already listening on the same port or you must have more privileges";
@@ -932,7 +934,7 @@ static int set_ports_option( mg_context* ctx, const char* list, const char* pem_
 		}
 		else
 		{
-			listener = (mg_socket *) calloc( 1, sizeof(*listener ) );
+			listener = (mg_socket*) calloc( 1, sizeof(*listener) );
 			*listener = so;
 			listener->sock = sock;
 			set_close_on_exec( listener->sock );
@@ -941,74 +943,71 @@ static int set_ports_option( mg_context* ctx, const char* list, const char* pem_
 		}
 	}
 
-	if ( !success )
-	{
+	if( !success )
 		close_all_listening_sockets( ctx );
-	}
 
 	return success;
 }
 
-static void add_to_set( SOCKET fd, fd_set *set, int *max_fd )
+/**********************************************************************************************/
+static void add_to_set( SOCKET fd, fd_set* set, int* max_fd )
 {
 	FD_SET( fd, set );
-	if ( fd > ( SOCKET ) * max_fd )
+	if( fd > ( SOCKET ) * max_fd )
 		*max_fd = (int) fd;
 }
 
 #ifndef NO_SSL
-static pthread_mutex_t *ssl_mutexes;
 
-static void ssl_locking_callback( int mode, int mutex_num, const char *file,
-								  int line )
+/**********************************************************************************************/
+static pthread_mutex_t* ssl_mutexes;
+
+/**********************************************************************************************/
+static void ssl_locking_callback( int mode, int mutex_num, const char*, int )
 {
-	(void) line;
-	(void) file;
-
-	if ( mode & CRYPTO_LOCK )
-	{
-		pthread_mutex_lock( &ssl_mutexes[mutex_num] );
-	}
+	if( mode & CRYPTO_LOCK )
+		pthread_mutex_lock( &ssl_mutexes[ mutex_num ] );
 	else
-	{
-		pthread_mutex_unlock( &ssl_mutexes[mutex_num] );
-	}
+		pthread_mutex_unlock( &ssl_mutexes[ mutex_num ] );
 }
 
+/**********************************************************************************************/
 static unsigned long ssl_id_callback( void )
 {
-	return (unsigned long) pthread_self( );
+	return (unsigned long) pthread_self();
 }
 
-static int load_dll( const char *dll_name,
-					 struct ssl_func *sw )
+/**********************************************************************************************/
+static int load_dll( const char* dll_name, ssl_func* sw )
 {
-
 	union
 	{
 		void *p;
-		void (*fp )(void) ;
-	} u;
-	void  *dll_handle;
-	struct ssl_func *fp;
+		void (*fp )(void);
+	}
+	u;
+	
+	void* dll_handle;
+	ssl_func* fp;
 
-	if ( ( dll_handle = dlopen( dll_name, RTLD_LAZY ) ) == NULL )
+	if( !( dll_handle = dlopen( dll_name, RTLD_LAZY ) ) )
 	{
 		error_string = "cannot load ssl dll";
 		return 0;
 	}
 
-	for ( fp = sw; fp->name != NULL; fp++ )
+	for( fp = sw ; fp->name ; fp++ )
 	{
 #    ifdef _WIN32
 		// GetProcAddress() returns pointer to function
-		u.fp = (void (* )(void) ) dlsym( dll_handle, fp->name );
+		u.fp = (void (*)(void)) dlsym( dll_handle, fp->name );
 #    else
 		// dlsym() on UNIX returns void *. ISO C forbids casts of data pointers to
 		// function pointers. We need to use a union to make a cast.
 		u.p = dlsym( dll_handle, fp->name );
 #    endif // _WIN32
-		if ( u.fp == NULL )
+		
+		if( !u.fp )
 		{
 			error_string = "cannot find ssl symbol";
 			return 0;
@@ -1022,33 +1021,27 @@ static int load_dll( const char *dll_name,
 	return 1;
 }
 
+/**********************************************************************************************/
 // Dynamically load SSL library. Set up ctx->ssl_ctx pointer.
-
-static int set_ssl_option( mg_context *ctx, const char* pem )
+//
+static int set_ssl_option( mg_context* ctx, const char* pem )
 {
 	int i, size;
 
 	// If PEM file is not specified, skip SSL initialization.
-	if ( pem == NULL || !*pem )
-	{
+	if( !pem || !*pem )
 		return 1;
-	}
 
-	if ( !load_dll( SSL_LIB, ssl_sw ) ||
-		 !load_dll( CRYPTO_LIB, crypto_sw ) )
-	{
+	if( !load_dll( SSL_LIB, ssl_sw ) || !load_dll( CRYPTO_LIB, crypto_sw ) )
 		return 0;
-	}
 
 	// Initialize SSL crap
-	SSL_library_init( );
+	SSL_library_init();
 
-	if ( ( ctx->client_ssl_ctx = SSL_CTX_new( SSLv23_client_method( ) ) ) == NULL )
-	{
+	if( !( ctx->client_ssl_ctx = SSL_CTX_new( SSLv23_client_method( ) ) ) )
 		error_string = "SSL_CTX_new (client) error";
-	}
 
-	if ( ( ctx->ssl_ctx = SSL_CTX_new( SSLv23_server_method( ) ) ) == NULL )
+	if( !( ctx->ssl_ctx = SSL_CTX_new( SSLv23_server_method( ) ) ) )
 	{
 		error_string = "SSL_CTX_new (server) error";
 		return 0;
@@ -1056,27 +1049,23 @@ static int set_ssl_option( mg_context *ctx, const char* pem )
 
 	// If user callback returned non-NULL, that means that user callback has
 	// set up certificate itself. In this case, skip sertificate setting.
-	if ( ( SSL_CTX_use_certificate_file( ctx->ssl_ctx, pem, SSL_FILETYPE_PEM ) == 0 ||
-		   SSL_CTX_use_PrivateKey_file( ctx->ssl_ctx, pem, SSL_FILETYPE_PEM ) == 0 ) )
+	if( !SSL_CTX_use_certificate_file( ctx->ssl_ctx, pem, SSL_FILETYPE_PEM ) ||
+		!SSL_CTX_use_PrivateKey_file( ctx->ssl_ctx, pem, SSL_FILETYPE_PEM ) )
 	{
 		error_string = "cannot open pem";
 		return 0;
 	}
 
-	if ( pem != NULL )
-	{
+	if( pem )
 		SSL_CTX_use_certificate_chain_file( ctx->ssl_ctx, pem );
-	}
 
 	// Initialize locking callbacks, needed for thread safety.
 	// http://www.openssl.org/support/faq.html#PROG1
-	size = sizeof(pthread_mutex_t ) * CRYPTO_num_locks( );
+	size = sizeof(pthread_mutex_t) * CRYPTO_num_locks();
 	ssl_mutexes = (pthread_mutex_t*) malloc( (size_t) size );
 
-	for ( i = 0; i < CRYPTO_num_locks( ); i++ )
-	{
-		pthread_mutex_init( &ssl_mutexes[i], NULL );
-	}
+	for( i = 0 ; i < CRYPTO_num_locks() ; i++ )
+		pthread_mutex_init( &ssl_mutexes[ i ], NULL );
 
 	CRYPTO_set_locking_callback( &ssl_locking_callback );
 	CRYPTO_set_id_callback( &ssl_id_callback );
@@ -1084,29 +1073,31 @@ static int set_ssl_option( mg_context *ctx, const char* pem )
 	return 1;
 }
 
-static void uninitialize_ssl( mg_context *ctx )
+/**********************************************************************************************/
+static void uninitialize_ssl( mg_context* ctx )
 {
-	int i;
-	if ( ctx->ssl_ctx != NULL )
+	if( ctx->ssl_ctx )
 	{
 		CRYPTO_set_locking_callback( NULL );
-		for ( i = 0; i < CRYPTO_num_locks( ); i++ )
-		{
-			pthread_mutex_destroy( &ssl_mutexes[i] );
-		}
+		for( int i = 0 ; i < CRYPTO_num_locks() ; i++ )
+			pthread_mutex_destroy( &ssl_mutexes[ i ] );
+
 		CRYPTO_set_locking_callback( NULL );
 		CRYPTO_set_id_callback( NULL );
 	}
 }
+
 #endif // NO_SSL
 
-static void reset_per_request_attributes( mg_connection *conn )
+/**********************************************************************************************/
+static void reset_per_request_attributes( mg_connection* conn )
 {
 	conn->consumed_content = 0;
 	conn->must_close = conn->request_len = 0;
 }
 
-static void close_socket_gracefully( mg_connection *conn )
+/**********************************************************************************************/
+static void close_socket_gracefully( mg_connection* conn )
 {
 	char buf[ 8192 ];
 	struct linger linger;
@@ -1116,7 +1107,7 @@ static void close_socket_gracefully( mg_connection *conn )
 	// ephemeral port exhaust problem under high QPS.
 	linger.l_onoff = 1;
 	linger.l_linger = 1;
-	setsockopt( sock, SOL_SOCKET, SO_LINGER, (char *) &linger, sizeof(linger ) );
+	setsockopt( sock, SOL_SOCKET, SO_LINGER, (char*) &linger, sizeof(linger) );
 
 	// Send FIN to the client
 	shutdown( sock, SHUT_WR );
@@ -1129,28 +1120,27 @@ static void close_socket_gracefully( mg_connection *conn )
 	// does recv() it gets no data back.
 	do
 	{
-		n = pull( conn, buf, sizeof(buf ) );
+		n = pull( conn, buf, sizeof(buf) );
 	}
-	while ( n > 0 );
+	while( n > 0 );
 
 	// Now we know that our FIN is ACK-ed, safe to close
 	closesocket( sock );
 }
 
-static void close_connection( mg_connection *conn )
+/**********************************************************************************************/
+static void close_connection( mg_connection* conn )
 {
 #ifndef NO_SSL	
-	if ( conn->ssl )
+	if( conn->ssl )
 	{
 		SSL_free( (SSL*) conn->ssl );
 		conn->ssl = NULL;
 	}
 #endif // NO_SSL
 
-	if ( conn->client.sock != INVALID_SOCKET )
-	{
+	if( conn->client.sock != INVALID_SOCKET )
 		close_socket_gracefully( conn );
-	}
 }
 
 /**********************************************************************************************/
@@ -1158,7 +1148,7 @@ static void process_new_connection( mg_connection* conn )
 {
 	mg_request_info& ri = conn->request_info;
 	int discard_len;
-	const char *cl;
+	const char* cl;
 	
 	do
 	{
@@ -1182,7 +1172,7 @@ static void process_new_connection( mg_connection* conn )
 		else
 		{
 			// Request is valid, handle it
-			if ( ( cl = ri.headers_.value( "content-length", 14 ) ) != NULL )
+			if( cl = ri.headers_.value( "content-length", 14 ) )
 				conn->content_len = strtol( cl, NULL, 10 );
 			else if ( !strcmp( ri.method_, "POST" ) || !strcmp( ri.method_, "PUT" ) )
 				conn->content_len = -1;
