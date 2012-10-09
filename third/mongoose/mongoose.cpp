@@ -811,7 +811,7 @@ void event_handler( mg_connection* conn );
 static void handle_request( mg_connection *conn )
 {
 	mg_request_info& ri = conn->request_info;
-	if( ri.query_parameters_ = strchr( ri.uri_, '?' ) )
+	if( ( ri.query_parameters_ = strchr( ri.uri_, '?' ) ) )
 		*ri.query_parameters_++ = '\0';
 
 	url_decode( ri.uri_, strlen( ri.uri_ ) );
@@ -1172,7 +1172,7 @@ static void process_new_connection( mg_connection* conn )
 		else
 		{
 			// Request is valid, handle it
-			if( cl = ri.headers_.value( "content-length", 14 ) )
+			if( ( cl = ri.headers_.value( "content-length", 14 ) ) )
 				conn->content_len = strtol( cl, NULL, 10 );
 			else if ( !strcmp( ri.method_, "POST" ) || !strcmp( ri.method_, "PUT" ) )
 				conn->content_len = -1;
