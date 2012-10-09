@@ -76,10 +76,6 @@ void				mg_stop( mg_context* );
 int					mg_write( mg_connection*, const char* buf, size_t len );
 
 /**********************************************************************************************/
-void				mg_close_connection( mg_connection* conn );
-mg_connection*		mg_connect( mg_context *ctx, const char* host, int port, int use_ssl );
-
-/**********************************************************************************************/
 bool				mg_fetch(
 						char*		buf,
 						char*&		out,
@@ -87,4 +83,4 @@ bool				mg_fetch(
 						mg_context*	ctx,
 						const char*	url,
 						cr_headers*	headers,
-						bool		redirected = false );
+						int			redirect_count = 0 /* For internal use */ );

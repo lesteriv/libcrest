@@ -25,6 +25,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+/**********************************************************************************************/
+#ifdef _FORTIFY_SOURCE
+#undef _FORTIFY_SOURCE
+#define _FORTIFY_SOURCE 0
+#endif // _FORTIFY_SOURCE
+
 // STD
 #include <ctype.h>
 #include <errno.h>
@@ -36,8 +42,7 @@
 #include <time.h>
 
 // CREST
-#include "../../src/utils.h"
-
+#include "../../include/cr_utils.h"
 
 #if defined(_WIN32) // Windows specific
 #    define _CRT_SECURE_NO_WARNINGS // Disable deprecation warning in VS2005
@@ -102,11 +107,12 @@ static int pthread_mutex_unlock( pthread_mutex_t * );
 #    define mg_sleep_int(x) usleep((x) * 1000)
 #    define ERRNO errno
 #    define INVALID_SOCKET (-1)
+
 typedef int SOCKET;
 
 #endif // End of Windows and UNIX specific includes
 
-
+// MONGOOSE
 #include "mongoose.h"
 
 #define MAX_REQUEST_SIZE	16384
@@ -115,7 +121,7 @@ typedef int SOCKET;
 #ifdef _WIN32
 static pthread_t pthread_self( void )
 {
-	return GetCurrentThreadId( );
+	return GetCurrentThreadId();
 }
 #endif // _WIN32
 
@@ -123,13 +129,14 @@ static pthread_t pthread_self( void )
 #ifdef NO_SOCKLEN_T
 typedef int socklen_t;
 #endif // NO_SOCKLEN_T
+
 #define _DARWIN_UNLIMITED_SELECT
 
-#if !defined(MSG_NOSIGNAL)
+#ifndef MSG_NOSIGNAL
 #    define MSG_NOSIGNAL 0
 #endif
 
-#if !defined(SOMAXCONN)
+#ifndef SOMAXCONN
 #    define SOMAXCONN 100
 #endif
 
@@ -150,9 +157,9 @@ typedef struct ssl_ctx_st SSL_CTX;
 
 struct ssl_func
 {
-	const char* name;   // SSL function name
-	void  (*ptr )(void) ; // Function pointer
-} ;
+	const char* name;		// SSL function name
+	void  (*ptr)( void );	// Function pointer
+};
 
 #    define SSL_free							(* (void (*)(SSL *)) ssl_sw[0].ptr)
 #    define SSL_accept							(* (int (*)(SSL *)) ssl_sw[1].ptr)
@@ -211,29 +218,33 @@ static struct ssl_func crypto_sw[] = {
 };
 #endif // NO_SSL
 
+/**********************************************************************************************/
 // Unified socket address. For IPv6 support, add IPv6 address structure
 // in the union u.
-
+//
 union usa
 {
 	struct sockaddr sa;
 	struct sockaddr_in sin;
+
 #if defined(USE_IPV6)
 	struct sockaddr_in6 sin6;
 #endif
-} ;
+};
 
+/**********************************************************************************************/
 // Describes a string (chunk of memory).
-
+//
 struct vec
 {
 	const char*	ptr;
 	size_t		len;
-} ;
+};
 
+/**********************************************************************************************/
 // Describes listening socket, or socket which was accept()-ed by the master
 // thread and queued for future handling by the worker thread.
-
+//
 struct mg_socket
 {
 	mg_socket*	next;	// Linkage
@@ -246,14 +257,17 @@ struct mg_socket
 #endif // NO_SSL
 };
 
+/**********************************************************************************************/
 static const char* error_string;
 
+/**********************************************************************************************/
 struct mg_context
 {
 #ifndef NO_SSL
 	SSL_CTX*		client_ssl_ctx;		// Client SSL context
 	SSL_CTX*		ssl_ctx;			// SSL context
 #endif // NO_SLL
+	
 	mg_socket*		listening_sockets;
 	volatile int	num_threads;		// Number of threads
 	mg_socket		queue[ 64 ];		// Accepted sockets
@@ -270,16 +284,17 @@ struct mg_context
 /**********************************************************************************************/
 struct mg_connection
 {
+#ifndef NO_SSL	
+	void*			ssl;					// SSL descriptor
+#endif // NO_SSL
+	
 	time_t			birth_time;				// Time when request was received
 	mg_socket		client;					// Connected client
 	mg_context*		ctx;
 	mg_request_info	request_info;
-#ifndef NO_SSL	
-	void*			ssl;					// SSL descriptor
-#endif // NO_SSL
 	int				content_len;			// Content-Length header value
 	int				consumed_content;		// How many bytes of content have been read
-	char*			buf;					// Buffer for received data
+	char			buf[ MAX_REQUEST_SIZE ];// Buffer for received data
 	int				must_close;				// 1 if connection must be closed
 	int				request_len;			// Size of the request + headers in a buffer
 	int				data_len;				// Total size of data in a buffer
@@ -304,7 +319,7 @@ mg_request_info* mg_get_request_info( mg_connection* conn )
 }
 
 /**********************************************************************************************/
-static char *skip_quoted(
+static char* skip_quoted(
 	char**		buf,
 	const char* delimiters,
 	const char* whitespace )
@@ -352,82 +367,98 @@ static int should_keep_alive( mg_connection *conn )
 }
 
 /**********************************************************************************************/
+inline char mg_tolower( char ch )
+{
+	return ( ch >= 'A' && ch <= 'Z' ) ? ch + 32 : ch;
+}
+
+/**********************************************************************************************/
 typedef void * ( *mg_thread_func_t )(void *) ;
 
 
 #if defined(_WIN32)
 
-static int pthread_mutex_init( pthread_mutex_t *mutex, void *unused )
+/**********************************************************************************************/
+static int pthread_mutex_init( pthread_mutex_t* mutex, void* )
 {
-	unused = NULL;
 	*mutex = CreateMutex( NULL, FALSE, NULL );
-	return *mutex == NULL ? -1 : 0;
+	return !*mutex ? -1 : 0;
 }
 
-static int pthread_mutex_destroy( pthread_mutex_t *mutex )
+/**********************************************************************************************/
+static int pthread_mutex_destroy( pthread_mutex_t* mutex )
 {
-	return CloseHandle( *mutex ) == 0 ? -1 : 0;
+	return !CloseHandle( *mutex ) ? -1 : 0;
 }
 
-static int pthread_mutex_lock( pthread_mutex_t *mutex )
+/**********************************************************************************************/
+static int pthread_mutex_lock( pthread_mutex_t* mutex )
 {
 	return WaitForSingleObject( *mutex, INFINITE ) == WAIT_OBJECT_0 ? 0 : -1;
 }
 
-static int pthread_mutex_unlock( pthread_mutex_t *mutex )
+/**********************************************************************************************/
+static int pthread_mutex_unlock( pthread_mutex_t* mutex )
 {
-	return ReleaseMutex( *mutex ) == 0 ? -1 : 0;
+	return !ReleaseMutex( *mutex ) ? -1 : 0;
 }
 
-static int pthread_cond_init( pthread_cond_t *cv, const void *unused )
+/**********************************************************************************************/
+static int pthread_cond_init( pthread_cond_t* cv, const void* )
 {
-	unused = NULL;
 	cv->signal = CreateEvent( NULL, FALSE, FALSE, NULL );
 	cv->broadcast = CreateEvent( NULL, TRUE, FALSE, NULL );
 	return cv->signal != NULL && cv->broadcast != NULL ? 0 : -1;
 }
 
-static int pthread_cond_wait( pthread_cond_t *cv, pthread_mutex_t *mutex )
+/**********************************************************************************************/
+static int pthread_cond_wait( pthread_cond_t* cv, pthread_mutex_t* mutex )
 {
-	HANDLE handles[] = {cv->signal, cv->broadcast};
+	HANDLE handles[] = { cv->signal, cv->broadcast };
 	ReleaseMutex( *mutex );
 	WaitForMultipleObjects( 2, handles, FALSE, INFINITE );
 	return WaitForSingleObject( *mutex, INFINITE ) == WAIT_OBJECT_0 ? 0 : -1;
 }
 
-static int pthread_cond_signal( pthread_cond_t *cv )
+/**********************************************************************************************/
+static int pthread_cond_signal( pthread_cond_t* cv )
 {
-	return SetEvent( cv->signal ) == 0 ? -1 : 0;
+	return !SetEvent( cv->signal ) ? -1 : 0;
 }
 
-static int pthread_cond_broadcast( pthread_cond_t *cv )
+/**********************************************************************************************/
+static int pthread_cond_broadcast( pthread_cond_t* cv )
 {
 	// Implementation with PulseEvent() has race condition, see
 	// http://www.cs.wustl.edu/~schmidt/win32-cv-1.html
-	return PulseEvent( cv->broadcast ) == 0 ? -1 : 0;
+	return !PulseEvent( cv->broadcast ) ? -1 : 0;
 }
 
-static int pthread_cond_destroy( pthread_cond_t *cv )
+/**********************************************************************************************/
+static int pthread_cond_destroy( pthread_cond_t* cv )
 {
 	return CloseHandle( cv->signal ) && CloseHandle( cv->broadcast ) ? 0 : -1;
 }
 
 #    define set_close_on_exec(fd) // No FD_CLOEXEC on Windows
 
-static int mg_start_thread( mg_thread_func_t f, void *p )
+/**********************************************************************************************/
+static int mg_start_thread( mg_thread_func_t f, void* p )
 {
 	return _beginthread( (void (__cdecl *) (void *) ) f, 0, p ) == -1L ? -1 : 0;
 }
 
 #    ifndef NO_SSL
 
-static HANDLE dlopen( const char *dll_name, int flags )
+/**********************************************************************************************/
+static HANDLE dlopen( const char* dll_name, int )
 {
-	flags = 0; // Unused
 	return LoadLibraryA( dll_name );
 }
+
 #    endif // NO_SSL
 
+/**********************************************************************************************/
 static int set_non_blocking_mode( SOCKET sock )
 {
 	unsigned long on = 1;
@@ -436,24 +467,24 @@ static int set_non_blocking_mode( SOCKET sock )
 
 #else
 
+/**********************************************************************************************/
 static void set_close_on_exec( int fd )
 {
 	fcntl( fd, F_SETFD, FD_CLOEXEC );
 }
 
-static int mg_start_thread( mg_thread_func_t func, void *param )
+/**********************************************************************************************/
+static int mg_start_thread( mg_thread_func_t func, void* param )
 {
 	pthread_t thread_id;
 	pthread_attr_t attr;
 
 	pthread_attr_init( &attr );
 	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
-	// TODO(lsm): figure out why mongoose dies on Linux if next line is enabled
-	// pthread_attr_setstacksize(&attr, sizeof(mg_connection) * 5);
-
 	return pthread_create( &thread_id, &attr, func, param );
 }
 
+/**********************************************************************************************/
 static int set_non_blocking_mode( SOCKET sock )
 {
 	int flags;
@@ -463,14 +494,16 @@ static int set_non_blocking_mode( SOCKET sock )
 
 	return 0;
 }
+
 #endif // _WIN32
 
+/**********************************************************************************************/
 // This function is needed to prevent Mongoose to be stuck in a blocking
 // socket read when user requested exit. To do that, we sleep in select
 // with a timeout, and when returned, check the context for the stop flag.
 // If it is set, we return 0, and this means that we must not continue
 // reading, must give up and close the connection and exit serving thread.
-
+//
 static int wait_until_socket_is_readable( mg_connection* conn )
 {
 	int result;
@@ -485,20 +518,20 @@ static int wait_until_socket_is_readable( mg_connection* conn )
 		FD_SET( conn->client.sock, &set );
 		result = select( conn->client.sock + 1, &set, NULL, NULL, &tv );
 	}
-	while ( ( result == 0 || ( result < 0 && ERRNO == EINTR ) ) &&
-			conn->ctx->stop_flag == 0 );
+	while( ( !result || ( result < 0 && ERRNO == EINTR ) ) && !conn->ctx->stop_flag );
 
 	return conn->ctx->stop_flag || result < 0 ? 0 : 1;
 }
 
+/**********************************************************************************************/
 // Read from IO channel - opened file descriptor, socket, or SSL descriptor.
 // Return negative value on error, or number of bytes read on success.
-
-static int pull( mg_connection *conn, char *buf, int len )
+//
+static int pull( mg_connection* conn, char* buf, int len )
 {
 	int nread;
 
-	if ( !wait_until_socket_is_readable( conn ) )
+	if( !wait_until_socket_is_readable( conn ) )
 	{
 		nread = -1;
 #ifndef NO_SSL	
@@ -517,13 +550,13 @@ static int pull( mg_connection *conn, char *buf, int len )
 }
 
 /**********************************************************************************************/
-int mg_read( mg_connection *conn, void *buf, size_t len )
+int mg_read( mg_connection *conn, void* buf, size_t len )
 {
 	int n, buffered_len, nread;
 	const char *body;
 
 	nread = 0;
-	if ( conn->consumed_content < conn->content_len )
+	if( conn->consumed_content < conn->content_len )
 	{
 		// Adjust number of bytes to read.
 		int to_read = conn->content_len - conn->consumed_content;
@@ -532,23 +565,24 @@ int mg_read( mg_connection *conn, void *buf, size_t len )
 
 		// Return buffered data
 		body = conn->buf + conn->request_len + conn->consumed_content;
-		buffered_len = &conn->buf[conn->data_len] - body;
-		if ( buffered_len > 0 )
+		buffered_len = &conn->buf[ conn->data_len ] - body;
+		
+		if( buffered_len > 0 )
 		{
-			if ( len < (size_t) buffered_len )
+			if( len < (size_t) buffered_len )
 				buffered_len = (int) len;
 
 			memmove( buf, body, (size_t) buffered_len );
 			len -= buffered_len;
 			conn->consumed_content += buffered_len;
 			nread += buffered_len;
-			buf = (char *) buf + buffered_len;
+			buf = (char*) buf + buffered_len;
 		}
 
 		// We have returned all buffered data. Read new data from the remote socket.
 		while( len > 0 )
 		{
-			n = pull( conn, (char *) buf, (int) len );
+			n = pull( conn, (char*) buf, (int) len );
 			if( n < 0 )
 			{
 				nread = n;  // Propagate the error
@@ -560,36 +594,36 @@ int mg_read( mg_connection *conn, void *buf, size_t len )
 			}
 			else
 			{
-				buf = (char *) buf + n;
+				buf = (char*) buf + n;
 				conn->consumed_content += n;
 				nread += n;
 				len -= n;
 			}
 		}
 	}
+	
 	return nread;
 }
 
 /**********************************************************************************************/
 int mg_write( mg_connection* conn, const char* buf, size_t len )
 {
-	int sent;
 	int n, k;
 
-	sent = 0;
+	int sent = 0;
 	while( sent < (int) len )
 	{
 		// How many bytes we send in this iteration
 		k = (int) ( len - sent );
 
 #ifndef NO_SSL	
-		if ( conn->ssl )
+		if( conn->ssl )
 			n = SSL_write( (SSL*) conn->ssl, buf + sent, k );
 		else
 #endif // NO_SSL		
 			n = send( conn->client.sock, buf + sent, (size_t) k, MSG_NOSIGNAL );
 
-		if ( n < 0 )
+		if( n < 0 )
 			break;
 
 		sent += n;
@@ -598,37 +632,40 @@ int mg_write( mg_connection* conn, const char* buf, size_t len )
 	return sent;
 }
 
+/**********************************************************************************************/
 // URL-decode input buffer into destination buffer.
 // 0-terminate the destination buffer. Return the length of decoded data.
 // form-url-encoded data differs from URI encoding in a way that it
 // uses '+' as character for space, see RFC 1866 section 8.2.1
 // http://ftp.ics.uci.edu/pub/ietf/html/rfc1866.txt
-
+//
 static size_t url_decode( char* buf, size_t len )
 {
 	size_t i, j;
 	int a, b;
-#define HEXTOI(x) (isdigit(x) ? x - '0' : x - 'W')
+	
+#define HEXTOI( x ) ( isdigit( x ) ? x - '0' : x - 'W' )
 
-	for ( i = j = 0; i < len; i++, j++ )
+	for( i = j = 0 ; i < len ; i++, j++ )
 	{
-		if ( buf[i] == '%' &&
-			 isxdigit( * (const unsigned char *) ( buf + i + 1 ) ) &&
-			 isxdigit( * (const unsigned char *) ( buf + i + 2 ) ) )
+		if( buf[ i ] == '%' &&
+			isxdigit( *(unsigned char*) ( buf + i + 1 ) ) &&
+			isxdigit( *(unsigned char*) ( buf + i + 2 ) ) )
 		{
-			a = tolower( * (const unsigned char *) ( buf + i + 1 ) );
-			b = tolower( * (const unsigned char *) ( buf + i + 2 ) );
-			buf[j] = (char) ( ( HEXTOI( a ) << 4 ) | HEXTOI( b ) );
+			a = mg_tolower( *(unsigned char*) ( buf + i + 1 ) );
+			b = mg_tolower( *(unsigned char*) ( buf + i + 2 ) );
+			
+			buf[ j ] = (char) ( ( HEXTOI( a ) << 4 ) | HEXTOI( b ) );
 			i += 2;
 		}
 		else
 		{
 			if( j != i )
-				buf[j] = buf[i];
+				buf[ j ] = buf[ i ];
 		}
 	}
 
-	buf[j] = '\0'; // Null-terminate the destination
+	buf[ j ] = 0; // Null-terminate the destination
 	return j;
 }
 
@@ -637,49 +674,50 @@ static size_t url_decode( char* buf, size_t len )
 /**********************************************************************************************/
 static int sslize( mg_connection* conn, SSL_CTX* s, int (*func )( SSL * ) )
 {
-	return
-	(conn->ssl = SSL_new( s ) ) != NULL &&
+	return ( conn->ssl = SSL_new( s ) ) &&
 		SSL_set_fd( (SSL*) conn->ssl, conn->client.sock ) == 1 &&
 		func( (SSL*) conn->ssl ) == 1;
 }
 
 #endif // NO_SSL
 
+/**********************************************************************************************/
 // Check whether full request is buffered. Return:
-//   -1  if request is malformed
-//	0  if request is not yet fully buffered
-//   >0  actual request length, including last \r\n\r\n
-
-static int get_request_len( const char *buf, int buflen )
+//   -1 if request is malformed
+//	  0 if request is not yet fully buffered
+//  > 0 actual request length, including last \r\n\r\n
+//
+static int get_request_len( const char* buf, int buflen )
 {
 	const char *s, *e;
 	int len = 0;
 
-	for ( s = buf, e = s + buflen - 1; len <= 0 && s < e; s++ )
+	for( s = buf, e = s + buflen - 1 ; len <= 0 && s < e ; s++ )
+	{
 		// Control characters are not allowed but >=128 is.
-		if ( !isprint( * (const unsigned char *) s ) && *s != '\r' &&
-			 *s != '\n' && * (const unsigned char *) s < 128 )
+		if( !isprint( *(const unsigned char*) s ) && *s != '\r' && *s != '\n' && *(const unsigned char*) s < 128 )
 		{
 			len = -1;
 			break; // [i_a] abort scan as soon as one malformed character is found; don't let subsequent \r\n\r\n win us over anyhow
 		}
-		else if ( s[0] == '\n' && s[1] == '\n' )
+		else if( s[ 0 ] == '\n' && s[ 1 ] == '\n' )
 		{
 			len = (int) ( s - buf ) + 2;
 		}
-		else if ( s[0] == '\n' && &s[1] < e &&
-		  s[1] == '\r' && s[2] == '\n' )
+		else if( s[ 0 ] == '\n' && &s[ 1 ] < e && s[ 1 ] == '\r' && s[ 2 ] == '\n' )
 		{
 			len = (int) ( s - buf ) + 3;
 		}
+	}
 
 	return len;
 }
 
+/**********************************************************************************************/
 // Parse HTTP headers from the given buffer, advance buffer to the point
 // where parsing stopped.
-
-static void parse_http_headers( char **buf, mg_request_info *ri )
+//
+static void parse_http_headers( char** buf, mg_request_info& ri )
 {
 	for( int i = 0 ; i < 64 ; ++i )
 	{
@@ -688,10 +726,10 @@ static void parse_http_headers( char **buf, mg_request_info *ri )
 		
 		if( name && *name )
 		{
-			ri->headers_.add( name, value );
+			ri.headers_.add( name, value );
 			while( *name )
 			{
-				*name = tolower( *name );
+				*name = mg_tolower( *name );
 				++name;
 			}
 		}
@@ -702,40 +740,42 @@ static void parse_http_headers( char **buf, mg_request_info *ri )
 	}
 }
 
+/**********************************************************************************************/
 // Parse HTTP request, fill in mg_request_info structure.
 // This function modifies the buffer by NUL-terminating
 // HTTP request components, header names and header values.
-
-static int parse_http_message( char *buf, int len, mg_request_info *ri )
+//
+static int parse_http_message( char* buf, int len, mg_request_info& ri )
 {
 	int request_length = get_request_len( buf, len );
-	if ( request_length > 0 )
+	if( request_length > 0 )
 	{
 		// Reset attributes. DO NOT TOUCH is_ssl, remote_ip, remote_port
-		ri->method_ = ri->uri_ = NULL;
-		ri->headers_.reset();
+		ri.method_ = ri.uri_ = NULL;
+		ri.headers_.reset();
 
-		buf[request_length - 1] = '\0';
+		buf[ request_length - 1 ] = '\0';
 
 		// RFC says that all initial whitespaces should be ingored
-		while ( *buf != '\0' && isspace( * (unsigned char *) buf ) )
-		{
+		while( *buf && isspace( *(unsigned char*) buf ) )
 			buf++;
-		}
-		ri->method_ = skip( &buf, " " );
-		ri->uri_ = skip( &buf, " " );
+
+		ri.method_ = skip( &buf, " " );
+		ri.uri_ = skip( &buf, " " );
 		skip( &buf, "\r\n" );
 		parse_http_headers( &buf, ri );
 	}
+	
 	return request_length;
 }
 
+/**********************************************************************************************/
 // Keep reading the input (either opened file descriptor fd, or socket sock,
 // or SSL descriptor ssl) into buffer buf, until \r\n\r\n appears in the
 // buffer (which marks the end of HTTP request). Buffer buf may already
 // have some data. The length of the data is stored in nread.
 // Upon every read operation, increase nread by the number of bytes read.
-
+//
 static int read_request( 
 	mg_connection*	conn,
 	char*			buf,
@@ -745,44 +785,36 @@ static int read_request(
 	int request_len, n = 1;
 
 	request_len = get_request_len( buf, *nread );
-	while ( *nread < bufsiz && request_len == 0 && n > 0 )
+	while( *nread < bufsiz && !request_len && n > 0 )
 	{
 		n = pull( conn, buf + *nread, bufsiz - *nread );
-		if ( n > 0 )
+		if( n > 0 )
 		{
 			*nread += n;
 			request_len = get_request_len( buf, *nread );
 		}
 	}
 
-	if ( n < 0 )
+	if( n < 0 )
 	{
 		// recv() error -> propagate error; do not process a b0rked-with-very-high-probability request
 		return -1;
 	}
+	
 	return request_len;
 }
 
 /**********************************************************************************************/
 void event_handler( mg_connection* conn );
 
-// This is the heart of the Mongoose's logic.
-// This function is called when the request is read, parsed and validated,
-// and Mongoose must decide what action to take: serve a file, or
-// a directory, or call embedded function, etcetera.
-
+/**********************************************************************************************/
 static void handle_request( mg_connection *conn )
 {
-	mg_request_info *ri = &conn->request_info;
-	int uri_len;
+	mg_request_info& ri = conn->request_info;
+	if( ri.query_parameters_ = strchr( ri.uri_, '?' ) )
+		*ri.query_parameters_++ = '\0';
 
-	if ( ( conn->request_info.query_parameters_ = strchr( (char*) ri->uri_, '?' ) ) != NULL )
-	{
-		* ( (char *) conn->request_info.query_parameters_++ ) = '\0';
-	}
-	uri_len = (int) strlen( ri->uri_ );
-	url_decode( ri->uri_, uri_len );
-
+	url_decode( ri.uri_, strlen( ri.uri_ ) );
 	event_handler( conn );
 }
 
@@ -895,7 +927,7 @@ static int set_ports_option( mg_context* ctx, const char* list, const char* pem_
 		  listen( sock, SOMAXCONN ) != 0 )
 		{
 			closesocket( sock );
-			error_string = "cannot bind socket";
+			error_string = "Cannot bind socket, another socket is already listening on the same port or you must have more privileges";
 			success = 0;
 		}
 		else
@@ -1121,18 +1153,19 @@ static void close_connection( mg_connection *conn )
 	}
 }
 
-static void process_new_connection( mg_connection *conn )
+/**********************************************************************************************/
+static void process_new_connection( mg_connection* conn )
 {
-	mg_request_info *ri = &conn->request_info;
+	mg_request_info& ri = conn->request_info;
 	int discard_len;
 	const char *cl;
 	
 	do
 	{
 		reset_per_request_attributes( conn );
-		conn->request_len = read_request( conn, conn->buf, MAX_REQUEST_SIZE,
-										  &conn->data_len );
-		if( conn->request_len == 0 && conn->data_len == MAX_REQUEST_SIZE )
+		conn->request_len = read_request( conn, conn->buf, MAX_REQUEST_SIZE, &conn->data_len );
+
+		if( !conn->request_len && conn->data_len == MAX_REQUEST_SIZE )
 		{
 			mg_write( conn, "HTTP/1.1 413 Request Entity Too Large\r\nContent-Length: 0\r\n\r\n", 60 );
 			return;
@@ -1141,7 +1174,7 @@ static void process_new_connection( mg_connection *conn )
 		if( conn->request_len <= 0 )
 			return;  // Remote end closed the connection
 		
-		if( parse_http_message( conn->buf, MAX_REQUEST_SIZE, ri ) <= 0 || *ri->uri_ != '/' )
+		if( parse_http_message( conn->buf, MAX_REQUEST_SIZE, ri ) <= 0 || *ri.uri_ != '/' )
 		{
 			mg_write( conn, "HTTP/1.1 400 Bad Request Too Large\r\nContent-Length: 0\r\n\r\n", 57 );
 			conn->must_close = 1;
@@ -1149,9 +1182,9 @@ static void process_new_connection( mg_connection *conn )
 		else
 		{
 			// Request is valid, handle it
-			if ( ( cl = ri->headers_.value( "content-length", 14 ) ) != NULL )
+			if ( ( cl = ri.headers_.value( "content-length", 14 ) ) != NULL )
 				conn->content_len = strtol( cl, NULL, 10 );
-			else if ( !strcmp( ri->method_, "POST" ) || !strcmp( ri->method_, "PUT" ) )
+			else if ( !strcmp( ri.method_, "POST" ) || !strcmp( ri.method_, "PUT" ) )
 				conn->content_len = -1;
 			else
 				conn->content_len = 0;
@@ -1164,33 +1197,33 @@ static void process_new_connection( mg_connection *conn )
 		discard_len = conn->content_len >= 0 &&
 			conn->request_len + conn->content_len < (int) conn->data_len ?
 			(int) ( conn->request_len + conn->content_len ) : conn->data_len;
+
 		memmove( conn->buf, conn->buf + discard_len, conn->data_len - discard_len );
 		conn->data_len -= discard_len;
 	}
-	while ( conn->ctx->stop_flag == 0 &&
-			conn->content_len >= 0 &&
-			should_keep_alive( conn ) );
+	while( !conn->ctx->stop_flag && conn->content_len >= 0 && should_keep_alive( conn ) );
 }
 
+/**********************************************************************************************/
 // Worker threads take accepted socket from the queue
-
-static int consume_socket( mg_context *ctx, mg_socket *sp )
+//
+static int consume_socket( mg_context* ctx, mg_socket* sp )
 {
 	pthread_mutex_lock( &ctx->mutex );
 
 	// If the queue is empty, wait. We're idle at this point.
-	while( ctx->sq_head == ctx->sq_tail && ctx->stop_flag == 0 )
+	while( ctx->sq_head == ctx->sq_tail && !ctx->stop_flag )
 		pthread_cond_wait( &ctx->sq_full, &ctx->mutex );
 
 	// If we're stopping, sq_head may be equal to sq_tail.
-	if ( ctx->sq_head > ctx->sq_tail )
+	if( ctx->sq_head > ctx->sq_tail )
 	{
 		// Copy socket from the queue and increment tail
-		*sp = ctx->queue[ctx->sq_tail % ARRAY_SIZE( ctx->queue )];
+		*sp = ctx->queue[ ctx->sq_tail % ARRAY_SIZE( ctx->queue ) ];
 		ctx->sq_tail++;
 
 		// Wrap pointers if needed
-		while ( ctx->sq_tail > (int) ARRAY_SIZE( ctx->queue ) )
+		while( ctx->sq_tail > (int) ARRAY_SIZE( ctx->queue ) )
 		{
 			ctx->sq_tail -= ARRAY_SIZE( ctx->queue );
 			ctx->sq_head -= ARRAY_SIZE( ctx->queue );
@@ -1203,18 +1236,17 @@ static int consume_socket( mg_context *ctx, mg_socket *sp )
 	return !ctx->stop_flag;
 }
 
+/**********************************************************************************************/
 static void worker_thread( mg_context *ctx )
 {
 	mg_connection conn;
+	
+	// TODO: reset only some bytes
 	memset( &conn, 0, sizeof conn );
-
-	char buf[ MAX_REQUEST_SIZE ];
-	conn.buf = buf;
-	memset( buf, 0, MAX_REQUEST_SIZE );
 
 	// Call consume_socket() even when ctx->stop_flag > 0, to let it signal
 	// sq_empty condvar to wake up the master waiting in produce_socket()
-	while ( consume_socket( ctx, &conn.client ) )
+	while( consume_socket( ctx, &conn.client ) )
 	{
 		conn.birth_time = time( NULL );
 		conn.ctx = ctx;
@@ -1224,8 +1256,7 @@ static void worker_thread( mg_context *ctx )
 		// Thanks to Johannes Winkelmann for the patch.
 		// TODO(lsm): Fix IPv6 case
 		conn.request_info.remote_port_ = ntohs( conn.client.rsa.sin.sin_port );
-		memmove( &conn.request_info.remote_ip_,
-				&conn.client.rsa.sin.sin_addr.s_addr, 4 );
+		memmove( &conn.request_info.remote_ip_, &conn.client.rsa.sin.sin_addr.s_addr, 4 );
 		conn.request_info.remote_ip_ = ntohl( conn.request_info.remote_ip_ );
 
 #ifndef NO_SSL	
@@ -1247,20 +1278,18 @@ static void worker_thread( mg_context *ctx )
 	pthread_mutex_unlock( &ctx->mutex );
 }
 
+/**********************************************************************************************/
 // Master thread adds accepted socket to a queue
-
-static void produce_socket( mg_context *ctx, const mg_socket *sp )
+//
+static void produce_socket( mg_context* ctx, const mg_socket* sp )
 {
 	pthread_mutex_lock( &ctx->mutex );
 
 	// If the queue is full, wait
-	while ( ctx->stop_flag == 0 &&
-			ctx->sq_head - ctx->sq_tail >= (int) ARRAY_SIZE( ctx->queue ) )
-	{
+	while( ctx->stop_flag == 0 && ctx->sq_head - ctx->sq_tail >= (int) ARRAY_SIZE( ctx->queue ) )
 		pthread_cond_wait( &ctx->sq_empty, &ctx->mutex );
-	}
 
-	if ( ctx->sq_head - ctx->sq_tail < (int) ARRAY_SIZE( ctx->queue ) )
+	if( ctx->sq_head - ctx->sq_tail < (int) ARRAY_SIZE( ctx->queue ) )
 	{
 		// Copy socket to the queue and increment head
 		ctx->queue[ctx->sq_head % ARRAY_SIZE( ctx->queue )] = *sp;
@@ -1271,16 +1300,18 @@ static void produce_socket( mg_context *ctx, const mg_socket *sp )
 	pthread_mutex_unlock( &ctx->mutex );
 }
 
-static void accept_new_connection( const mg_socket *listener,
-								   mg_context *ctx )
+/**********************************************************************************************/
+static void accept_new_connection(
+	const mg_socket*	listener,
+	mg_context*			ctx )
 {
 	mg_socket accepted;
-	socklen_t len;
+	socklen_t len = sizeof( accepted.rsa );
 
-	len = sizeof(accepted.rsa );
 	accepted.lsa = listener->lsa;
 	accepted.sock = accept( listener->sock, &accepted.rsa.sa, &len );
-	if ( accepted.sock != INVALID_SOCKET )
+	
+	if( accepted.sock != INVALID_SOCKET )
 	{
 		// Put accepted socket structure into the queue
 #ifndef NO_SSL	  
@@ -1290,10 +1321,11 @@ static void accept_new_connection( const mg_socket *listener,
 	}
 }
 
+/**********************************************************************************************/
 static void master_thread( mg_context *ctx )
 {
 	fd_set read_set;
-	struct timeval tv;
+	timeval tv;
 	mg_socket *sp;
 	int max_fd;
 
@@ -1302,21 +1334,19 @@ static void master_thread( mg_context *ctx )
 	SetThreadPriority( GetCurrentThread( ), THREAD_PRIORITY_ABOVE_NORMAL );
 #endif
 
-	while ( ctx->stop_flag == 0 )
+	while( !ctx->stop_flag )
 	{
 		FD_ZERO( &read_set );
 		max_fd = -1;
 
 		// Add listening sockets to the read set
-		for ( sp = ctx->listening_sockets; sp != NULL; sp = sp->next )
-		{
+		for( sp = ctx->listening_sockets ; sp ; sp = sp->next )
 			add_to_set( sp->sock, &read_set, &max_fd );
-		}
 
 		tv.tv_sec = 0;
 		tv.tv_usec = 200 * 1000;
 
-		if ( select( max_fd + 1, &read_set, NULL, NULL, &tv ) < 0 )
+		if( select( max_fd + 1, &read_set, NULL, NULL, &tv ) < 0 )
 		{
 #ifdef _WIN32
 			// On windows, if read_set and write_set are empty,
@@ -1327,12 +1357,10 @@ static void master_thread( mg_context *ctx )
 		}
 		else
 		{
-			for ( sp = ctx->listening_sockets; sp != NULL; sp = sp->next )
+			for( sp = ctx->listening_sockets ; sp ; sp = sp->next )
 			{
-				if ( ctx->stop_flag == 0 && FD_ISSET( sp->sock, &read_set ) )
-				{
+				if( !ctx->stop_flag && FD_ISSET( sp->sock, &read_set ) )
 					accept_new_connection( sp, ctx );
-				}
 			}
 		}
 	}
@@ -1345,10 +1373,9 @@ static void master_thread( mg_context *ctx )
 
 	// Wait until all threads finish
 	pthread_mutex_lock( &ctx->mutex );
-	while ( ctx->num_threads > 0 )
-	{
+	while( ctx->num_threads > 0 )
 		pthread_cond_wait( &ctx->cond, &ctx->mutex );
-	}
+
 	pthread_mutex_unlock( &ctx->mutex );
 
 	// All threads exited, no sync is needed. Destroy mutex and condvars
@@ -1372,15 +1399,13 @@ static void free_context( mg_context *ctx )
 {
 	// Deallocate SSL context
 #ifndef NO_SSL	
-	if ( ctx->ssl_ctx != NULL )
-	{
+	if( ctx->ssl_ctx )
 		SSL_CTX_free( ctx->ssl_ctx );
-	}
-	if ( ctx->client_ssl_ctx != NULL )
-	{
+
+	if( ctx->client_ssl_ctx )
 		SSL_CTX_free( ctx->client_ssl_ctx );
-	}
-	if ( ssl_mutexes != NULL )
+
+	if( ssl_mutexes )
 	{
 		free( ssl_mutexes );
 		ssl_mutexes = NULL;
@@ -1397,19 +1422,18 @@ void mg_stop( mg_context *ctx )
 	ctx->stop_flag = 1;
 
 	// Wait until mg_fini() stops
-	while ( ctx->stop_flag != 2 )
-	{
+	while( ctx->stop_flag != 2 )
 		mg_sleep_int( 10 );
-	}
+
 	free_context( ctx );
 
 #if defined(_WIN32)
-	WSACleanup( );
+	WSACleanup();
 #endif // _WIN32
 }
 
 /**********************************************************************************************/
-mg_context *mg_start(
+mg_context* mg_start(
 	const char* ports,
 	const char* pem_file,
 	size_t		thread_count )
@@ -1423,7 +1447,6 @@ mg_context *mg_start(
 #endif // _WIN32
 
 	// Allocate context and initialize reasonable general case defaults.
-	// TODO(lsm): do proper error handling here.
 	ctx = (mg_context *) calloc( 1, sizeof(*ctx ) );
 
 	// NOTE(lsm): order is important here. SSL certificates must
@@ -1511,14 +1534,7 @@ const char* mg_get_error_string( void )
 }
 
 /**********************************************************************************************/
-void mg_close_connection( mg_connection* conn )
-{
-	close_connection( conn );
-	free( conn );
-}
-
-/**********************************************************************************************/
-mg_connection* mg_connect(
+static mg_connection* mg_connect(
 	mg_context*	ctx,
 	const char*	host,
 	int			port,
@@ -1570,10 +1586,10 @@ mg_connection* mg_connect(
 }
 
 /**********************************************************************************************/
-static int parse_http_response( char* buf, int len, mg_request_info* ri )
+inline int parse_http_response( char* buf, int len, mg_request_info& ri )
 {
 	int result = parse_http_message( buf, len, ri );
-	return result > 0 && !strncmp( ri->method_, "HTTP/", 5 ) ? result : -1;
+	return result > 0 && !strncmp( ri.method_, "HTTP/", 5 ) ? result : -1;
 }
 
 /**********************************************************************************************/
@@ -1584,8 +1600,10 @@ bool mg_fetch(
 	mg_context*	ctx,
 	const char*	url,
 	cr_headers*	headers,
-	bool		redirected )
+	int			redirect_count )
 {
+	// TODO:
+	
 	out = NULL;
 	
 	mg_connection* conn;
@@ -1616,7 +1634,7 @@ bool mg_fetch(
 		str = add_string( str, url + n, strlen( url + n ) );
 		str = add_string( str, " HTTP/1.0\r\nHost: ", 17 );
 		str = add_string( str, host, strlen( host ) );
-		str = add_string( str, "\r\n\r\n", 4 );
+		str = add_string( str, "\r\nUser-Agent: Mozilla/5.0 Gecko Firefox/18\r\n\r\n", 46 );
 		mg_write( conn, buf, str - buf );
 		
 		int data_length = 0;
@@ -1624,7 +1642,7 @@ bool mg_fetch(
 		if( req_length <= 0 )
 		{
 		}
-		else if( parse_http_response( buf, req_length, &ri ) <= 0 )
+		else if( parse_http_response( buf, req_length, ri ) <= 0 )
 		{
 		}
 		else
@@ -1633,10 +1651,12 @@ bool mg_fetch(
 				*headers = ri.headers_;
 			
 			const char* location = ri.headers_.value( "location", 8 );
-			if( location && !redirected )
+			if( location && redirect_count < 5 )
 			{
-				mg_close_connection( conn );
-				return mg_fetch( buf, out, out_size, ctx, location, headers, true );
+				close_connection( conn );
+				free( conn );
+
+				return mg_fetch( buf, out, out_size, ctx, location, headers, redirect_count + 1 );
 			}
 		
 			// Write chunk of data that may be in the user's buffer
@@ -1672,7 +1692,8 @@ bool mg_fetch(
 			out_size = str - out;
 		}
 		
-		mg_close_connection( conn );
+		close_connection( conn );
+		free( conn );
 	}
 	
 	return out != NULL;
