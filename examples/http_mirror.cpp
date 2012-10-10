@@ -5,16 +5,14 @@
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
-// TODO: update from source by timeout + etag
-
 // STD
 #include <memory>
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 
 // CREST
 #include "../include/crest.h"
-#include "../src/utils.h"
+#include "../include/cr_utils.h"
 
 /**********************************************************************************************/
 using namespace std;
@@ -30,131 +28,144 @@ using namespace std;
 
 
 //////////////////////////////////////////////////////////////////////////
-// global data
+// types
 //////////////////////////////////////////////////////////////////////////
+
+
+/**********************************************************************************************/
+struct cached_data
+{
+	~cached_data( void ) { free( ptr_ ); }
+	
+	size_t	len_;
+	char*	ptr_;
+};
 
 
 /**********************************************************************************************/
 struct resource
 {
-	shared_ptr<string>	data;
-	shared_ptr<string>	etag;
-	time_t				expire;
+	shared_ptr<cached_data>	data_;
+	shared_ptr<string>		etag_;
+	time_t					expire_;
 };
+
+
+//////////////////////////////////////////////////////////////////////////
+// global data
+//////////////////////////////////////////////////////////////////////////
+
 
 /**********************************************************************************************/
 static unordered_map<string,resource> g_cache;
-static size_t	g_memory_usage	= 0;
+static size_t	g_memory_usage;
+static cr_mutex g_mutex_cache;
 static string	g_source;
 
-/**********************************************************************************************/
-static cr_mutex g_mutex_cache;
-
 
 //////////////////////////////////////////////////////////////////////////
-// handlers
+// http handlers
 //////////////////////////////////////////////////////////////////////////
 
 
 /**********************************************************************************************/
-GET_PUBLIC( * )( cr_connection& conn )
+GET( * )( cr_connection& conn )
 {
 	time_t t = time( NULL );
 	string url = conn.get_url();
 	
 	// Add query parameters to url
 	const char* qs = conn.get_query_string();
-	if( *qs )
-	{
-		url += '?';
-		url += qs;
-	}
+	if( *qs ) { url += '?';	url += qs; }
 
 	LOCK_CACHE
 	
 	// Search for non-expired cached content
 	auto it = g_cache.find( url );
-	if( it != g_cache.end() && ( EXPIRATION_TIME_SEC == 0 || it->second.expire > t ) )
+	if( it != g_cache.end() && it->second.expire_ > t )
 	{
-		auto etag = it->second.etag;
-		auto data = it->second.data;
+		auto data = it->second.data_;
+		auto etag = it->second.etag_;
 		
 		UNLOCK_CACHE
 		
 		// Send 403 status if client already has cached version of resource.
-		const char* r_etag = conn.get_http_header( "if-none-match" );
-		if( r_etag && *etag == r_etag )
+		const char* client_etag = conn.get_http_header( "if-none-match" );
+		if( client_etag && *etag == client_etag )
 		{
 			conn.respond( CR_HTTP_NOT_MODIFIED );
 			return;
 		}
 		
 		// Send responce with resource's content
-		conn.write( *data );
+		conn.write( data->ptr_, data->len_ );
 	}
 	// Fetch value from mirrored site
 	else
 	{
+		// Forget expired data
 		if( it != g_cache.end() )
 			g_cache.erase( it );
 		
 		UNLOCK_CACHE
 			
-		string curl = g_source + url;
-		
-		char* content;
-		size_t content_size;
-		cr_headers headers;
+		char*		content;
+		size_t		content_size;
+		string		curl = g_source + url;
+		cr_headers	source_headers;
 		
 		// Fetch resource
-		if( conn.fetch( curl.c_str(), content, content_size, &headers ) )
+		if( conn.fetch( curl.c_str(), content, content_size, &source_headers ) )
 		{
 			cr_headers cache_headers;
 			
 			// Keep original 'content-type' header
-			const char* type = headers.value( "content-type" );
+			const char* type = source_headers.value( "content-type", 12 );
 			if( type )
-				cache_headers.add( "content-type", type );
+				cache_headers.add( "content-type", type, 12 );
 			
 			// Add 'ETag' so client can use cached version of resource
 			auto etag = make_shared<string>( to_string( time( NULL ) ) );
-			cache_headers.add( "etag", etag->c_str() );
+			cache_headers.add( "etag", etag->c_str(), 4, etag->length() );
 			
 			// Generate responce with status, headers and content
-			char* rbuf;
-			size_t rlen;
-			create_responce( rbuf, rlen, CR_HTTP_OK, content, content_size, &cache_headers );
+			char* data;
+			size_t data_len;
+			create_responce( data, data_len, CR_HTTP_OK, content, content_size, &cache_headers );
 			free( content );
 			
-			// Store responce into shared_ptr<string>
-			auto data = make_shared<string>();
-			data->assign( rbuf, rlen );
-			free( rbuf );
-			
-			// 'Send' responce into cache if it not too big
-			if( data->length() < MAX_RESOURCE_SIZE )
+			// Save responce into cache if it not too big
+			if( data_len < MAX_RESOURCE_SIZE )
 			{
+				resource rs;
+				rs.data_		= make_shared<cached_data>();
+				rs.data_->len_	= data_len;
+				rs.data_->ptr_	= data;
+				rs.etag_		= etag;
+				rs.expire_		= time( NULL ) + EXPIRATION_TIME_SEC;
+				
 				LOCK_CACHE
 
-				if( g_memory_usage + data->length() > MAX_MEMORY_USAGE )
+				// Check total memory usage bound
+				if( g_memory_usage + data_len > MAX_MEMORY_USAGE )
 				{
 					g_memory_usage = 0;
 					g_cache.clear();
 				}
-				
-				g_memory_usage += data->length();
-				
-				auto& rs = g_cache[ url ];
-				rs.data = data;
-				rs.etag = etag;
-				if( EXPIRATION_TIME_SEC )
-					rs.expire = time( NULL ) + EXPIRATION_TIME_SEC;
+
+				// Add data to cache
+				g_cache[ url ] = rs;
+				g_memory_usage += data_len;
 				
 				UNLOCK_CACHE
 			}
 				
 			// Send responce to client
-			conn.write( *data );
+			conn.write( data, data_len );
+			
+			// Free resources if need
+			if( data_len >= MAX_RESOURCE_SIZE )
+				free( data );
 		}
 		// We cannot fetach resource - send 404 status to client
 		else

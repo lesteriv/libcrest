@@ -55,8 +55,6 @@ GET( * )( cr_connection& conn )
 int main( void )
 {
 	cr_options opts;
-	opts.thread_count = 1;
-	
 	if( !cr_start( opts ) )
 		printf( "%s\n", cr_error_string() );
 }

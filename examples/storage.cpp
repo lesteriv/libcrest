@@ -17,16 +17,24 @@
 using namespace std;
 
 /**********************************************************************************************/
-#define COLLECTION	conn.get_path_parameter( 1 )
-#define KEY			conn.get_path_parameter( 2 )
-#define LOCK		g_mutex.lock();
-#define UNLOCK		g_mutex.unlock();
+#define COLLECTION	conn.get_path_parameter( 0 )
+#define KEY			conn.get_path_parameter( 1 )
+#define LOCK		g_mutex_hash.lock();
+#define UNLOCK		g_mutex_hash.unlock();
+
+
+//////////////////////////////////////////////////////////////////////////
+// global data
+//////////////////////////////////////////////////////////////////////////
+
 
 /**********************************************************************************************/
 static unordered_map<string,unordered_map<string,shared_ptr<string>>> g_hashes;
 static int64_t		g_counter = 1 << 20;
-static cr_mutex		g_mutex;
+
+/**********************************************************************************************/
 static cr_mutex		g_mutex_counter;
+static cr_mutex		g_mutex_hash;
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -197,5 +205,5 @@ int main( void )
 {
 	cr_options opts;
 	if( !cr_start( opts ) )
-		fputs( cr_error_string(), stdout );
+		printf( "%s\n", cr_error_string() );
 }
