@@ -16,9 +16,9 @@
 
 // CREST
 #include "../include/crest.h"
+#include "../include/cr_utils.h"
 #include "auth_basic.h"
 #include "auth_digest.h"
-#include "utils.h"
 
 /**********************************************************************************************/
 #ifdef _MSC_VER
@@ -78,10 +78,10 @@ extern "C" int __cxa_guard_release( int* guard ) { return *guard = 1; }
 /**********************************************************************************************/
 struct resource
 {
-	bool					admin_;
+	bool				admin_;
 	cr_api_callback_t	handler_;
-	crest_string_array		keys_;
-	bool					public_;
+	crest_string_array	keys_;
+	bool				public_;
 };
 
 /**********************************************************************************************/
@@ -302,7 +302,7 @@ cr_auto_handler_register::cr_auto_handler_register(
 }
 
 /**********************************************************************************************/
-void event_handler( mg_connection* conn );
+void event_handler( mg_connection* conn ); // To avoid warning from GCC
 void event_handler( mg_connection* conn )
 {
 	++g_request_count;

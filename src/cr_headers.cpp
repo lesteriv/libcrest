@@ -68,6 +68,20 @@ size_t cr_headers::count( void ) const
 }
 
 /**********************************************************************************************/
+int cr_headers::index( const char* name ) const
+{
+	size_t name_len = strlen( name );
+	
+	for( size_t i = 0 ; i < count_ ; ++i )
+	{
+		if( names_len_[ i ] == name_len && !strcmp( names_[ i ], name ) )
+			return i;
+	}
+	
+	return -1;	
+}
+
+/**********************************************************************************************/
 const char* cr_headers::name( size_t index ) const
 {
 	return names_[ index ];

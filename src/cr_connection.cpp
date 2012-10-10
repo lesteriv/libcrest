@@ -18,18 +18,20 @@
 
 // CREST
 #include "../include/crest.h"
-#include "utils.h"
+#include "../include/cr_utils.h"
 
 /**********************************************************************************************/
 #ifdef _MSC_VER
 #pragma warning( disable: 4996 )
 #endif // _WIN32
 
+#ifndef NO_DEFLATE
 /**********************************************************************************************/
 extern bool g_deflate;
 
 /**********************************************************************************************/
 static cr_headers g_deflate_headers( "Content-Encoding", "deflate" );
+#endif // NO_DEFLATE
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -47,6 +49,21 @@ time_t cr_connection::get_birth_time( void ) const
 size_t cr_connection::get_content_length( void ) const
 {
 	return mg_get_content_len( conn_ );
+}
+
+/**********************************************************************************************/
+const char* cr_connection::get_cookie( const char* name )
+{
+	cr_headers& headers = mg_get_request_info( conn_ )->headers_;
+	int index = headers.index( name );
+	if( index < 0 )
+		return "";
+	
+	size_t len = headers.value_len( index );
+	char* value = (char*) headers.value( index );
+
+	(void) len;
+	return value;
 }
 
 /**********************************************************************************************/
@@ -90,6 +107,13 @@ const char* cr_connection::get_query_parameter( const char* name ) const
 	}
 	
 	return "";
+}
+
+/**********************************************************************************************/
+const char* cr_connection::get_query_string( void ) const
+{
+	const char* res = mg_get_request_info( conn_ )->query_parameters_;
+	return res ? res : "";
 }
 
 /**********************************************************************************************/
@@ -163,21 +187,53 @@ void cr_connection::respond(
 }
 
 /**********************************************************************************************/
+void cr_connection::respond_header(
+	cr_http_status	rc,
+	size_t			data_len,
+	cr_headers*		headers )
+{
+	char header[ 16384 ];
+	size_t header_len;
+	create_responce_header( header, header_len, rc, data_len, headers );
+	mg_write( conn_, header, header_len );	
+}
+		
+/**********************************************************************************************/
 void cr_connection::send_file( const char* path )
 {
+	time_t t = file_modification_time( path );
+	if( !t )
+	{
+		respond( CR_HTTP_NOT_FOUND );
+		return;
+	}
+
+	char tstr[ 64 ];
+	to_string( tstr, t );
+	
+	const char* etag = get_http_header( "if-none-match" );
+	if( etag && !strcmp( etag, tstr ) )
+	{
+		respond( CR_HTTP_NOT_MODIFIED );
+		return;
+	}
+	
 	FILE* f = fopen( path, "rb" );
 	if( !f )
 	{
-		respond( CR_HTTP_NOT_FOUND );
+		respond( CR_HTTP_FORBIDDEN );
 		return;
 	}
 
 	fseek( f, 0, SEEK_END );
 	
 	// Header
-	char header[ 128 ];
+	cr_headers headers;
+	headers.add( "etag", tstr, 4 );
+	
+	char header[ 256 ];
 	size_t header_len;
-	create_responce_header( header, header_len, CR_HTTP_OK, ftell( f ) );
+	create_responce_header( header, header_len, CR_HTTP_OK, ftell( f ), &headers );
 	mg_write( conn_, header, header_len );
 
 	fseek( f, 0, SEEK_SET );
