@@ -1238,7 +1238,6 @@ static void worker_thread( mg_context *ctx )
 	// sq_empty condvar to wake up the master waiting in produce_socket()
 	while( consume_socket( ctx, &conn.client ) )
 	{
-		conn.birth_time = time( NULL );
 		conn.ctx = ctx;
 
 		// Fill in IP, port info early so even if SSL setup below fails,
