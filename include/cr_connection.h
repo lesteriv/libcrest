@@ -33,6 +33,10 @@ class cr_connection : public cr_connection_internal
 								/** Returns count of bytes in content. */
 		size_t					get_content_length( void ) const;
 		
+								// TODO
+								/** Returns value of cookie. */
+		const char*				get_cookie( const char* name );
+		
 								/** Returns value of request header by name,
 								 *  name must be in lower case. */
 		const char*				get_http_header( 
@@ -48,6 +52,9 @@ class cr_connection : public cr_connection_internal
 		
 								/** Returns value of parameter passed via query string. */
 		const char*				get_query_parameter( const char* name ) const;
+		
+								/** Returns 'raw' query string after ? symbol. */
+		const char*				get_query_string( void ) const;
 		
 								/** Returns URL of request. */
 		const char*				get_url( void ) const;
@@ -65,7 +72,41 @@ class cr_connection : public cr_connection_internal
 									size_t&		out_len,
 									cr_headers*	headers = NULL );
 		
-								/** The same method for str::string. */
+								/** Reads data from the remote end, return number of bytes read. */
+		size_t					read( char* buf, size_t len );
+		
+								/** Generates and sends HTTP server responce with 
+								 *  status code, data-length header and data. */
+		void					respond(
+									cr_http_status	rc,
+									const char*		data	 = NULL,
+									size_t			data_len = 0,
+									cr_headers*		headers	 = NULL );
+
+								/** Generates and sends HTTP server responce with 
+								 *  status code and data-length header. */
+		void					respond_header(
+									cr_http_status	rc,
+									size_t			data_len,
+									cr_headers*		headers	 = NULL );
+		
+								/** Sends content of file, or respond HTTP_BAD_REQUEST if
+								 *  file doesn't exist or not readable. That's very limited method,
+								 *  don't use it for heavy tasks. */
+		void					send_file( const char* path );
+		
+								/** Sends data to the client. Returns
+								 *  0 when the connection has been closed,
+								 *  -1 on error,
+								 *  or number of bytes written on success. */
+		int						write( const char* buf, size_t len );
+		
+
+	public://////////////////////////////////////////////////////////////////////////
+		
+	// ---------------------
+	// Methods for std::string
+
 								template< class T >
 		bool					fetch(
 									const T&	url,
@@ -85,11 +126,7 @@ class cr_connection : public cr_connection_internal
 
 									return false;
 								}
-								
-								/** Reads data from the remote end, return number of bytes read. */
-		size_t					read( char* buf, size_t len );
-		
-								/** Reads data from the remote end into string or vector. */
+
 								template< class T >
 		void					read( T& out )
 								{
@@ -99,17 +136,7 @@ class cr_connection : public cr_connection_internal
 									if( len )
 										out.resize( read( &out[ 0 ], len ) );
 								}
-								
-								/** Generates and sends HTTP server responce with 
-								 *  status code, data-length header and data. */
-		void					respond(
-									cr_http_status	rc,
-									const char*		data	 = NULL,
-									size_t			data_len = 0,
-									cr_headers*		headers	 = NULL );
 
-								/** Generates and sends HTTP server responce with 
-								 *  status code, data-length header and data from string/vector. */
 								template< class T >
 		void					respond(
 									cr_http_status	rc,
@@ -119,22 +146,20 @@ class cr_connection : public cr_connection_internal
 									respond( rc, data.c_str(), data.size(), headers );
 								}
 		
-								/** Sends content of file, or respond HTTP_BAD_REQUEST if
-								 *  file doesn't exist or not readable. That's very limited method,
-								 *  don't use it for heavy tasks. */
-		void					send_file( const char* path );
-		
-								/** Sends data to the client. Returns
-								 *  0 when the connection has been closed,
-								 *  -1 on error,
-								 *  or number of bytes written on success. */
-		int						write( const char* buf, size_t len );
-		
-								/** The same method to send data from string. */
+		void					send_file( char* path )
+								{
+									send_file( (const char*) path );
+								}
+								
+								template< class T >
+		void					send_file( const T&	path )
+								{
+									send_file( path.c_str() );
+								}
+
 								template< class T >
 		int						write( const T&	data )
 								{
 									return write( data.c_str(), data.size() );
 								}
-								
 };

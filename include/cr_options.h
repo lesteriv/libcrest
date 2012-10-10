@@ -23,7 +23,7 @@ struct cr_options
 			log_file		= NULL;
 			pem_file		= NULL;
 			ports			= "8080";
-			thread_count	= 32;
+			thread_count	= 8;
 		}
 
 		const char*			auth_file;
