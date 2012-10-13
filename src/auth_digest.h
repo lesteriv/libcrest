@@ -14,4 +14,4 @@
 			/** Makes digest autorization. */
 bool		auth_digest(
 				cr_connection&	conn,
-				bool				admin );
+				bool			admin );

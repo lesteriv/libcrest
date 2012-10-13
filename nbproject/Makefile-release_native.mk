@@ -35,16 +35,19 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/src/cr_connection.o \
-	${OBJECTDIR}/examples/cache_proxy.o \
-	${OBJECTDIR}/src/utils.o \
+	${OBJECTDIR}/src/cr_post_parameters.o \
+	${OBJECTDIR}/examples/http_mirror.o \
+	${OBJECTDIR}/src/cr_string_map.o \
 	${OBJECTDIR}/third/zlib/trees.o \
 	${OBJECTDIR}/third/zlib/deflate.o \
-	${OBJECTDIR}/src/crest.o \
 	${OBJECTDIR}/src/cr_user_manager.o \
-	${OBJECTDIR}/src/cr_headers.o \
+	${OBJECTDIR}/src/crest.o \
+	${OBJECTDIR}/src/cr_utils.o \
 	${OBJECTDIR}/src/auth_digest.o \
 	${OBJECTDIR}/src/cr_mutex.o \
 	${OBJECTDIR}/third/mongoose/mongoose.o \
+	${OBJECTDIR}/examples/file_server.o \
+	${OBJECTDIR}/examples/file_server_stl.o \
 	${OBJECTDIR}/src/auth_basic.o
 
 
@@ -79,15 +82,20 @@ ${OBJECTDIR}/src/cr_connection.o: src/cr_connection.cpp
 	${RM} $@.d
 	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_connection.o src/cr_connection.cpp
 
-${OBJECTDIR}/examples/cache_proxy.o: examples/cache_proxy.cpp 
-	${MKDIR} -p ${OBJECTDIR}/examples
-	${RM} $@.d
-	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/cache_proxy.o examples/cache_proxy.cpp
-
-${OBJECTDIR}/src/utils.o: src/utils.cpp 
+${OBJECTDIR}/src/cr_post_parameters.o: src/cr_post_parameters.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/utils.o src/utils.cpp
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_post_parameters.o src/cr_post_parameters.cpp
+
+${OBJECTDIR}/examples/http_mirror.o: examples/http_mirror.cpp 
+	${MKDIR} -p ${OBJECTDIR}/examples
+	${RM} $@.d
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/http_mirror.o examples/http_mirror.cpp
+
+${OBJECTDIR}/src/cr_string_map.o: src/cr_string_map.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_string_map.o src/cr_string_map.cpp
 
 ${OBJECTDIR}/third/zlib/trees.o: third/zlib/trees.cpp 
 	${MKDIR} -p ${OBJECTDIR}/third/zlib
@@ -99,20 +107,20 @@ ${OBJECTDIR}/third/zlib/deflate.o: third/zlib/deflate.cpp
 	${RM} $@.d
 	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/zlib/deflate.o third/zlib/deflate.cpp
 
-${OBJECTDIR}/src/crest.o: src/crest.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest.o src/crest.cpp
-
 ${OBJECTDIR}/src/cr_user_manager.o: src/cr_user_manager.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_user_manager.o src/cr_user_manager.cpp
 
-${OBJECTDIR}/src/cr_headers.o: src/cr_headers.cpp 
+${OBJECTDIR}/src/crest.o: src/crest.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_headers.o src/cr_headers.cpp
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest.o src/crest.cpp
+
+${OBJECTDIR}/src/cr_utils.o: src/cr_utils.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_utils.o src/cr_utils.cpp
 
 ${OBJECTDIR}/src/auth_digest.o: src/auth_digest.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
@@ -128,6 +136,16 @@ ${OBJECTDIR}/third/mongoose/mongoose.o: third/mongoose/mongoose.cpp
 	${MKDIR} -p ${OBJECTDIR}/third/mongoose
 	${RM} $@.d
 	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.cpp
+
+${OBJECTDIR}/examples/file_server.o: examples/file_server.cpp 
+	${MKDIR} -p ${OBJECTDIR}/examples
+	${RM} $@.d
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/file_server.o examples/file_server.cpp
+
+${OBJECTDIR}/examples/file_server_stl.o: examples/file_server_stl.cpp 
+	${MKDIR} -p ${OBJECTDIR}/examples
+	${RM} $@.d
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/file_server_stl.o examples/file_server_stl.cpp
 
 ${OBJECTDIR}/src/auth_basic.o: src/auth_basic.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src

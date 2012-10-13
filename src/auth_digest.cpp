@@ -83,11 +83,11 @@ static bool check_password(
 /**********************************************************************************************/
 static bool parse_auth_header(
 	cr_connection&	conn,
-	auth_data&			adata )
+	auth_data&		adata )
 {
 	memset( &adata, 0, sizeof( adata ) );
 	
-	char* s = (char*) conn.get_http_header( "authorization", 13 );
+	char* s = (char*) conn.header( "authorization" );
 	if( !s )
 		return false;
 	
@@ -186,7 +186,7 @@ bool auth_digest(
 		}
 		else if( !admin || the_cr_user_manager.get_user_is_admin( adata.user ) )
 		{
-			res = check_password( conn.get_http_method(), ha1, adata );
+			res = check_password( conn.method(), ha1, adata );
 		}
 	}
 		

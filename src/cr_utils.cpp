@@ -84,7 +84,7 @@ static const size_t RESPONCE_PREFIX_SIZE[ CR_HTTP_STATUS_COUNT ] =
 /**********************************************************************************************/
 inline char hex_to_int( char ch )
 {
-	return isdigit( ch ) ? ch - '0' : ch - 'W';
+	return ( ch >= '0' && ch <= '9' ) ? ch - '0' : ch - 'W';
 }
 
 
@@ -138,7 +138,7 @@ void create_responce(
 	cr_http_status	status,
 	const char*		content,
 	size_t			content_len,
-	cr_headers*		headers )
+	cr_string_map*	headers )
 {
 	out = (char*) malloc( content_len + 128 + headers->size() );
 	
@@ -149,7 +149,7 @@ void create_responce(
 	
 	if( headers )
 	{
-		size_t count = headers->count();
+		size_t count = headers->size();
 		for( size_t i = 0 ; i < count ; ++i )
 		{
 			str = add_string( str, headers->name( i ), headers->name_len( i ) );
@@ -172,7 +172,7 @@ void create_responce_header(
 	size_t&			out_len,
 	cr_http_status	status,
 	size_t			content_len,
-	cr_headers*		headers )
+	cr_string_map*	headers )
 {
 	char* str = out;
 	str = add_string ( str, RESPONCE_PREFIX[ status ], RESPONCE_PREFIX_SIZE[ status ] );
@@ -181,7 +181,7 @@ void create_responce_header(
 	
 	if( headers )
 	{
-		size_t count = headers->count();
+		size_t count = headers->size();
 		for( size_t i = 0 ; i < count ; ++i )
 		{
 			str = add_string( str, headers->name( i ), headers->name_len( i ) );
@@ -194,6 +194,19 @@ void create_responce_header(
 	str = add_string( str, "\r\n", 3 );
 	
 	out_len = str - out - 1;
+}
+
+/**********************************************************************************************/
+int cr_strcasecmp(
+	const char*	str1,
+	const char* str2 )
+{
+	int r;
+
+	do r = tolower( *str1++ ) - tolower( *str2++ );
+	while( !r && str1[ -1 ] );
+
+	return r;
 }
 
 /**********************************************************************************************/
@@ -264,18 +277,58 @@ size_t file_size( const char* path )
 }
 
 /**********************************************************************************************/
-void parse_query_parameters(
-	size_t&	count,
-	char**	names,
-	char**	values,
-	char*	str )
+void parse_cookie_header(
+	cr_string_map&	cookies,
+	char*			header_value,
+	size_t			header_len )
 {
-	count = 0;
+	bool	in_value = false;
+	char*	name;
+	size_t	name_len;
 	
+	for( size_t i = 0 ; i < header_len ; ++i )
+	{
+		if( in_value )
+		{
+			// Skip whitespace before value
+			if( header_value[ i ] && strchr( "\r\n \t", header_value[ i ] ) )
+				continue;
+			
+			// Find end of value
+			char* end = header_value + i;
+			while( *end && !strchr( " \r\n\t;=", *end ) ) ++end;
+			*end = 0;
+
+			cookies.add( name, header_value + i, name_len, end - header_value - i );
+			
+			i = end - header_value;
+			in_value = false;
+		}
+		else
+		{
+			// Skip whitespace before name
+			if( !header_value[ i ] || strchr( ";\r\n \t", header_value[ i ] ) )
+				continue;
+			
+			name = header_value + i;
+			for( ; i < header_len && header_value[ i ] != '=' ; ++i );
+			header_value[ i ] = 0;
+			name_len = header_value + i - name;
+			
+			in_value = true;
+		}
+	}
+}
+
+/**********************************************************************************************/
+void parse_query_parameters(
+	cr_string_map&	out,
+	char*			str )
+{
 	while( str && *str )
 	{
 		// Name
-		names[ count ] = str;
+		char* name = str;
 
 		// Search for '='
 		for( ; *str && *str != '=' ; ++str );
@@ -283,31 +336,34 @@ void parse_query_parameters(
 		// If found = read value
 		if( *str == '=' )
 		{
+			size_t name_len = str - name;
 			*str++ = 0;
-			values[ count ] = str;
-			count++;
-			char* v = str;
 			
-			for( ; *str && *str != '&' ; ++str, ++v )
+			char* value = str;
+			char* end = str;
+			
+			for( ; *str && *str != '&' ; ++str, ++end )
 			{
 				if( *str == '+' )
 				{
-					*v = ' ';
+					*end = ' ';
 				}
 				else if( *str == '%' && isxdigit( str[ 1 ] ) && isxdigit( str[ 2 ] ) )
 				{
-					*v = ( hex_to_int( tolower( str[ 1 ] ) ) << 4 ) | hex_to_int( tolower( str[ 2 ] ) );
+					*end = ( hex_to_int( tolower( str[ 1 ] ) ) << 4 ) | hex_to_int( tolower( str[ 2 ] ) );
 					str += 2;
 				}
 				else
 				{
-					if( v != str )
-						*v = *str;
+					if( end != str )
+						*end = *str;
 				}
 			}
 
-			*v = 0;
-			if( !*str++ || count > 63 )
+			*end = 0;
+			out.add( name, value, name_len, end - value );
+			
+			if( !*str++ || out.size() > 63 )
 				break;
 		}
 	}

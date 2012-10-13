@@ -23,11 +23,11 @@ typedef	void(*cr_api_callback_t)( cr_connection& );
 struct cr_auto_handler_register
 {
 	cr_auto_handler_register(
-		cr_http_method	 method,
-		const char*			 resource,
-		cr_api_callback_t func,
-		bool				 admin,
-		bool			 	 publ );
+		cr_http_method		method,
+		const char*			resource,
+		cr_api_callback_t	func,
+		bool				admin,
+		bool			 	publ );
 };
 
 /**********************************************************************************************/

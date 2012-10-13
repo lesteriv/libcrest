@@ -17,8 +17,8 @@
 using namespace std;
 
 /**********************************************************************************************/
-#define COLLECTION	conn.get_path_parameter( 0 )
-#define KEY			conn.get_path_parameter( 1 )
+#define COLLECTION	conn.path_parameter( 0 )
+#define KEY			conn.path_parameter( 1 )
 #define LOCK		g_mutex_hash.lock();
 #define UNLOCK		g_mutex_hash.unlock();
 

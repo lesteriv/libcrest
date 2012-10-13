@@ -13,13 +13,14 @@
 #include <time.h>
 
 // CREST
+#include "../cr_string_map.h"
 #include "../cr_types.h"
 
 /**********************************************************************************************/
 struct mg_connection;
 
 /**********************************************************************************************/
-struct crest_string_array
+struct cr_string_array
 {
 	size_t	count_;
 	char**	items_;
@@ -45,9 +46,13 @@ class cr_connection_internal
 // Properties
 
 		char					buf_headers_[ 16384 ];
-		crest_string_array		path_params_;
-		
-mutable	size_t					query_params_count_;
-mutable	char*					query_params_names_[ 64 ];
-mutable	char*					query_params_values_[ 64 ];
+mutable	cr_string_map			cookies_;
+		cr_string_array			path_params_;
+mutable	cr_string_map			query_params_;
+
+
+// Flags
+
+mutable	bool					cookies_inited_			: 1;
+mutable	bool					query_params_inited_	: 1;
 };

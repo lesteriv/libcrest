@@ -7,12 +7,8 @@
 
 #pragma once
 
-// STD
-#include <string.h>
-
 // CREST
 #include "internal/cr_connection_internal.h"
-#include "cr_headers.h"
 
 
 /**********************************************************************************************/
@@ -27,37 +23,44 @@ class cr_connection : public cr_connection_internal
 	// ---------------------
 	// Properties
 
-								/** Time of connection creation. */
-		time_t					get_birth_time( void ) const;
+								/** Returns connection's birth time. */
+		time_t					birth_time( void ) const;
 
-								/** Returns count of bytes in content. */
-		size_t					get_content_length( void ) const;
+								/** Returns count of bytes in content for POST/PUT requests. */
+		size_t					content_length( void ) const;
 		
-								// TODO
-								/** Returns value of cookie. */
-		const char*				get_cookie( const char* name );
+								/** Returns single cookie's value.
+								 *  NB: method change value of 'cookie' header. */
+		const char*				cookie( const char* name ) const;
 		
-								/** Returns value of request header by name,
-								 *  name must be in lower case. */
-		const char*				get_http_header( 
-									const char*	name,
-									size_t		name_len = (size_t) -1 ) const;
+								/** Returns cookies for request.
+								 *  NB: method change value of 'cookie' header. */
+		const cr_string_map&	cookies( void ) const;
+
+								/** Returns value of single HTTP header. */
+		const char*				header( const char* name ) const;
+
+								/** Returns HTTP headers for request. */
+		const cr_string_map&	headers( void ) const;
 
 								/** Returns request's method. */
-		const char*				get_http_method( void ) const;
+		const char*				method( void ) const;
 		
-								/** Returns value of parameter passed via url,
-								 *  see examples. */
-		const char*				get_path_parameter( size_t index ) const;
+								/** Returns value of parameter passed via url.
+								 *  TODO */
+		const char*				path_parameter( size_t index ) const;
 		
 								/** Returns value of parameter passed via query string. */
-		const char*				get_query_parameter( const char* name ) const;
+		const char*				query_parameter( const char* name ) const;
+		
+								/** Returns all query parameters. */
+		const cr_string_map&	query_parameters( void ) const;
 		
 								/** Returns 'raw' query string after ? symbol. */
-		const char*				get_query_string( void ) const;
+		const char*				query_string( void ) const;
 		
 								/** Returns URL of request. */
-		const char*				get_url( void ) const;
+		const char*				url( void ) const;
 		
 		
 	public://////////////////////////////////////////////////////////////////////////
@@ -67,10 +70,10 @@ class cr_connection : public cr_connection_internal
 
 								/** Fetch data from remote HTTP server. */
 		bool					fetch(
-									const char*	url,
-									char*&		out,
-									size_t&		out_len,
-									cr_headers*	headers = NULL );
+									const char*		url,
+									char*&			out,
+									size_t&			out_len,
+									cr_string_map*	headers = NULL );
 		
 								/** Reads data from the remote end, return number of bytes read. */
 		size_t					read( char* buf, size_t len );
@@ -81,19 +84,21 @@ class cr_connection : public cr_connection_internal
 									cr_http_status	rc,
 									const char*		data	 = NULL,
 									size_t			data_len = 0,
-									cr_headers*		headers	 = NULL );
+									cr_string_map*	headers	 = NULL );
 
 								/** Generates and sends HTTP server responce with 
 								 *  status code and data-length header. */
 		void					respond_header(
 									cr_http_status	rc,
 									size_t			data_len,
-									cr_headers*		headers	 = NULL );
+									cr_string_map*	headers	 = NULL );
 		
 								/** Sends content of file, or respond HTTP_BAD_REQUEST if
 								 *  file doesn't exist or not readable. That's very limited method,
 								 *  don't use it for heavy tasks. */
-		void					send_file( const char* path );
+		void					send_file( 
+									const char* path,
+									const char* content_type = NULL );
 		
 								/** Sends data to the client. Returns
 								 *  0 when the connection has been closed,
@@ -109,9 +114,9 @@ class cr_connection : public cr_connection_internal
 
 								template< class T >
 		bool					fetch(
-									const T&	url,
-									T&			out,
-									cr_headers*	headers = NULL )
+									const T&		url,
+									T&				out,
+									cr_string_map*	headers = NULL )
 								{
 									char* data;
 									size_t len;
@@ -130,7 +135,7 @@ class cr_connection : public cr_connection_internal
 								template< class T >
 		void					read( T& out )
 								{
-									size_t len = get_content_length();
+									size_t len = content_length();
 									
 									out.resize( len );
 									if( len )
@@ -141,20 +146,32 @@ class cr_connection : public cr_connection_internal
 		void					respond(
 									cr_http_status	rc,
 									const T&		data,
-									cr_headers*		headers = NULL )
+									cr_string_map*	headers = NULL )
 								{
-									respond( rc, data.c_str(), data.size(), headers );
-								}
-		
-		void					send_file( char* path )
-								{
-									send_file( (const char*) path );
+									respond( rc, data.c_str(), data.length(), headers );
 								}
 								
 								template< class T >
-		void					send_file( const T&	path )
+		void					send_file( 
+									const T&	path,
+									const T&	content_type = "" )
 								{
-									send_file( path.c_str() );
+									send_file( path.c_str(), content_type.c_str() );
+								}
+
+		void					send_file( 
+									char*		path,
+									const char*	content_type = "" )
+								{
+									send_file( (const char*) path, content_type );
+								}
+								
+								template< class T >
+		void					send_file( 
+									const T&	path,
+									const char*	content_type = "" )
+								{
+									send_file( path.c_str(), content_type );
 								}
 
 								template< class T >

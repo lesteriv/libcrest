@@ -24,18 +24,18 @@
 
 
 /**********************************************************************************************/
-bool parse_basic_auth(
-	const char*	auth,
-	size_t		auth_len,
+static bool parse_basic_auth(
+	const char*	auth_header,
+	size_t		auth_header_len,
 	char*		buf,
 	char*&		user,
 	char*&		password )
 {
-	if( strncmp( "Basic ", auth, 6 ) )
+	if( strcmp( "Basic ", auth_header ) )
 		return false;
 	
-	auth += 6;
-	size_t len = base64_decode( buf, auth, auth_len - 6 );
+	auth_header += 6;
+	size_t len = base64_decode( buf, auth_header, auth_header_len - 6 );
 	buf[ len ] = 0;
 
 	char* sp = strchr( buf, ':' );
@@ -61,10 +61,11 @@ bool auth_basic(
 	bool			admin )
 {
 	bool res = false;
-	const char* auth = conn.get_http_header( "authorization", 13 );
 	
+	const char* auth = conn.header( "authorization" );
 	size_t auth_len = auth ? strlen( auth ) : 0;
-	char *buf = (char*) alloca( auth_len + 1 );
+	
+	char *buf = (char*) alloca( auth_len + 16 );
 	char *user, *pass;
 
 	if( auth && parse_basic_auth( auth, auth_len, buf, user, pass ) )

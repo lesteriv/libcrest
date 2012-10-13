@@ -72,10 +72,10 @@ static string	g_source;
 GET( * )( cr_connection& conn )
 {
 	time_t t = time( NULL );
-	string url = conn.get_url();
+	string url = conn.url();
 	
 	// Add query parameters to url
-	const char* qs = conn.get_query_string();
+	const char* qs = conn.query_string();
 	if( *qs ) { url += '?';	url += qs; }
 
 	LOCK_CACHE
@@ -90,7 +90,7 @@ GET( * )( cr_connection& conn )
 		UNLOCK_CACHE
 		
 		// Send 403 status if client already has cached version of resource.
-		const char* client_etag = conn.get_http_header( "if-none-match" );
+		const char* client_etag = conn.header( "if-none-match" );
 		if( client_etag && *etag == client_etag )
 		{
 			conn.respond( CR_HTTP_NOT_MODIFIED );
@@ -109,18 +109,18 @@ GET( * )( cr_connection& conn )
 		
 		UNLOCK_CACHE
 			
-		char*		content;
-		size_t		content_size;
-		string		curl = g_source + url;
-		cr_headers	source_headers;
+		char*			content;
+		size_t			content_size;
+		string			curl = g_source + url;
+		cr_string_map	source_headers;
 		
 		// Fetch resource
 		if( conn.fetch( curl.c_str(), content, content_size, &source_headers ) )
 		{
-			cr_headers cache_headers;
+			cr_string_map cache_headers;
 			
 			// Keep original 'content-type' header
-			const char* type = source_headers.value( "content-type", 12 );
+			const char* type = source_headers[ "content-type" ];
 			if( type )
 				cache_headers.add( "content-type", type, 12 );
 			

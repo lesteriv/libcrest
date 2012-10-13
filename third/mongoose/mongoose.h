@@ -32,7 +32,7 @@
 #include <time.h>
 
 // CREST
-#include "../../include/cr_headers.h"
+#include "../../include/cr_string_map.h"
 
 /**********************************************************************************************/
 struct mg_connection;
@@ -45,7 +45,7 @@ typedef void* mg_mutex;
 /**********************************************************************************************/
 struct mg_request_info
 {
-	cr_headers		headers_;			// Headers
+	cr_string_map	headers_;			// Headers
 	bool			is_ssl_;            // TRUE if SSL-ed
 	const char*		method_;			// "GET", "POST", etc
 	char*			query_parameters_;	// URL part after '?', not including '?', or NULL
@@ -77,10 +77,10 @@ int					mg_write( mg_connection*, const char* buf, size_t len );
 
 /**********************************************************************************************/
 bool				mg_fetch(
-						char*		buf,
-						char*&		out,
-						size_t&		out_size,
-						mg_context*	ctx,
-						const char*	url,
-						cr_headers*	headers,
-						int			redirect_count = 0 /* For internal use */ );
+						char*			buf,
+						char*&			out,
+						size_t&			out_size,
+						mg_context*		ctx,
+						const char*		url,
+						cr_string_map*	headers,
+						int				redirect_count = 0 /* For internal use */ );

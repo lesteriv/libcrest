@@ -6,14 +6,32 @@
             <name>libcrest</name>
             <c-extensions/>
             <cpp-extensions>cpp</cpp-extensions>
-            <header-extensions>h</header-extensions>
+            <header-extensions>h,hpp</header-extensions>
             <sourceEncoding>UTF-8</sourceEncoding>
             <make-dep-projects/>
-            <sourceRootList/>
+            <sourceRootList>
+                <sourceRootElem>third/rapidxml</sourceRootElem>
+            </sourceRootList>
             <confList>
                 <confElem>
                     <name>debug_native</name>
                     <type>3</type>
+                </confElem>
+                <confElem>
+                    <name>examples_debug</name>
+                    <type>1</type>
+                </confElem>
+                <confElem>
+                    <name>file_server</name>
+                    <type>1</type>
+                </confElem>
+                <confElem>
+                    <name>file_server_stl</name>
+                    <type>1</type>
+                </confElem>
+                <confElem>
+                    <name>http_mirror</name>
+                    <type>1</type>
                 </confElem>
                 <confElem>
                     <name>release_native</name>
@@ -28,11 +46,7 @@
                     <type>3</type>
                 </confElem>
                 <confElem>
-                    <name>examples</name>
-                    <type>1</type>
-                </confElem>
-                <confElem>
-                    <name>examples_debug</name>
+                    <name>storage</name>
                     <type>1</type>
                 </confElem>
                 <confElem>

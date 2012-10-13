@@ -5,22 +5,27 @@
                    displayName="Source Files"
                    projectFiles="true">
       <logicalFolder name="examples" displayName="examples" projectFiles="true">
-        <itemPath>examples/cache_proxy.cpp</itemPath>
+        <itemPath>examples/file_server.cpp</itemPath>
+        <itemPath>examples/file_server_stl.cpp</itemPath>
+        <itemPath>examples/http_mirror.cpp</itemPath>
         <itemPath>examples/storage.cpp</itemPath>
       </logicalFolder>
       <logicalFolder name="include" displayName="include" projectFiles="true">
         <logicalFolder name="f1" displayName="internal" projectFiles="true">
           <itemPath>include/internal/cr_connection_internal.h</itemPath>
           <itemPath>include/internal/cr_handler_register.h</itemPath>
-          <itemPath>include/internal/cr_headers_internal.h</itemPath>
+          <itemPath>include/internal/cr_post_parameters_internal.h</itemPath>
+          <itemPath>include/internal/cr_string_map_internal.h</itemPath>
           <itemPath>include/internal/cr_user_manager_internal.h</itemPath>
         </logicalFolder>
         <itemPath>include/cr_connection.h</itemPath>
-        <itemPath>include/cr_headers.h</itemPath>
         <itemPath>include/cr_mutex.h</itemPath>
         <itemPath>include/cr_options.h</itemPath>
+        <itemPath>include/cr_post_parameters.h</itemPath>
+        <itemPath>include/cr_string_map.h</itemPath>
         <itemPath>include/cr_types.h</itemPath>
         <itemPath>include/cr_user_manager.h</itemPath>
+        <itemPath>include/cr_utils.h</itemPath>
         <itemPath>include/crest.h</itemPath>
       </logicalFolder>
       <logicalFolder name="src" displayName="src" projectFiles="true">
@@ -29,12 +34,12 @@
         <itemPath>src/auth_digest.cpp</itemPath>
         <itemPath>src/auth_digest.h</itemPath>
         <itemPath>src/cr_connection.cpp</itemPath>
-        <itemPath>src/cr_headers.cpp</itemPath>
         <itemPath>src/cr_mutex.cpp</itemPath>
+        <itemPath>src/cr_post_parameters.cpp</itemPath>
+        <itemPath>src/cr_string_map.cpp</itemPath>
         <itemPath>src/cr_user_manager.cpp</itemPath>
+        <itemPath>src/cr_utils.cpp</itemPath>
         <itemPath>src/crest.cpp</itemPath>
-        <itemPath>src/utils.cpp</itemPath>
-        <itemPath>src/utils.h</itemPath>
       </logicalFolder>
       <logicalFolder name="f1" displayName="tests" projectFiles="true">
         <itemPath>tests/tests.cpp</itemPath>
@@ -45,6 +50,10 @@
           <itemPath>third/mongoose/mongoose.cpp</itemPath>
           <itemPath>third/mongoose/mongoose.h</itemPath>
         </logicalFolder>
+        <logicalFolder name="rapidxml" displayName="rapidxml" projectFiles="true">
+          <itemPath>third/rapidxml/license.txt</itemPath>
+          <itemPath>third/rapidxml/rapidxml.hpp</itemPath>
+        </logicalFolder>
         <logicalFolder name="zlib" displayName="zlib" projectFiles="true">
           <itemPath>third/zlib/README</itemPath>
           <itemPath>third/zlib/deflate.cpp</itemPath>
@@ -54,6 +63,7 @@
           <itemPath>third/zlib/zlib.h</itemPath>
         </logicalFolder>
       </logicalFolder>
+      <itemPath>TODO</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -67,6 +77,9 @@
       <itemPath>Makefile</itemPath>
     </logicalFolder>
   </logicalFolder>
+  <sourceRootList>
+    <Elem>third/rapidxml</Elem>
+  </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
     <conf name="debug_native" type="3">
@@ -83,6 +96,184 @@
         </archiverTool>
       </compileType>
       <item path="examples/storage.cpp" ex="true" tool="1" flavor="0">
+      </item>
+      <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
+      </item>
+    </conf>
+    <conf name="examples_debug" type="1">
+      <toolsSet>
+        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
+        <compilerSet>default</compilerSet>
+      </toolsSet>
+      <compileType>
+        <cTool>
+          <commandlineTool>gcc</commandlineTool>
+          <commandLine>-Wall -Wextra</commandLine>
+        </cTool>
+        <ccTool>
+          <commandlineTool>g++</commandlineTool>
+          <commandLine>-Wall -Wextra -fno-rtti -fno-exceptions</commandLine>
+        </ccTool>
+        <linkerTool>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/storage</output>
+          <commandlineTool>g++</commandlineTool>
+          <linkerLibItems>
+            <linkerLibStdlibItem>PosixThreads</linkerLibStdlibItem>
+            <linkerLibStdlibItem>DynamicLinking</linkerLibStdlibItem>
+          </linkerLibItems>
+          <commandLine>-fno-exceptions -fno-rtti</commandLine>
+        </linkerTool>
+      </compileType>
+      <item path="examples/file_server_stl.cpp" ex="true" tool="1" flavor="0">
+      </item>
+      <item path="examples/http_mirror.cpp" ex="true" tool="1" flavor="0">
+        <ccTool>
+          <commandLine>-std=c++11</commandLine>
+        </ccTool>
+      </item>
+      <item path="examples/storage.cpp" ex="true" tool="1" flavor="0">
+        <ccTool>
+          <commandLine>-std=c++11</commandLine>
+        </ccTool>
+      </item>
+      <item path="src/cr_post_parameters.cpp" ex="true" tool="1" flavor="0">
+      </item>
+      <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
+      </item>
+    </conf>
+    <conf name="file_server" type="1">
+      <toolsSet>
+        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
+        <compilerSet>default</compilerSet>
+      </toolsSet>
+      <compileType>
+        <ccTool>
+          <developmentMode>0</developmentMode>
+          <stripSymbols>true</stripSymbols>
+          <commandlineTool>g++</commandlineTool>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Os -m32</commandLine>
+          <preprocessorList>
+            <Elem>NO_AUTH</Elem>
+            <Elem>NO_DEFLATE</Elem>
+            <Elem>NO_INFO</Elem>
+            <Elem>NO_LOG</Elem>
+            <Elem>NO_SSL</Elem>
+          </preprocessorList>
+          <useLinkerLibraries>false</useLinkerLibraries>
+        </ccTool>
+        <linkerTool>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/server</output>
+          <stripSymbols>true</stripSymbols>
+          <commandlineTool>gcc</commandlineTool>
+          <linkerLibItems>
+            <linkerLibStdlibItem>PosixThreads</linkerLibStdlibItem>
+          </linkerLibItems>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Os -Wl,--gc-sections -m32 -Wl,--hash-style=sysv</commandLine>
+        </linkerTool>
+      </compileType>
+      <item path="examples/file_server_stl.cpp" ex="true" tool="1" flavor="0">
+      </item>
+      <item path="examples/http_mirror.cpp" ex="true" tool="1" flavor="0">
+        <ccTool>
+          <commandLine>-std=c++11</commandLine>
+        </ccTool>
+      </item>
+      <item path="examples/storage.cpp" ex="true" tool="1" flavor="0">
+        <ccTool>
+          <commandLine>-std=c++11</commandLine>
+        </ccTool>
+      </item>
+      <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
+      </item>
+    </conf>
+    <conf name="file_server_stl" type="1">
+      <toolsSet>
+        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
+        <compilerSet>default</compilerSet>
+      </toolsSet>
+      <compileType>
+        <ccTool>
+          <developmentMode>0</developmentMode>
+          <stripSymbols>true</stripSymbols>
+          <commandlineTool>g++</commandlineTool>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Os -m32</commandLine>
+          <preprocessorList>
+            <Elem>NO_AUTH</Elem>
+            <Elem>NO_DEFLATE</Elem>
+            <Elem>NO_INFO</Elem>
+            <Elem>NO_LOG</Elem>
+            <Elem>NO_SSL</Elem>
+          </preprocessorList>
+          <useLinkerLibraries>false</useLinkerLibraries>
+        </ccTool>
+        <linkerTool>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/server</output>
+          <stripSymbols>true</stripSymbols>
+          <commandlineTool>g++</commandlineTool>
+          <linkerLibItems>
+            <linkerLibStdlibItem>PosixThreads</linkerLibStdlibItem>
+          </linkerLibItems>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Os -Wl,--gc-sections -m32 -Wl,--hash-style=sysv -static-libstdc++</commandLine>
+        </linkerTool>
+      </compileType>
+      <item path="examples/file_server.cpp" ex="true" tool="1" flavor="0">
+      </item>
+      <item path="examples/http_mirror.cpp" ex="true" tool="1" flavor="0">
+        <ccTool>
+          <commandLine>-std=c++11</commandLine>
+        </ccTool>
+      </item>
+      <item path="examples/storage.cpp" ex="true" tool="1" flavor="0">
+        <ccTool>
+          <commandLine>-std=c++11</commandLine>
+        </ccTool>
+      </item>
+      <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
+      </item>
+    </conf>
+    <conf name="http_mirror" type="1">
+      <toolsSet>
+        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
+        <compilerSet>default</compilerSet>
+      </toolsSet>
+      <compileType>
+        <ccTool>
+          <developmentMode>0</developmentMode>
+          <stripSymbols>true</stripSymbols>
+          <commandlineTool>g++</commandlineTool>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -m32</commandLine>
+          <preprocessorList>
+            <Elem>NO_AUTH</Elem>
+            <Elem>NO_DEFLATE</Elem>
+            <Elem>NO_INFO</Elem>
+            <Elem>NO_LOG</Elem>
+            <Elem>NO_SSL</Elem>
+          </preprocessorList>
+          <useLinkerLibraries>false</useLinkerLibraries>
+        </ccTool>
+        <linkerTool>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/http_mirror</output>
+          <stripSymbols>true</stripSymbols>
+          <commandlineTool>g++</commandlineTool>
+          <linkerLibItems>
+            <linkerLibStdlibItem>PosixThreads</linkerLibStdlibItem>
+          </linkerLibItems>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -Wl,--gc-sections -m32 -Wl,--hash-style=sysv -static-libstdc++</commandLine>
+        </linkerTool>
+      </compileType>
+      <item path="examples/file_server.cpp" ex="true" tool="1" flavor="0">
+      </item>
+      <item path="examples/file_server_stl.cpp" ex="true" tool="1" flavor="0">
+      </item>
+      <item path="examples/http_mirror.cpp" ex="false" tool="1" flavor="0">
+        <ccTool>
+          <commandLine>-std=c++11</commandLine>
+        </ccTool>
+      </item>
+      <item path="examples/storage.cpp" ex="true" tool="1" flavor="0">
+        <ccTool>
+          <commandLine>-std=c++11</commandLine>
+        </ccTool>
       </item>
       <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
       </item>
@@ -180,7 +371,7 @@
       <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
       </item>
     </conf>
-    <conf name="examples" type="1">
+    <conf name="storage" type="1">
       <toolsSet>
         <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
         <compilerSet>default</compilerSet>
@@ -190,69 +381,36 @@
           <developmentMode>0</developmentMode>
           <stripSymbols>true</stripSymbols>
           <commandlineTool>g++</commandlineTool>
-          <commandLine>-fno-exceptions -fno-rtti -flto -O3</commandLine>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Os -m32</commandLine>
           <preprocessorList>
             <Elem>NO_AUTH</Elem>
             <Elem>NO_DEFLATE</Elem>
+            <Elem>NO_INFO</Elem>
             <Elem>NO_LOG</Elem>
             <Elem>NO_SSL</Elem>
           </preprocessorList>
           <useLinkerLibraries>false</useLinkerLibraries>
         </ccTool>
         <linkerTool>
-          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/storage</output>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/server</output>
           <stripSymbols>true</stripSymbols>
           <commandlineTool>g++</commandlineTool>
           <linkerLibItems>
             <linkerLibStdlibItem>PosixThreads</linkerLibStdlibItem>
-            <linkerLibStdlibItem>DynamicLinking</linkerLibStdlibItem>
           </linkerLibItems>
-          <commandLine>-fno-exceptions -fno-rtti -flto -O3 -Wl,--gc-sections</commandLine>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Os -Wl,--gc-sections -m32 -Wl,--hash-style=sysv -static-libstdc++</commandLine>
         </linkerTool>
       </compileType>
-      <item path="examples/cache_proxy.cpp" ex="false" tool="1" flavor="0">
+      <item path="examples/file_server.cpp" ex="true" tool="1" flavor="0">
+      </item>
+      <item path="examples/file_server_stl.cpp" ex="true" tool="1" flavor="0">
+      </item>
+      <item path="examples/http_mirror.cpp" ex="true" tool="1" flavor="0">
         <ccTool>
           <commandLine>-std=c++11</commandLine>
         </ccTool>
       </item>
-      <item path="examples/storage.cpp" ex="true" tool="1" flavor="0">
-        <ccTool>
-          <commandLine>-std=c++11</commandLine>
-        </ccTool>
-      </item>
-      <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
-      </item>
-    </conf>
-    <conf name="examples_debug" type="1">
-      <toolsSet>
-        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
-        <compilerSet>default</compilerSet>
-      </toolsSet>
-      <compileType>
-        <cTool>
-          <commandlineTool>gcc</commandlineTool>
-          <commandLine>-Wall -Wextra</commandLine>
-        </cTool>
-        <ccTool>
-          <commandlineTool>g++</commandlineTool>
-          <commandLine>-Wall -Wextra -fno-rtti -fno-exceptions</commandLine>
-        </ccTool>
-        <linkerTool>
-          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/storage</output>
-          <commandlineTool>g++</commandlineTool>
-          <linkerLibItems>
-            <linkerLibStdlibItem>PosixThreads</linkerLibStdlibItem>
-            <linkerLibStdlibItem>DynamicLinking</linkerLibStdlibItem>
-          </linkerLibItems>
-          <commandLine>-fno-exceptions -fno-rtti</commandLine>
-        </linkerTool>
-      </compileType>
-      <item path="examples/cache_proxy.cpp" ex="false" tool="1" flavor="0">
-        <ccTool>
-          <commandLine>-std=c++11</commandLine>
-        </ccTool>
-      </item>
-      <item path="examples/storage.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/storage.cpp" ex="false" tool="1" flavor="0">
         <ccTool>
           <commandLine>-std=c++11</commandLine>
         </ccTool>
@@ -277,6 +435,12 @@
           </linkerLibItems>
         </linkerTool>
       </compileType>
+      <item path="examples/file_server.cpp" ex="true" tool="1" flavor="0">
+      </item>
+      <item path="examples/file_server_stl.cpp" ex="true" tool="1" flavor="0">
+      </item>
+      <item path="examples/http_mirror.cpp" ex="true" tool="1" flavor="0">
+      </item>
       <item path="examples/storage.cpp" ex="true" tool="1" flavor="0">
       </item>
       <item path="tests/tests.cpp" ex="false" tool="1" flavor="0">

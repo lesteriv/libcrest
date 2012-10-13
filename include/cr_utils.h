@@ -9,9 +9,11 @@
 
 // STD
 #include <stddef.h>
+#include <string.h>
+#include <time.h>
 
 // CREST
-#include "cr_headers.h"
+#include "cr_string_map.h"
 #include "cr_types.h"
 
 
@@ -50,7 +52,7 @@ void			create_responce(
 					cr_http_status	status,
 					const char*		content,
 					size_t			content_len,
-					cr_headers*		headers = NULL );
+					cr_string_map*	headers = NULL );
 
 				/** Returns string with status code and 'Content-Length' header. */
 void			create_responce_header(
@@ -58,7 +60,12 @@ void			create_responce_header(
 					size_t&			out_len,
 					cr_http_status	status,
 					size_t			content_len,
-					cr_headers*		headers = NULL );
+					cr_string_map*	headers = NULL );
+
+				/** The same as strcasecmp. */
+int				cr_strcasecmp(
+					const char*	str1,
+					const char* str2 );
 
 				/** The same as strdup. */
 char*			cr_strdup( const char* str, int en = -1 );
@@ -79,6 +86,12 @@ time_t			file_modification_time( const char* path );
 				/** Returns file's size. */
 size_t			file_size( const char* path );
 
+				/** Extract cookies from header. */
+void			parse_cookie_header(
+					cr_string_map&	cookies,
+					char*			header,
+					size_t			header_len );
+
 				/** Calculate md5 hash. */
 void			md5(
 					char			hash[ 16 ],
@@ -88,10 +101,8 @@ void			md5(
 
 				/** Parse string with query parameters */
 void			parse_query_parameters(
-					size_t&			count,
-					char**			names,
-					char**			values,
-					char*			str );
+					cr_string_map&	out,
+					char*			text );
 
 				/** Converts integer value to string, returns end of string - \0 pos. */
 char*			to_string( char* buf, int value );

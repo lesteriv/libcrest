@@ -22,7 +22,6 @@
 
 /**********************************************************************************************/
 #ifdef _MSC_VER
-#define snprintf _snprintf
 #pragma warning( disable: 4996 )
 #endif // _MSC_VER
 
@@ -33,8 +32,12 @@
 
 
 /**********************************************************************************************/
+#ifndef NO_INFO
 static cr_connection*	g_conns[ 20 ];
 static mg_mutex			g_conns_mutex;
+#endif // NO_INFO
+
+/**********************************************************************************************/
 static const char*		g_error;
 static size_t			g_request_count;
 static bool				g_shutdown;
@@ -80,7 +83,7 @@ struct resource
 {
 	bool				admin_;
 	cr_api_callback_t	handler_;
-	crest_string_array	keys_;
+	cr_string_array	keys_;
 	bool				public_;
 };
 
@@ -103,8 +106,8 @@ static int compare_resources( const void* a, const void* b )
 	const resource* ra = (const resource*) a;
 	const resource* rb = (const resource*) b;
 	
-	const crest_string_array& ka = ra->keys_;
-	const crest_string_array& kb = rb->keys_;
+	const cr_string_array& ka = ra->keys_;
+	const cr_string_array& kb = rb->keys_;
 	
 	if( ka.count_ < kb.count_ )
 		return -1;
@@ -136,13 +139,14 @@ struct sl_connection : public cr_connection
 {
 	sl_connection( 
 		mg_connection*		conn,
-		crest_string_array	params )
+		cr_string_array	params )
 	{
 		// Properties
 		
-		conn_ = conn;
-		path_params_ = params;
-		query_params_count_ = (size_t) -1;
+		conn_					= conn;
+		cookies_inited_			= false;
+		path_params_			= params;
+		query_params_inited_	= false;
 	}
 	
 #ifndef NO_LOG
@@ -150,7 +154,7 @@ struct sl_connection : public cr_connection
 	void log( void )
 	{
 		mg_request_info* request = mg_get_request_info( conn_ );
-		time_t t = get_birth_time();
+		time_t t = birth_time();
 		
 		char stime[ 32 ];
 		tm* lt = localtime( &t );
@@ -243,11 +247,11 @@ struct sl_connection : public cr_connection
 
 
 /**********************************************************************************************/
-static crest_string_array parse_resource_name( 
+static cr_string_array parse_resource_name( 
 	const char* url,
 	size_t		len )
 {
-	crest_string_array res;
+	cr_string_array res;
 	res.items_ = (char**) malloc( len + 1 + 16 * sizeof * res.items_ );
 	res.count_ = 0;
 	
@@ -314,10 +318,10 @@ void event_handler( mg_connection* conn )
 
 	cr_http_method method;
 
-	if( !strcmp( method_name, "DELETE" ) ) method = CR_METHOD_DELETE;
-	else if( !strcmp( method_name, "GET" ) ) method = CR_METHOD_GET;
-	else if( !strcmp( method_name, "POST" ) ) method = CR_METHOD_POST;
-	else if( !strcmp( method_name, "PUT" ) ) method = CR_METHOD_PUT;
+		 if( !strcmp( method_name, "DELETE" ) ) method = CR_METHOD_DELETE;
+	else if( !strcmp( method_name, "GET"	) ) method = CR_METHOD_GET;
+	else if( !strcmp( method_name, "POST"	) ) method = CR_METHOD_POST;
+	else if( !strcmp( method_name, "PUT"	) ) method = CR_METHOD_PUT;
 	else
 	{
 		mg_write( conn, "HTTP/1.1 400 Bad Request\r\nContent-Length: 20\r\n\r\nNon-supported method", 68 );
@@ -352,6 +356,7 @@ void event_handler( mg_connection* conn )
 		
 #endif // NO_AUTH
 		
+#ifndef NO_INFO		
 		mg_mutex_lock( g_conns_mutex );
 		
 		for( size_t i = 0 ; i < 20 ; ++i )
@@ -364,9 +369,11 @@ void event_handler( mg_connection* conn )
 		}
 		
 		mg_mutex_unlock( g_conns_mutex );
-
+#endif // NO_INFO
+		
 		(*it->handler_)( sconn );
 
+#ifndef NO_INFO
 		mg_mutex_lock( g_conns_mutex );
 		
 		for( size_t i = 0 ; i < 20 ; ++i )
@@ -379,6 +386,7 @@ void event_handler( mg_connection* conn )
 		}
 		
 		mg_mutex_unlock( g_conns_mutex );
+#endif // NO_INFO
 
 #ifndef NO_LOG
 
@@ -460,11 +468,11 @@ void crest_set_log_enabled( bool value )
 
 /**********************************************************************************************/
 void cr_register_handler(
-	cr_http_method	 method,
-	const char*			 name,
-	cr_api_callback_t func,
-	bool				 for_admin_only,
-	bool			 	 publ )
+	cr_http_method		method,
+	const char*			name,
+	cr_api_callback_t	func,
+	bool				for_admin_only,
+	bool			 	publ )
 {
 	resource* rs;
 	
@@ -512,21 +520,22 @@ size_t cr_request_count( void )
 /**********************************************************************************************/
 bool cr_start( cr_options& opts )
 {
-	
 	if( g_time_start )
 	{
-		g_error = cr_strdup( "Server already running" );
+		g_error = "Server already running";
 		return false;
 	}
 
 	if( !opts.thread_count || opts.thread_count > 128 )
 	{
-		g_error = cr_strdup( "Invalid thread count" );
+		g_error = "Invalid thread count";
 		return false;
 	}
 	
 	// Allocate mutexes
+#ifndef NO_INFO	
 	g_conns_mutex = mg_mutex_create();
+#endif // NO_INFO
 	
 	// Prepare resources
 	for( size_t i = 0 ; i < CR_METHOD_COUNT ; ++i )
@@ -586,12 +595,12 @@ bool cr_start( cr_options& opts )
 	}
 	
 	// Clean
+#ifndef NO_INFO
 	mg_mutex_destroy( g_conns_mutex );
+#endif // NO_INFO
 
 #ifndef NO_AUTH
-
 	the_cr_user_manager.clean();
-
 #endif // NO_AUTH
 
 #ifndef NO_LOG

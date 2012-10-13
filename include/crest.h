@@ -12,6 +12,7 @@
 #include "cr_connection.h"
 #include "cr_mutex.h"
 #include "cr_options.h"
+#include "cr_post_parameters.h"
 #include "cr_user_manager.h"
 
 

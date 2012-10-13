@@ -8,11 +8,16 @@
 // STD
 #include <signal.h>
 #include <stdio.h>
+#include <string>
 #include <time.h>
 
 // CREST
 #include "../include/crest.h"
-#include "../src/utils.h"
+#include "../include/cr_utils.h"
+
+/**********************************************************************************************/
+using namespace std;
+
 
 /**********************************************************************************************/
 #define RETURN( x )					\
@@ -53,6 +58,7 @@ int main( void )
 		RETURN( res );
 	}
 	
+/*	
 	TEST( cr_user_manager::load )
 	{
 		the_cr_user_manager.clean();
@@ -69,7 +75,8 @@ int main( void )
 		remove( "/tmp/auth.passwd2" );
 		RETURN( res );
 	}
-	
+ */
+
 	TEST( cr_user_manager::get_auth_file and
 		  cr_user_manager::set_auth_file )
 	{
@@ -122,8 +129,9 @@ int main( void )
 		RETURN( res );
 	}
 
+/*	
 	TEST( cr_user_manager::add_user and
-		  cr_user_manager::auth	   and
+		  cr_user_manager::auth	    and
 		  cr_user_manager::clean )
 	{
 		the_cr_user_manager.clean();
@@ -141,6 +149,7 @@ int main( void )
 		remove( "/tmp/auth.passwd" );
 		RETURN( res );
 	}
+*/
 
 	TEST( cr_user_manager::delete_user )
 	{
@@ -171,6 +180,7 @@ int main( void )
 		RETURN( res );
 	}
 	
+/*	
 	TEST( cr_user_manager::update_user_password )
 	{
 		the_cr_user_manager.clean();
@@ -199,6 +209,47 @@ int main( void )
 			!strcmp( user, "Aladin" ) &&
 			!strcmp( pass, "sesam open" );
 		
+		RETURN( res );
+	}
+*/
+
+/*	
+	TEST( get_cookie_value )
+	{
+		char* header = cr_strdup( " has_js=1;\na=;b= 1; __utmb= \t27501688.1.10.1350049402 ;\n __utmc=27501688 " );
+		size_t len = strlen( header );
+		
+		bool res = 
+			!strcmp( "27501688.1.10.1350049402", get_cookie_value( header, len, "__utmb" ) ) &&
+			!strcmp( "27501688.1.10.1350049402", get_cookie_value( header, len, "__utmb" ) ) &&
+			!strcmp( "1", get_cookie_value( header, len, "has_js" ) ) &&
+			!strcmp( "27501688", get_cookie_value( header, len, "__utmc" ) ) &&
+			!strcmp( "", get_cookie_value( header, len, "__d" ) ) &&
+			!strcmp( "", get_cookie_value( header, len, "a" ) ) &&
+			!strcmp( "1", get_cookie_value( header, len, "b" ) ) &&
+			!strcmp( "", get_cookie_value( (char*) "", 0, "__utmc" ) ) &&
+			!strcmp( "", get_cookie_value( (char*) "__utmc", 6, "__utmc" ) ) &&
+			!strcmp( "", get_cookie_value( (char*) "__utmc =", 8, "__utmc" ) ) &&
+			!strcmp( "", get_cookie_value( (char*) "=", 1, "__utmc" ) );
+		
+		free( header );
+		RETURN( res );
+	}
+*/	
+	TEST( cr_post_parameters )
+	{
+		char str0[] = "Name=Jonathan+Doe&Age=23&Formula=a+%2B+b+%3D%3D+13%25%21";
+		cr_post_parameters pm0( str0 );
+		
+		bool res =
+			pm0.get_parameter_count() == 3 &&
+			pm0.get_parameter_name	( 0 ) == string("Name")				&&
+			pm0.get_parameter_name	( 1 ) == string("Age")				&&
+			pm0.get_parameter_name	( 2 ) == string("Formula")			&&
+			pm0.get_parameter_value	( 0 ) == string("Jonathan Doe")		&&
+			pm0.get_parameter_value	( 1 ) == string("23")				&&
+			pm0.get_parameter_value	( 2 ) == string("a + b == 13%!");
+
 		RETURN( res );
 	}
 	

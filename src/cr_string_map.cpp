@@ -1,14 +1,16 @@
 /**********************************************************************************************/
-/* cr_heders.cpp						                                               		  */
+/* cr_string_map.cpp				                                               			  */
 /*                                                                       					  */
 /* Igor Nikitin, 2012																		  */
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
-// CREST
+// STD
 #include <string.h>
 
-#include "../include/cr_headers.h"
+// CREST
+#include "../include/cr_string_map.h"
+#include "../include/cr_utils.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -17,119 +19,121 @@
 
 
 /**********************************************************************************************/
-cr_headers::cr_headers( void )
+cr_string_map::cr_string_map( void )
 {
-	count_ = 0;
-	size_ = 0;
+	bytes_ = 0;
+	size_  = 0;
 }
 
 /**********************************************************************************************/
-cr_headers::cr_headers(
+cr_string_map::cr_string_map(
 	const char* name,
 	const char* value )
 {
-	count_ = 0;
+	bytes_ = 0;
+	size_  = 0;
+	
 	add( name, value );
 }
-							
-							
+
+
+//////////////////////////////////////////////////////////////////////////
+// properties
+//////////////////////////////////////////////////////////////////////////
+
+
+/**********************************************************************************************/
+const char*	cr_string_map::name( size_t index ) const
+{
+	return name_[ index ];
+}
+
+/**********************************************************************************************/
+size_t cr_string_map::name_len( size_t index ) const
+{
+	return name_len_[ index ];
+}
+
+/**********************************************************************************************/
+size_t cr_string_map::size( void ) const
+{
+	return size_;
+}
+
+/**********************************************************************************************/
+const char*	cr_string_map::value( size_t index ) const
+{
+	return value_[ index ];
+}
+
+/**********************************************************************************************/
+size_t cr_string_map::value_len( size_t index ) const
+{
+	return value_len_[ index ];
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 // methods
 //////////////////////////////////////////////////////////////////////////
 
 
 /**********************************************************************************************/
-void cr_headers::add(
+void cr_string_map::add(
 	const char*	name,
 	const char*	value,
 	size_t		name_len,
 	size_t		value_len )
 {
-	if( count_ < 64 )
+	if( size_ < CREST_MAP_SIZE )
 	{
 		if( name_len  == (size_t) -1 ) name_len  = strlen( name );
 		if( value_len == (size_t) -1 ) value_len = strlen( value );
 		
-		names_[ count_ ] = name;
-		names_len_[ count_ ] = name_len;
+		name_[ size_ ] = name;
+		name_len_[ size_ ] = name_len;
 
-		values_[ count_ ] = value;
-		values_len_[ count_ ] = value_len;
+		value_[ size_ ] = value;
+		value_len_[ size_ ] = value_len;
 
-		size_ += name_len + value_len + 4;
-		count_++;
-	}
+		bytes_ += name_len + value_len + 4;
+		size_++;
+	}	
 }
 
 /**********************************************************************************************/
-size_t cr_headers::count( void ) const
+void cr_string_map::clear( void )
 {
-	return count_;
+	bytes_ = 0;
+	size_  = 0;
 }
 
 /**********************************************************************************************/
-int cr_headers::index( const char* name ) const
+int cr_string_map::find(
+	const char* name,
+	size_t		name_len ) const
 {
-	size_t name_len = strlen( name );
+	if( name_len == (size_t) -1 )
+		name_len = strlen( name );
 	
-	for( size_t i = 0 ; i < count_ ; ++i )
+	for( size_t i = 0 ; i < size_ ; ++i )
 	{
-		if( names_len_[ i ] == name_len && !strcmp( names_[ i ], name ) )
+		if( name_len == name_len_[ i ] && !cr_strcasecmp( name, name_[ i ] ) )
 			return i;
 	}
 	
-	return -1;	
+	return -1;
 }
 
-/**********************************************************************************************/
-const char* cr_headers::name( size_t index ) const
-{
-	return names_[ index ];
-}
+
+//////////////////////////////////////////////////////////////////////////
+// operators
+//////////////////////////////////////////////////////////////////////////
+
 
 /**********************************************************************************************/
-size_t cr_headers::name_len( size_t index ) const
+const char*	cr_string_map::operator[]( const char* name ) const
 {
-	return names_len_[ index ];
-}
-
-/**********************************************************************************************/
-void cr_headers::reset( void )
-{
-	count_ = 0;
-}
-
-/**********************************************************************************************/
-size_t cr_headers::size( void )
-{
-	return size_;
-}
-
-/**********************************************************************************************/
-const char* cr_headers::value( size_t index ) const
-{
-	return values_[ index ];
-}
-
-/**********************************************************************************************/
-const char* cr_headers::value( 
-	const char*	name,
-	size_t		name_len ) const
-{
-	if( name_len  == (size_t) -1 )
-		name_len = strlen( name );
-	
-	for( size_t i = 0 ; i < count_ ; ++i )
-	{
-		if( names_len_[ i ] == name_len && !strcmp( names_[ i ], name ) )
-			return values_[ i ];
-	}
-	
-	return NULL;
-}
-
-/**********************************************************************************************/
-size_t cr_headers::value_len( size_t index ) const
-{
-	return values_len_[ index ];
+	int index = find( name );
+	return index >= 0 ? value_[ index ] : "";
 }

@@ -1,5 +1,5 @@
 /**********************************************************************************************/
-/* cr_headers_internal.h		                                                   			  */
+/* cr_string_map_internal.h		                                                   			  */
 /*                                                                       					  */
 /* Igor Nikitin, 2012																		  */
 /* MIT license			                                                  					  */
@@ -10,18 +10,21 @@
 // STD
 #include <stddef.h>
 
+/**********************************************************************************************/
+#define CREST_MAP_SIZE 64
+
 
 /**********************************************************************************************/
-class cr_headers_internal
+class cr_string_map_internal
 {
 	protected://////////////////////////////////////////////////////////////////////////
 
 // Properties
 		
-		size_t				count_;
-		const char*			names_[ 64 ];
-		size_t				names_len_[ 64 ];
+		size_t				bytes_;
+		const char*			name_[ CREST_MAP_SIZE ];
+		size_t				name_len_[ CREST_MAP_SIZE ];
 		size_t				size_;
-		const char*			values_[ 64 ];
-		size_t				values_len_[ 64 ];
+		const char*			value_[ CREST_MAP_SIZE ];
+		size_t				value_len_[ CREST_MAP_SIZE ];
 };

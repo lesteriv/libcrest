@@ -30,7 +30,7 @@
 extern bool g_deflate;
 
 /**********************************************************************************************/
-static cr_headers g_deflate_headers( "Content-Encoding", "deflate" );
+static cr_string_map g_deflate_headers( "Content-Encoding", "deflate" );
 #endif // NO_DEFLATE
 
 
@@ -40,48 +40,64 @@ static cr_headers g_deflate_headers( "Content-Encoding", "deflate" );
 
 
 /**********************************************************************************************/
-time_t cr_connection::get_birth_time( void ) const
+time_t cr_connection::birth_time( void ) const
 {
 	return mg_get_birth_time( conn_ );
 }
 
 /**********************************************************************************************/
-size_t cr_connection::get_content_length( void ) const
+size_t cr_connection::content_length( void ) const
 {
 	return mg_get_content_len( conn_ );
 }
 
 /**********************************************************************************************/
-const char* cr_connection::get_cookie( const char* name )
+const char*	cr_connection::cookie( const char* name ) const
 {
-	cr_headers& headers = mg_get_request_info( conn_ )->headers_;
-	int index = headers.index( name );
-	if( index < 0 )
-		return "";
+	return cookies()[ name ];
+}
+
+/**********************************************************************************************/
+const cr_string_map& cr_connection::cookies( void ) const
+{
+	if( !cookies_inited_ )
+	{
+		cookies_inited_ = true;
+		cr_string_map& headers = mg_get_request_info( conn_ )->headers_;
+		
+		int index = headers.find( "cookie" );
+		if( index >= 0 )
+		{
+			parse_cookie_header(
+				cookies_,
+				(char*) headers.value( index ),
+				headers.value_len( index ) );
+		}
+	}
 	
-	size_t len = headers.value_len( index );
-	char* value = (char*) headers.value( index );
-
-	(void) len;
-	return value;
+	return cookies_;
 }
 
 /**********************************************************************************************/
-const char* cr_connection::get_http_header(
-	const char*	name,
-	size_t		name_len ) const
+const char*	cr_connection::header( const char* name ) const
 {
-	return mg_get_request_info( conn_ )->headers_.value( name, name_len );
+	return mg_get_request_info( conn_ )->headers_[ name ];
 }
 
 /**********************************************************************************************/
-const char*	cr_connection::get_http_method( void ) const
+const cr_string_map& cr_connection::headers( void ) const
+{
+	return mg_get_request_info( conn_ )->headers_;
+}
+
+/**********************************************************************************************/
+const char*	cr_connection::method( void ) const
 {
 	return mg_get_request_info( conn_ )->method_;
 }
 
 /**********************************************************************************************/
-const char* cr_connection::get_path_parameter( size_t index ) const
+const char* cr_connection::path_parameter( size_t index ) const
 {
 	return path_params_.count_ > index ?
 		path_params_.items_[ index ] :
@@ -89,35 +105,35 @@ const char* cr_connection::get_path_parameter( size_t index ) const
 }
 
 /**********************************************************************************************/
-const char* cr_connection::get_query_parameter( const char* name ) const
+const char* cr_connection::query_parameter( const char* name ) const
 {
-	if( query_params_count_ == (size_t) -1 )
-	{
-		parse_query_parameters(
-			query_params_count_,
-			query_params_names_,
-			query_params_values_,
-			mg_get_request_info( conn_ )->query_parameters_ );
-	}
-
-	for( size_t i = 0 ; i < query_params_count_ ; ++i )
-	{
-		if( !strcmp( name, query_params_names_[ i ] ) )
-			return query_params_values_[ i ];
-	}
-	
-	return "";
+	return query_parameters()[ name ];
 }
 
 /**********************************************************************************************/
-const char* cr_connection::get_query_string( void ) const
+const cr_string_map& cr_connection::query_parameters( void ) const
+{
+	if( !query_params_inited_ )
+	{
+		query_params_inited_ = true;
+		
+		parse_query_parameters(
+			query_params_,
+			mg_get_request_info( conn_ )->query_parameters_ );
+	}
+	
+	return query_params_;
+}
+
+/**********************************************************************************************/
+const char* cr_connection::query_string( void ) const
 {
 	const char* res = mg_get_request_info( conn_ )->query_parameters_;
 	return res ? res : "";
 }
 
 /**********************************************************************************************/
-const char* cr_connection::get_url( void ) const
+const char* cr_connection::url( void ) const
 {
 	return mg_get_request_info( conn_ )->uri_;
 }
@@ -130,10 +146,10 @@ const char* cr_connection::get_url( void ) const
 
 /**********************************************************************************************/
 bool cr_connection::fetch(
-	const char*	url,
-	char*&		out,
-	size_t&		out_len,
-	cr_headers*	headers )
+	const char*		url,
+	char*&			out,
+	size_t&			out_len,
+	cr_string_map*	headers )
 {
 	return mg_fetch( buf_headers_, out, out_len, mg_get_context( conn_ ), url, headers );
 }
@@ -149,13 +165,13 @@ void cr_connection::respond(
 	cr_http_status	rc,
 	const char*		data,
 	size_t			data_len,
-	cr_headers*		headers )
+	cr_string_map*	headers )
 {
 	// Compress data if need
 #ifndef NO_DEFLATE	
 	if( g_deflate && data && data_len > 128 )
 	{
-		const char* enc_header = get_http_header( "accept-encoding", 15 );
+		const char* enc_header = header( "accept-encoding" );
 		if( enc_header && strstr( enc_header, "deflate" ) )
 		{
 			size_t out_len = compress_bound( data_len );
@@ -190,7 +206,7 @@ void cr_connection::respond(
 void cr_connection::respond_header(
 	cr_http_status	rc,
 	size_t			data_len,
-	cr_headers*		headers )
+	cr_string_map*	headers )
 {
 	char header[ 16384 ];
 	size_t header_len;
@@ -199,7 +215,9 @@ void cr_connection::respond_header(
 }
 		
 /**********************************************************************************************/
-void cr_connection::send_file( const char* path )
+void cr_connection::send_file(
+	const char* path,
+	const char* content_type )
 {
 	time_t t = file_modification_time( path );
 	if( !t )
@@ -211,10 +229,20 @@ void cr_connection::send_file( const char* path )
 	char tstr[ 64 ];
 	to_string( tstr, t );
 	
-	const char* etag = get_http_header( "if-none-match" );
+	const char* etag = header( "if-none-match" );
 	if( etag && !strcmp( etag, tstr ) )
 	{
-		respond( CR_HTTP_NOT_MODIFIED );
+		if( content_type )
+		{
+			cr_string_map headers;
+			headers.add( "content-type", content_type, 12 );		
+			respond( CR_HTTP_NOT_MODIFIED, NULL, 0, &headers );
+		}
+		else
+		{
+			respond( CR_HTTP_NOT_MODIFIED );
+		}
+		
 		return;
 	}
 	
@@ -228,8 +256,11 @@ void cr_connection::send_file( const char* path )
 	fseek( f, 0, SEEK_END );
 	
 	// Header
-	cr_headers headers;
+	cr_string_map headers;
 	headers.add( "etag", tstr, 4 );
+	
+	if( content_type )
+		headers.add( "content-type", content_type, 12 );
 	
 	char header[ 256 ];
 	size_t header_len;

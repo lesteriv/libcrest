@@ -1,24 +1,39 @@
 /**********************************************************************************************/
-/* server.cpp								                                				  */
+/* file_server_stl.cpp							                                			  */
 /*                                                                       					  */
 /* Igor Nikitin, 2012																		  */
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
 // STD
-#include <stdio.h>
+#include <iostream>
+#include <string>
 
 // CREST
 #include "../include/crest.h"
 
 /**********************************************************************************************/
-static const char	g_default_doc[]	= "/var/log/syslog";
-static const char	g_root[]		= "/var/log";
+using namespace std;
+
+
+//////////////////////////////////////////////////////////////////////////
+// constants
+//////////////////////////////////////////////////////////////////////////
+
 
 /**********************************************************************************************/
-static const size_t	ROOT_LEN		= sizeof( g_root ) - 1;
-static const size_t	URL_LEN			= 8192;
-static const size_t	BUF_LEN			= URL_LEN + ROOT_LEN + 1;
+static const string	g_root = "/var/log";
+
+/**********************************************************************************************/
+static const string g_index	=
+	"<html>"
+	"<a href=\"apt/history.log\">apt/history.log</a><br>"
+	"<a href=\"Xorg.0.log\">Xorg.0.log</a><br>"
+	"<a href=\"auth.log\">auth.log</a><br>"
+	"<a href=\"dmesg\">dmesg</a><br>"
+	"<a href=\"kern.log\">kern.log</a><br>"
+	"<a href=\"syslog\">syslog</a>"
+	"</html>";
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -29,20 +44,9 @@ static const size_t	BUF_LEN			= URL_LEN + ROOT_LEN + 1;
 /**********************************************************************************************/
 GET( * )( cr_connection& conn )
 {
-	if( conn.get_url()[ 1 ] )
-	{
-		// Use "C" strings instead of std::string to not link with libstdc++
-		char path[ BUF_LEN ];
-		memcpy( path, g_root, ROOT_LEN );
-		strncpy( path + ROOT_LEN, conn.get_url(), URL_LEN );
-		path[ BUF_LEN - 1 ] = 0;
-		
-		conn.send_file( path );
-	}
-	else
-	{
-		conn.send_file( g_default_doc );
-	}
+	conn.get_url()[ 1 ] ?
+		conn.send_file( g_root + conn.get_url(), "text/plain" ) :
+		conn.respond( CR_HTTP_OK, g_index );
 }
 
 
@@ -55,6 +59,8 @@ GET( * )( cr_connection& conn )
 int main( void )
 {
 	cr_options opts;
+	opts.thread_count = 1;
+	
 	if( !cr_start( opts ) )
-		printf( "%s\n", cr_error_string() );
+		cout << cr_error_string() << endl;
 }
