@@ -19,6 +19,7 @@
 // CREST
 #include "../include/crest.h"
 #include "../include/cr_utils.h"
+#include "cr_json.h"
 #include "cr_xml.h"
 
 /**********************************************************************************************/
@@ -393,9 +394,21 @@ void parse_post_parameters(
 	
 	switch( *text )
 	{
-//		case '{': parameters_from_json	( out, text ); break;
-		case '<': { cr_xml parser; parser.parse( out, text ); } break;
-		default : parameters_from_form( out, text ); break;
+#ifndef CREST_OMIT_JSON		
+		case '{':
+			cr_json().parse( out, text ); 
+			break;
+#endif // CREST_OMIT_JSON
+		
+#ifndef CREST_OMIT_XML
+		case '<':
+			cr_xml().parse( out, text ); 
+			break;
+#endif // CREST_OMIT_XML
+		
+		default :
+			parameters_from_form( out, text );
+			break;
 	}	
 }
 

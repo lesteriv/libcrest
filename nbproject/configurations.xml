@@ -33,8 +33,9 @@
         <itemPath>src/auth_digest.cpp</itemPath>
         <itemPath>src/auth_digest.h</itemPath>
         <itemPath>src/cr_connection.cpp</itemPath>
+        <itemPath>src/cr_json.cpp</itemPath>
+        <itemPath>src/cr_json.h</itemPath>
         <itemPath>src/cr_mutex.cpp</itemPath>
-        <itemPath>src/cr_post_parameters.cpp</itemPath>
         <itemPath>src/cr_string_map.cpp</itemPath>
         <itemPath>src/cr_user_manager.cpp</itemPath>
         <itemPath>src/cr_utils.cpp</itemPath>
@@ -138,8 +139,6 @@
         <ccTool>
           <commandLine>-std=c++11</commandLine>
         </ccTool>
-      </item>
-      <item path="src/cr_post_parameters.cpp" ex="true" tool="1" flavor="0">
       </item>
       <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
       </item>

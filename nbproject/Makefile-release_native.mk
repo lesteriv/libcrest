@@ -36,7 +36,6 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 OBJECTFILES= \
 	${OBJECTDIR}/src/cr_xml.o \
 	${OBJECTDIR}/src/cr_connection.o \
-	${OBJECTDIR}/src/cr_post_parameters.o \
 	${OBJECTDIR}/examples/http_mirror.o \
 	${OBJECTDIR}/src/cr_string_map.o \
 	${OBJECTDIR}/third/zlib/trees.o \
@@ -48,6 +47,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/cr_mutex.o \
 	${OBJECTDIR}/third/mongoose/mongoose.o \
 	${OBJECTDIR}/examples/file_server.o \
+	${OBJECTDIR}/src/cr_json.o \
 	${OBJECTDIR}/examples/file_server_stl.o \
 	${OBJECTDIR}/src/auth_basic.o
 
@@ -87,11 +87,6 @@ ${OBJECTDIR}/src/cr_connection.o: src/cr_connection.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_connection.o src/cr_connection.cpp
-
-${OBJECTDIR}/src/cr_post_parameters.o: src/cr_post_parameters.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_post_parameters.o src/cr_post_parameters.cpp
 
 ${OBJECTDIR}/examples/http_mirror.o: examples/http_mirror.cpp 
 	${MKDIR} -p ${OBJECTDIR}/examples
@@ -147,6 +142,11 @@ ${OBJECTDIR}/examples/file_server.o: examples/file_server.cpp
 	${MKDIR} -p ${OBJECTDIR}/examples
 	${RM} $@.d
 	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/file_server.o examples/file_server.cpp
+
+${OBJECTDIR}/src/cr_json.o: src/cr_json.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_json.o src/cr_json.cpp
 
 ${OBJECTDIR}/examples/file_server_stl.o: examples/file_server_stl.cpp 
 	${MKDIR} -p ${OBJECTDIR}/examples

@@ -19,7 +19,7 @@ void cr_json::parse(
 	cr_string_map&	out,
 	char*			text )
 {
-	parse_value( text );
+	parse_object( text );
 }
 		
 
@@ -29,9 +29,54 @@ void cr_json::parse(
 
 
 /**********************************************************************************************/
+char* cr_json::parse_object( char* text )
+{
+	if( *text != '{' )
+		return 0;
+	
+	item->type=cJSON_Object;
+	text=skip(text+1);
+	if (*text=='}') return text+1;	/* empty array. */
+	
+	item->child=child=cJSON_New_Item();
+	if (!item->child) return 0;
+	text=skip(parse_string(child,skip(text)));
+	if (!text) return 0;
+	child->string=child->valuestring;child->valuestring=0;
+	if (*text!=':') {ep=text;return 0;}	/* fail! */
+	text=skip(parse_value(child,skip(text+1)));	/* skip any spacing, get the value. */
+	if (!text) return 0;
+	
+	while (*text==',')
+	{
+		cJSON *new_item;
+		if (!(new_item=cJSON_New_Item()))	return 0; /* memory fail */
+		child->next=new_item;new_item->prev=child;child=new_item;
+		text=skip(parse_string(child,skip(text+1)));
+		if (!text) return 0;
+		child->string=child->valuestring;child->valuestring=0;
+		if (*text!=':') {ep=text;return 0;}	/* fail! */
+		text=skip(parse_value(child,skip(text+1)));	/* skip any spacing, get the value. */
+		if (!text) return 0;
+	}
+	
+	if (*text=='}') return text+1;	/* end of array */
+	ep=text;return 0;	/* malformed. */
+}
+
+/**********************************************************************************************/
 char* cr_json::parse_value( char* text )
 {
-	
+
+	if (!strncmp(value,"null",4))	{ item->type=cJSON_NULL;  return value+4; }
+	if (!strncmp(value,"false",5))	{ item->type=cJSON_False; return value+5; }
+	if (!strncmp(value,"true",4))	{ item->type=cJSON_True; item->valueint=1;	return value+4; }
+	if (*value=='\"')				{ return parse_string(item,value); }
+	if (*value=='-' || (*value>='0' && *value<='9'))	{ return parse_number(item,value); }
+	if (*value=='[')				{ return parse_array(item,value); }
+	if (*value=='{')				{ return parse_object(item,value); }
+
+	ep=value;return 0;	/* failure. */	
 }
 
 
@@ -201,20 +246,7 @@ static const char *parse_object(cJSON *item,const char *value);
 static const char *skip(const char *in) {while (in && *in && (unsigned char)*in<=32) in++; return in;}
 
 
-/* Parser core - when encountering text, process appropriately. */
-static const char *parse_value(cJSON *item,const char *value)
-{
-	if (!value)						return 0;	/* Fail on null. */
-	if (!strncmp(value,"null",4))	{ item->type=cJSON_NULL;  return value+4; }
-	if (!strncmp(value,"false",5))	{ item->type=cJSON_False; return value+5; }
-	if (!strncmp(value,"true",4))	{ item->type=cJSON_True; item->valueint=1;	return value+4; }
-	if (*value=='\"')				{ return parse_string(item,value); }
-	if (*value=='-' || (*value>='0' && *value<='9'))	{ return parse_number(item,value); }
-	if (*value=='[')				{ return parse_array(item,value); }
-	if (*value=='{')				{ return parse_object(item,value); }
 
-	ep=value;return 0;	/* failure. */
-}
 
 /* Build an array from input text. */
 static const char *parse_array(cJSON *item,const char *value)
@@ -241,41 +273,5 @@ static const char *parse_array(cJSON *item,const char *value)
 	}
 
 	if (*value==']') return value+1;	/* end of array */
-	ep=value;return 0;	/* malformed. */
-}
-
-/* Build an object from the text. */
-static const char *parse_object(cJSON *item,const char *value)
-{
-	cJSON *child;
-	if (*value!='{')	{ep=value;return 0;}	/* not an object! */
-	
-	item->type=cJSON_Object;
-	value=skip(value+1);
-	if (*value=='}') return value+1;	/* empty array. */
-	
-	item->child=child=cJSON_New_Item();
-	if (!item->child) return 0;
-	value=skip(parse_string(child,skip(value)));
-	if (!value) return 0;
-	child->string=child->valuestring;child->valuestring=0;
-	if (*value!=':') {ep=value;return 0;}	/* fail! */
-	value=skip(parse_value(child,skip(value+1)));	/* skip any spacing, get the value. */
-	if (!value) return 0;
-	
-	while (*value==',')
-	{
-		cJSON *new_item;
-		if (!(new_item=cJSON_New_Item()))	return 0; /* memory fail */
-		child->next=new_item;new_item->prev=child;child=new_item;
-		value=skip(parse_string(child,skip(value+1)));
-		if (!value) return 0;
-		child->string=child->valuestring;child->valuestring=0;
-		if (*value!=':') {ep=value;return 0;}	/* fail! */
-		value=skip(parse_value(child,skip(value+1)));	/* skip any spacing, get the value. */
-		if (!value) return 0;
-	}
-	
-	if (*value=='}') return value+1;	/* end of array */
 	ep=value;return 0;	/* malformed. */
 }

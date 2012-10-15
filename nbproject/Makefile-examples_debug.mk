@@ -46,6 +46,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/cr_mutex.o \
 	${OBJECTDIR}/third/mongoose/mongoose.o \
 	${OBJECTDIR}/examples/file_server.o \
+	${OBJECTDIR}/src/cr_json.o \
 	${OBJECTDIR}/src/auth_basic.o
 
 
@@ -132,6 +133,11 @@ ${OBJECTDIR}/examples/file_server.o: examples/file_server.cpp
 	${MKDIR} -p ${OBJECTDIR}/examples
 	${RM} $@.d
 	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/file_server.o examples/file_server.cpp
+
+${OBJECTDIR}/src/cr_json.o: src/cr_json.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -g -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_json.o src/cr_json.cpp
 
 ${OBJECTDIR}/src/auth_basic.o: src/auth_basic.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src

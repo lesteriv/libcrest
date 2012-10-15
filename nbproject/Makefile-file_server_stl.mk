@@ -36,7 +36,6 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 OBJECTFILES= \
 	${OBJECTDIR}/src/cr_xml.o \
 	${OBJECTDIR}/src/cr_connection.o \
-	${OBJECTDIR}/src/cr_post_parameters.o \
 	${OBJECTDIR}/src/cr_string_map.o \
 	${OBJECTDIR}/third/zlib/trees.o \
 	${OBJECTDIR}/third/zlib/deflate.o \
@@ -46,6 +45,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/auth_digest.o \
 	${OBJECTDIR}/src/cr_mutex.o \
 	${OBJECTDIR}/third/mongoose/mongoose.o \
+	${OBJECTDIR}/src/cr_json.o \
 	${OBJECTDIR}/examples/file_server_stl.o \
 	${OBJECTDIR}/src/auth_basic.o
 
@@ -83,11 +83,6 @@ ${OBJECTDIR}/src/cr_connection.o: src/cr_connection.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -s -DNO_AUTH -DNO_DEFLATE -DNO_INFO -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_connection.o src/cr_connection.cpp
-
-${OBJECTDIR}/src/cr_post_parameters.o: src/cr_post_parameters.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_AUTH -DNO_DEFLATE -DNO_INFO -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_post_parameters.o src/cr_post_parameters.cpp
 
 ${OBJECTDIR}/src/cr_string_map.o: src/cr_string_map.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
@@ -133,6 +128,11 @@ ${OBJECTDIR}/third/mongoose/mongoose.o: third/mongoose/mongoose.cpp
 	${MKDIR} -p ${OBJECTDIR}/third/mongoose
 	${RM} $@.d
 	$(COMPILE.cc) -s -DNO_AUTH -DNO_DEFLATE -DNO_INFO -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.cpp
+
+${OBJECTDIR}/src/cr_json.o: src/cr_json.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -s -DNO_AUTH -DNO_DEFLATE -DNO_INFO -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_json.o src/cr_json.cpp
 
 ${OBJECTDIR}/examples/file_server_stl.o: examples/file_server_stl.cpp 
 	${MKDIR} -p ${OBJECTDIR}/examples

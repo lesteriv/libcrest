@@ -31,6 +31,7 @@ class cr_json
 	// ---------------------
 	// Internal methods
 		
+		char*					parse_object( char* text );
 		char*					parse_value( char* text );
 };
 

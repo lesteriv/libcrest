@@ -119,20 +119,18 @@ const char* cr_connection::post_parameter(
 /**********************************************************************************************/
 const cr_string_map& cr_connection::post_parameters( void )
 {
-	if( !post_params_inited_ )
+	if( !post_params_buffer_ )
 	{
-		post_params_inited_ = true;
-		
 		size_t len = content_length();
 		if( len )
 		{
-			char* buf = (char*) alloca( len + 1 );
+			post_params_buffer_ = (char*) malloc( len + 1 );
 			
-			len = read( buf, len );
+			len = read( post_params_buffer_, len );
 			if( len )
 			{
-				buf[ len ] = 0;
-				parse_post_parameters( post_params_, buf );
+				post_params_buffer_[ len ] = 0;
+				parse_post_parameters( post_params_, post_params_buffer_ );
 			}
 		}
 	}
@@ -338,6 +336,7 @@ int cr_connection::write( const char* buf, size_t len )
 /**********************************************************************************************/
 cr_connection_internal::~cr_connection_internal( void )
 {
-	// Free temporary data
+	// Free cached data
 	free( path_params_.items_ );
+	free( post_params_buffer_ );
 }

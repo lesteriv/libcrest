@@ -55,6 +55,10 @@ mutable	cr_string_map			query_params_;
 // Flags
 
 mutable	bool					cookies_inited_			: 1;
-mutable	bool					post_params_inited_		: 1;
 mutable	bool					query_params_inited_	: 1;
+
+
+// Cached data
+
+mutable	char*					post_params_buffer_;
 };
