@@ -52,9 +52,11 @@ size_t cr_connection::content_length( void ) const
 }
 
 /**********************************************************************************************/
-const char*	cr_connection::cookie( const char* name ) const
+const char*	cr_connection::cookie(
+	const char* name,
+	size_t		name_len ) const
 {
-	return cookies()[ name ];
+	return cookies().value( name, name_len );
 }
 
 /**********************************************************************************************/
@@ -79,9 +81,11 @@ const cr_string_map& cr_connection::cookies( void ) const
 }
 
 /**********************************************************************************************/
-const char*	cr_connection::header( const char* name ) const
+const char*	cr_connection::header(
+	const char* name,
+	size_t		name_len ) const
 {
-	return mg_get_request_info( conn_ )->headers_[ name ];
+	return mg_get_request_info( conn_ )->headers_.value( name, name_len );
 }
 
 /**********************************************************************************************/
@@ -105,9 +109,43 @@ const char* cr_connection::path_parameter( size_t index ) const
 }
 
 /**********************************************************************************************/
-const char* cr_connection::query_parameter( const char* name ) const
+const char* cr_connection::post_parameter( 
+	const char*	name,
+	size_t		name_len )
 {
-	return query_parameters()[ name ];
+	return post_parameters().value( name, name_len );
+}
+
+/**********************************************************************************************/
+const cr_string_map& cr_connection::post_parameters( void )
+{
+	if( !post_params_inited_ )
+	{
+		post_params_inited_ = true;
+		
+		size_t len = content_length();
+		if( len )
+		{
+			char* buf = (char*) alloca( len + 1 );
+			
+			len = read( buf, len );
+			if( len )
+			{
+				buf[ len ] = 0;
+				parse_post_parameters( post_params_, buf );
+			}
+		}
+	}
+	
+	return post_params_;
+}
+
+/**********************************************************************************************/
+const char* cr_connection::query_parameter( 
+	const char*	name,
+	size_t		name_len ) const
+{
+	return query_parameters().value( name, name_len );
 }
 
 /**********************************************************************************************/

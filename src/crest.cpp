@@ -146,6 +146,7 @@ struct sl_connection : public cr_connection
 		conn_					= conn;
 		cookies_inited_			= false;
 		path_params_			= params;
+		post_params_inited_		= false;
 		query_params_inited_	= false;
 	}
 	

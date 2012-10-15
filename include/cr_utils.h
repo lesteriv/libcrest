@@ -100,6 +100,11 @@ void			md5(
 					size_t*			len );
 
 				/** Parse string with query parameters */
+void			parse_post_parameters(
+					cr_string_map&	out,
+					char*			text );
+
+				/** Parse string with query parameters */
 void			parse_query_parameters(
 					cr_string_map&	out,
 					char*			text );

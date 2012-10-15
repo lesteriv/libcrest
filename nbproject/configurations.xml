@@ -12,16 +12,15 @@
       </logicalFolder>
       <logicalFolder name="include" displayName="include" projectFiles="true">
         <logicalFolder name="f1" displayName="internal" projectFiles="true">
+          <itemPath>include/internal/cr_connection_imp.h</itemPath>
           <itemPath>include/internal/cr_connection_internal.h</itemPath>
           <itemPath>include/internal/cr_handler_register.h</itemPath>
-          <itemPath>include/internal/cr_post_parameters_internal.h</itemPath>
           <itemPath>include/internal/cr_string_map_internal.h</itemPath>
           <itemPath>include/internal/cr_user_manager_internal.h</itemPath>
         </logicalFolder>
         <itemPath>include/cr_connection.h</itemPath>
         <itemPath>include/cr_mutex.h</itemPath>
         <itemPath>include/cr_options.h</itemPath>
-        <itemPath>include/cr_post_parameters.h</itemPath>
         <itemPath>include/cr_string_map.h</itemPath>
         <itemPath>include/cr_types.h</itemPath>
         <itemPath>include/cr_user_manager.h</itemPath>
@@ -39,6 +38,8 @@
         <itemPath>src/cr_string_map.cpp</itemPath>
         <itemPath>src/cr_user_manager.cpp</itemPath>
         <itemPath>src/cr_utils.cpp</itemPath>
+        <itemPath>src/cr_xml.cpp</itemPath>
+        <itemPath>src/cr_xml.h</itemPath>
         <itemPath>src/crest.cpp</itemPath>
       </logicalFolder>
       <logicalFolder name="f1" displayName="tests" projectFiles="true">
@@ -49,10 +50,6 @@
           <itemPath>third/mongoose/LICENSE</itemPath>
           <itemPath>third/mongoose/mongoose.cpp</itemPath>
           <itemPath>third/mongoose/mongoose.h</itemPath>
-        </logicalFolder>
-        <logicalFolder name="rapidxml" displayName="rapidxml" projectFiles="true">
-          <itemPath>third/rapidxml/license.txt</itemPath>
-          <itemPath>third/rapidxml/rapidxml.hpp</itemPath>
         </logicalFolder>
         <logicalFolder name="zlib" displayName="zlib" projectFiles="true">
           <itemPath>third/zlib/README</itemPath>
@@ -92,9 +89,15 @@
           <commandLine>-Wall -Wextra</commandLine>
         </ccTool>
         <archiverTool>
-          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/librestpp.a</output>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcrestd.a</output>
         </archiverTool>
       </compileType>
+      <item path="examples/file_server.cpp" ex="true" tool="1" flavor="0">
+      </item>
+      <item path="examples/file_server_stl.cpp" ex="true" tool="1" flavor="0">
+      </item>
+      <item path="examples/http_mirror.cpp" ex="true" tool="1" flavor="0">
+      </item>
       <item path="examples/storage.cpp" ex="true" tool="1" flavor="0">
       </item>
       <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">

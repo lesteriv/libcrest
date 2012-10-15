@@ -9,8 +9,8 @@ CND_DISTDIR=dist
 # debug_native configuration
 CND_PLATFORM_debug_native=GNU-Linux-x86
 CND_ARTIFACT_DIR_debug_native=dist/debug_native/GNU-Linux-x86
-CND_ARTIFACT_NAME_debug_native=librestpp.a
-CND_ARTIFACT_PATH_debug_native=dist/debug_native/GNU-Linux-x86/librestpp.a
+CND_ARTIFACT_NAME_debug_native=libcrestd.a
+CND_ARTIFACT_PATH_debug_native=dist/debug_native/GNU-Linux-x86/libcrestd.a
 CND_PACKAGE_DIR_debug_native=dist/debug_native/GNU-Linux-x86/package
 CND_PACKAGE_NAME_debug_native=libcrest.tar
 CND_PACKAGE_PATH_debug_native=dist/debug_native/GNU-Linux-x86/package/libcrest.tar

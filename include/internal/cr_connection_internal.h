@@ -9,7 +9,7 @@
 
 // STD
 #include <stddef.h>
-#include <stdlib.h>
+#include <string>
 #include <time.h>
 
 // CREST
@@ -48,11 +48,13 @@ class cr_connection_internal
 		char					buf_headers_[ 16384 ];
 mutable	cr_string_map			cookies_;
 		cr_string_array			path_params_;
+mutable	cr_string_map			post_params_;
 mutable	cr_string_map			query_params_;
 
 
 // Flags
 
 mutable	bool					cookies_inited_			: 1;
+mutable	bool					post_params_inited_		: 1;
 mutable	bool					query_params_inited_	: 1;
 };

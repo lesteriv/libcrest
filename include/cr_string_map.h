@@ -55,6 +55,10 @@ class cr_string_map : public cr_string_map_internal
 									const char* name,
 									size_t		name_len = (size_t) -1 ) const;
 		
+		const char*				value(
+									const char*	name,
+									size_t		name_len = (size_t) -1 ) const;
+		
 		
 	public://////////////////////////////////////////////////////////////////////////
 		

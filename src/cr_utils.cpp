@@ -19,6 +19,7 @@
 // CREST
 #include "../include/crest.h"
 #include "../include/cr_utils.h"
+#include "cr_xml.h"
 
 /**********************************************************************************************/
 #ifdef _MSC_VER
@@ -318,6 +319,84 @@ void parse_cookie_header(
 			in_value = true;
 		}
 	}
+}
+
+/**********************************************************************************************/
+inline char hex2d( char ch )
+{
+	return ( ch >= '0' && ch <= '9' ) ?
+		ch - '0' :
+		( ch >= 'a' && ch <= 'f' ) ?
+			ch - 'a' + 10 :
+			ch - 'A' + 10;
+}
+
+/**********************************************************************************************/
+static void parameters_from_form(
+	cr_string_map&	out,
+	char*			text )
+{
+	while( text && *text )
+	{
+		// Name
+		char* name = text;
+
+		// Search for '='
+		for( ; *text && *text != '=' ; ++text );
+
+		// If found = read value
+		if( *text == '=' )
+		{
+			size_t name_len = text - name;
+			*text++ = 0;
+
+			char* value = text;
+			char* end = text;
+
+			for( ; *text && *text != '&' ; ++text, ++end )
+			{
+				if( *text == '+' )
+				{
+					*end = ' ';
+				}
+				else if( *text == '%' && isxdigit( text[ 1 ] ) && isxdigit( text[ 2 ] ) )
+				{
+					*end = ( hex2d( text[ 1 ] ) << 4 ) | hex2d( text[ 2 ] );
+					text += 2;
+				}
+				else
+				{
+					*end = *text;
+				}
+			}
+
+			bool finish = !*text;
+			
+			*end = 0;
+			
+			out.add( name, value, name_len, end - value );
+			++text;
+			
+			if( finish || out.size() >= 64 )
+				break;
+		}
+	}	
+}
+
+/**********************************************************************************************/
+void parse_post_parameters(
+	cr_string_map&	out,
+	char*			text )
+{
+	if( !text || !*text )
+		return;
+	
+	switch( *text )
+	{
+//		case '{': parameters_from_json	( out, text ); break;
+		case '<': { cr_xml parser; parser.parse( out, text ); } break;
+		default : parameters_from_form( out, text ); break;
+	}	
 }
 
 /**********************************************************************************************/

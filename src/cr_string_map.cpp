@@ -125,6 +125,15 @@ int cr_string_map::find(
 	return -1;
 }
 
+/**********************************************************************************************/
+const char*	cr_string_map::value(
+	const char*	name,
+	size_t		name_len ) const
+{
+	int index = find( name, name_len );
+	return index >= 0 ? value_[ index ] : "";
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // operators

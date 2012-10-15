@@ -31,28 +31,54 @@ class cr_connection : public cr_connection_internal
 		
 								/** Returns single cookie's value.
 								 *  NB: method change value of 'cookie' header. */
-		const char*				cookie( const char* name ) const;
+		const char*				cookie(
+									const char*	name,
+									size_t		name_len = (size_t) -1 ) const;
+		
+								/** 'cookie' method for std::string. */
+		const char*				cookie( const std::string& name ) const;
 		
 								/** Returns cookies for request.
 								 *  NB: method change value of 'cookie' header. */
 		const cr_string_map&	cookies( void ) const;
 
 								/** Returns value of single HTTP header. */
-		const char*				header( const char* name ) const;
+		const char*				header(
+									const char*	name,
+									size_t		name_len = (size_t) -1 ) const;
 
+								/** 'header' method for std::string. */
+		const char*				header( const std::string& name ) const;
+		
 								/** Returns HTTP headers for request. */
 		const cr_string_map&	headers( void ) const;
 
 								/** Returns request's method. */
 		const char*				method( void ) const;
 		
-								/** Returns value of parameter passed via url.
-								 *  TODO */
+								/** Returns value of parameter passed via url or empty
+								 *  string if index too big. */
 		const char*				path_parameter( size_t index ) const;
+
+								/** Returns value of parameter passed via POST data. */
+		const char*				post_parameter( 
+									const char*	name,
+									size_t		name_len = (size_t) -1 );
+		
+								/** 'post_parameter' method for std::string. */
+		const char*				post_parameter( const std::string& name );
+								
+								/** Returns all post parameters. */
+		const cr_string_map&	post_parameters( void );
 		
 								/** Returns value of parameter passed via query string. */
-		const char*				query_parameter( const char* name ) const;
+		const char*				query_parameter( 
+									const char*	name,
+									size_t		name_len = (size_t) -1 ) const;
 		
+								/** 'query_parameter' method for std::string. */
+		const char*				query_parameter( const std::string& name ) const;
+								
 								/** Returns all query parameters. */
 		const cr_string_map&	query_parameters( void ) const;
 		
@@ -75,10 +101,19 @@ class cr_connection : public cr_connection_internal
 									size_t&			out_len,
 									cr_string_map*	headers = NULL );
 		
+								/** 'fetch' method for std::string. */
+		bool					fetch(
+									const std::string&	url,
+									std::string&		out,
+									cr_string_map*		headers = NULL );
+								
 								/** Reads data from the remote end, return number of bytes read. */
 		size_t					read( char* buf, size_t len );
 		
-								/** Generates and sends HTTP server responce with 
+								/** Reads data from the remote end to std::string or std::vector<char>. */
+		void					read( std::string& out );
+								
+								/** Generates and sends HTTP responce with 
 								 *  status code, data-length header and data. */
 		void					respond(
 									cr_http_status	rc,
@@ -86,6 +121,12 @@ class cr_connection : public cr_connection_internal
 									size_t			data_len = 0,
 									cr_string_map*	headers	 = NULL );
 
+								/** 'respond' method for std::string. */
+		void					respond(
+									cr_http_status		rc,
+									const std::string&	data,
+									cr_string_map*		headers = NULL );
+								
 								/** Generates and sends HTTP server responce with 
 								 *  status code and data-length header. */
 		void					respond_header(
@@ -94,89 +135,28 @@ class cr_connection : public cr_connection_internal
 									cr_string_map*	headers	 = NULL );
 		
 								/** Sends content of file, or respond HTTP_BAD_REQUEST if
-								 *  file doesn't exist or not readable. That's very limited method,
-								 *  don't use it for heavy tasks. */
+								 *  file doesn't exist or not readable. */
 		void					send_file( 
 									const char* path,
 									const char* content_type = NULL );
 		
+								/** 'send_file' method for std::string. */
+		void					send_file( 
+									const std::string&	path,
+									const std::string&	content_type = "" );
+
 								/** Sends data to the client. Returns
 								 *  0 when the connection has been closed,
 								 *  -1 on error,
 								 *  or number of bytes written on success. */
 		int						write( const char* buf, size_t len );
 		
-
-	public://////////////////////////////////////////////////////////////////////////
-		
-	// ---------------------
-	// Methods for std::string
-
-								template< class T >
-		bool					fetch(
-									const T&		url,
-									T&				out,
-									cr_string_map*	headers = NULL )
-								{
-									char* data;
-									size_t len;
-									
-									if( fetch( url.c_str(), data, len, headers ) )
-									{
-										out.assign( data, len );
-										free( data );
-										
-										return true;
-									}
-
-									return false;
-								}
-
-								template< class T >
-		void					read( T& out )
-								{
-									size_t len = content_length();
-									
-									out.resize( len );
-									if( len )
-										out.resize( read( &out[ 0 ], len ) );
-								}
-
-								template< class T >
-		void					respond(
-									cr_http_status	rc,
-									const T&		data,
-									cr_string_map*	headers = NULL )
-								{
-									respond( rc, data.c_str(), data.length(), headers );
-								}
-								
-								template< class T >
-		void					send_file( 
-									const T&	path,
-									const T&	content_type = "" )
-								{
-									send_file( path.c_str(), content_type.c_str() );
-								}
-
-		void					send_file( 
-									char*		path,
-									const char*	content_type = "" )
-								{
-									send_file( (const char*) path, content_type );
-								}
-								
-								template< class T >
-		void					send_file( 
-									const T&	path,
-									const char*	content_type = "" )
-								{
-									send_file( path.c_str(), content_type );
-								}
-
-								template< class T >
-		int						write( const T&	data )
-								{
-									return write( data.c_str(), data.size() );
-								}
+								/** 'write' method for std::string. */
+		int						write( const std::string& data );
 };
+
+
+/**********************************************************************************************/
+// Implement methods for std::string
+//
+#include "internal/cr_connection_imp.h"

@@ -12,7 +12,6 @@
 #include "cr_connection.h"
 #include "cr_mutex.h"
 #include "cr_options.h"
-#include "cr_post_parameters.h"
 #include "cr_user_manager.h"
 
 
@@ -42,7 +41,7 @@
 /**********************************************************************************************/
 // Functions
 
-				/** Returns error description if crest unable to start,
+				/** Returns error description if crest unable to start or
 				 *  empty string otherwise. */
 const char*		cr_error_string( void );
 

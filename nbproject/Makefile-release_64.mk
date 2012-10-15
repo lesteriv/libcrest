@@ -34,14 +34,15 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/src/cr_xml.o \
 	${OBJECTDIR}/src/cr_connection.o \
 	${OBJECTDIR}/src/cr_post_parameters.o \
 	${OBJECTDIR}/examples/http_mirror.o \
 	${OBJECTDIR}/src/cr_string_map.o \
 	${OBJECTDIR}/third/zlib/trees.o \
 	${OBJECTDIR}/third/zlib/deflate.o \
-	${OBJECTDIR}/src/cr_user_manager.o \
 	${OBJECTDIR}/src/crest.o \
+	${OBJECTDIR}/src/cr_user_manager.o \
 	${OBJECTDIR}/src/cr_utils.o \
 	${OBJECTDIR}/src/auth_digest.o \
 	${OBJECTDIR}/src/cr_mutex.o \
@@ -77,6 +78,11 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/librestpp.a: ${OBJECTFILES}
 	${AR} -rv ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/librestpp.a ${OBJECTFILES} 
 	$(RANLIB) ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/librestpp.a
 
+${OBJECTDIR}/src/cr_xml.o: src/cr_xml.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_xml.o src/cr_xml.cpp
+
 ${OBJECTDIR}/src/cr_connection.o: src/cr_connection.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
@@ -107,15 +113,15 @@ ${OBJECTDIR}/third/zlib/deflate.o: third/zlib/deflate.cpp
 	${RM} $@.d
 	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/zlib/deflate.o third/zlib/deflate.cpp
 
-${OBJECTDIR}/src/cr_user_manager.o: src/cr_user_manager.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_user_manager.o src/cr_user_manager.cpp
-
 ${OBJECTDIR}/src/crest.o: src/crest.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest.o src/crest.cpp
+
+${OBJECTDIR}/src/cr_user_manager.o: src/cr_user_manager.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -s -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_user_manager.o src/cr_user_manager.cpp
 
 ${OBJECTDIR}/src/cr_utils.o: src/cr_utils.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
