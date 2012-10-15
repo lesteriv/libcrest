@@ -1,3 +1,48 @@
+/**********************************************************************************************/
+/* cr_json.cpp				                                                   				  */
+/*                                                                       					  */
+/* Igor Nikitin, 2012																		  */
+/* MIT license			                                                  					  */
+/**********************************************************************************************/
+
+// CREST
+#include "cr_json.h"
+
+
+//////////////////////////////////////////////////////////////////////////
+// methods
+//////////////////////////////////////////////////////////////////////////
+
+
+/**********************************************************************************************/
+void cr_json::parse(
+	cr_string_map&	out,
+	char*			text )
+{
+	parse_value( text );
+}
+		
+
+//////////////////////////////////////////////////////////////////////////
+// internal methods
+//////////////////////////////////////////////////////////////////////////
+
+
+/**********************************************************************************************/
+char* cr_json::parse_value( char* text )
+{
+	
+}
+
+
+
+
+
+
+
+
+
+
 /*
   Copyright (c) 2009 Dave Gamble
 
@@ -32,9 +77,6 @@
 #include <ctype.h>
 #include "cJSON.h"
 
-static const char *ep;
-
-const char *cJSON_GetErrorPtr() {return ep;}
 
 static int cJSON_strcasecmp(const char *s1,const char *s2)
 {
@@ -158,16 +200,6 @@ static const char *parse_object(cJSON *item,const char *value);
 /* Utility to jump whitespace and cr/lf */
 static const char *skip(const char *in) {while (in && *in && (unsigned char)*in<=32) in++; return in;}
 
-/* Parse an object - create a new root, and populate. */
-cJSON *cJSON_Parse(const char *value)
-{
-	cJSON *c=cJSON_New_Item();
-	ep=0;
-	if (!c) return 0;       /* memory fail */
-
-	if (!parse_value(c,skip(value))) {cJSON_Delete(c);return 0;}
-	return c;
-}
 
 /* Parser core - when encountering text, process appropriately. */
 static const char *parse_value(cJSON *item,const char *value)
