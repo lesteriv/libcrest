@@ -235,7 +235,7 @@ int main( void )
 		free( header );
 		RETURN( res );
 	}
-*/	
+
 	TEST( cr_post_parameters )
 	{
 		char str0[] = "Name=Jonathan+Doe&Age=23&Formula=a+%2B+b+%3D%3D+13%25%21";
@@ -250,6 +250,44 @@ int main( void )
 			pm0.get_parameter_value	( 1 ) == string("23")				&&
 			pm0.get_parameter_value	( 2 ) == string("a + b == 13%!");
 
+		RETURN( res );
+	}
+*/	
+	
+	TEST( parse_post_parameters JSON )
+	{
+		char str[] = "{ \"a\": 1, \"b\" :[\t], \"c\": [\"aa\" ,{} ,123 ]\n, \"d\": [[[1]]], \"e\": \"\\t\\\"1\\n\", \"f\": null , \"g\": { \"a\": 1 }, \"z\": \"2\" }";
+		
+		cr_string_map pm;
+		parse_post_parameters( pm, str );
+		
+		bool res =
+			!strcmp( pm[ "a" ], "1" ) &&
+			!strcmp( pm[ "e" ], "\t\"1\n" ) &&
+			!strcmp( pm[ "f" ], "null" ) &&
+			!strcmp( pm[ "z" ], "2" );
+		
+		RETURN( res );
+	}
+	
+	TEST( parse_post_parameters XML )
+	{
+		char str[] =
+			"<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+			"<!DOCTYPE foo [ <!ENTITY greeting \"helloworld\"> ]>"
+			"<!-- This is a comment -->"
+			"<![CDATA[ content ]]>"
+			"<c><a>1</a></c>"
+			"<a>1</a>"
+			"<b>a&gt;&#33;</b>";
+		
+		cr_string_map pm;
+		parse_post_parameters( pm, str );
+		
+		bool res =
+			!strcmp( pm[ "a" ], "1" ) &&
+			!strcmp( pm[ "b" ], "a>!" );
+		
 		RETURN( res );
 	}
 	

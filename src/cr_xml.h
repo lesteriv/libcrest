@@ -38,10 +38,10 @@ class cr_xml
 								char*&			text,
 								unsigned long	code );
 		
-		char				parse_and_append_data( char*& text );
-		void				parse_element( char*& text );
-		void				parse_node( char*& text );
-		void				parse_node_contents( char*& text );
+		char				parse_and_append_data( char*& text, size_t level );
+		void				parse_element( char*& text, size_t level );
+		void				parse_node( char*& text, size_t level );
+		void				parse_node_contents( char*& text, size_t level );
 		
 		char*				skip_and_expand_character_refs( char*& text );
 		void				skip_cdata( char*& text );

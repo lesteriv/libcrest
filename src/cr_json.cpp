@@ -5,8 +5,251 @@
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
+// STD
+#include <string.h>
+
 // CREST
 #include "cr_json.h"
+
+
+//////////////////////////////////////////////////////////////////////////
+// macroses
+//////////////////////////////////////////////////////////////////////////
+
+
+/**********************************************************************************************/
+#define BREAK { text = 0; return; }
+
+
+//////////////////////////////////////////////////////////////////////////
+// prototypes
+//////////////////////////////////////////////////////////////////////////
+
+
+/**********************************************************************************************/
+static void parse_object ( cr_string_map* out_map, char*& text );
+static void parse_value	 ( char*& text, char** out, size_t* out_len );
+
+
+//////////////////////////////////////////////////////////////////////////
+// helper functions
+//////////////////////////////////////////////////////////////////////////
+
+
+/**********************************************************************************************/
+inline void skip_whitespace_json( char*& text )
+{
+	if( text )
+	{
+		while( *text && (unsigned char) *text <= 32 )
+			++text;
+	}
+}
+
+/**********************************************************************************************/
+static void parse_array( char*& text )
+{
+	if( !text )
+		return;
+	
+	++text;
+	skip_whitespace_json( text );
+	
+	if( *text == ']' )
+	{
+		++text;
+		return;
+	}
+
+	do
+	{
+		skip_whitespace_json( text );
+		parse_value( text, NULL, NULL );
+		skip_whitespace_json( text );
+	}
+	while( text && *text == ',' && ++text );
+
+	if( !text || *text++ != ']' )
+		BREAK;
+}
+
+/**********************************************************************************************/
+static void parse_string( 
+	char*&	text,
+	char**	out,
+	size_t*	out_len )
+{
+	if( !text || !*text || *text++ != '"' )
+		BREAK;
+	
+	if( out )
+		*out = text;
+	
+	char* tail = text;
+	
+	while( *text && *text != '"' )
+	{
+		if( *text == '\\' )
+		{
+			switch( *++text )
+			{
+				case 'b': *tail++ = '\b'; break;
+				case 'f': *tail++ = '\f'; break;
+				case 'n': *tail++ = '\n'; break;
+				case 'r': *tail++ = '\r'; break;
+				case 't': *tail++ = '\t'; break;
+				
+				default:
+				{
+					if( *text )
+						*tail++ = *text;
+				}
+			}
+			
+			if( *text )
+				++text;
+		}
+		else
+		{
+			*tail++ = *text++;
+		}
+	}
+	
+	if( *text )
+		++text;
+	
+	if( out_len )
+		*out_len = tail - *out;
+}
+
+/**********************************************************************************************/
+static void parse_value(
+	char*&	text,
+	char**	out,
+	size_t*	out_len )
+{
+	if( !text )
+		return;
+	
+	skip_whitespace_json( text );
+	
+	if( !strncmp( text, "false", 5 ) )
+	{
+		if( out )
+		{
+			*out = text;
+			*out_len = 5;
+		}
+		
+		text += 5;
+	}
+	else if( !strncmp( text, "true", 4 ) || !strncmp( text, "null", 4 ) )
+	{
+		if( out )
+		{
+			*out = text;
+			*out_len = 4;
+		}
+		
+		text += 4;
+	}
+	else if( *text == '\"' )
+	{
+		parse_string( text, out, out_len );
+	}
+	else if( *text == '-' || ( *text >= '0' && *text <= '9' ) )
+	{
+		if( out )
+			*out = text;
+		
+		while( strchr( "01234567890-+.eE", *text ) )
+			++text;
+		
+		if( out_len )
+			*out_len = text - *out;
+	}
+	else if( *text == '[' )
+	{
+		if( out )
+		{
+			*out = text;
+			*out_len = 0;
+		}
+		
+		parse_array( text );
+	}
+	else if( *text == '{' )
+	{
+		if( out )
+		{
+			*out = text;
+			*out_len = 0;
+		}
+		
+		parse_object( NULL, text );
+	}
+	else
+	{
+		BREAK;
+	}
+}
+
+/**********************************************************************************************/
+static void parse_object( 
+	cr_string_map*	out_map,
+	char*&			text )
+{
+	if( !text )
+		return;
+	
+	skip_whitespace_json( text );
+	if( *text++ != '{' )
+		BREAK
+
+	skip_whitespace_json( text );
+	
+	if( *text == '}' )
+	{
+		++text;
+		return;
+	}
+	
+	do
+	{
+		skip_whitespace_json( text );
+		
+		char* name = NULL;
+		size_t name_len;
+		
+		parse_string( text, &name, &name_len );
+		if( !name || !text )
+			return;
+		
+		skip_whitespace_json( text );
+		if( *text++ != ':' )
+			BREAK;
+
+		char* value = NULL;
+		size_t value_len;
+		
+		parse_value( text, &value, &value_len );
+
+		skip_whitespace_json( text );
+		if( !text || !*text )
+			BREAK;
+		
+		if( out_map )
+			out_map->add( name, value, name_len, value_len );
+	}
+	while( text && *text++ == ',' );
+
+	if( !text )
+		return;
+	
+	--text;
+	if( *text++ != '}' )
+		BREAK;
+}
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -19,259 +262,12 @@ void cr_json::parse(
 	cr_string_map&	out,
 	char*			text )
 {
-	parse_object( text );
-}
-		
-
-//////////////////////////////////////////////////////////////////////////
-// internal methods
-//////////////////////////////////////////////////////////////////////////
-
-
-/**********************************************************************************************/
-char* cr_json::parse_object( char* text )
-{
-	if( *text != '{' )
-		return 0;
+	parse_object( &out, text );
 	
-	item->type=cJSON_Object;
-	text=skip(text+1);
-	if (*text=='}') return text+1;	/* empty array. */
-	
-	item->child=child=cJSON_New_Item();
-	if (!item->child) return 0;
-	text=skip(parse_string(child,skip(text)));
-	if (!text) return 0;
-	child->string=child->valuestring;child->valuestring=0;
-	if (*text!=':') {ep=text;return 0;}	/* fail! */
-	text=skip(parse_value(child,skip(text+1)));	/* skip any spacing, get the value. */
-	if (!text) return 0;
-	
-	while (*text==',')
+	size_t count = out.size();
+	for( size_t i = 0 ; i < count ; ++i )
 	{
-		cJSON *new_item;
-		if (!(new_item=cJSON_New_Item()))	return 0; /* memory fail */
-		child->next=new_item;new_item->prev=child;child=new_item;
-		text=skip(parse_string(child,skip(text+1)));
-		if (!text) return 0;
-		child->string=child->valuestring;child->valuestring=0;
-		if (*text!=':') {ep=text;return 0;}	/* fail! */
-		text=skip(parse_value(child,skip(text+1)));	/* skip any spacing, get the value. */
-		if (!text) return 0;
+		*((char*) ( out.name( i ) + out.name_len( i ) )) = 0;
+		*((char*) ( out.value( i ) + out.value_len( i ) )) = 0;
 	}
-	
-	if (*text=='}') return text+1;	/* end of array */
-	ep=text;return 0;	/* malformed. */
-}
-
-/**********************************************************************************************/
-char* cr_json::parse_value( char* text )
-{
-
-	if (!strncmp(value,"null",4))	{ item->type=cJSON_NULL;  return value+4; }
-	if (!strncmp(value,"false",5))	{ item->type=cJSON_False; return value+5; }
-	if (!strncmp(value,"true",4))	{ item->type=cJSON_True; item->valueint=1;	return value+4; }
-	if (*value=='\"')				{ return parse_string(item,value); }
-	if (*value=='-' || (*value>='0' && *value<='9'))	{ return parse_number(item,value); }
-	if (*value=='[')				{ return parse_array(item,value); }
-	if (*value=='{')				{ return parse_object(item,value); }
-
-	ep=value;return 0;	/* failure. */	
-}
-
-
-
-
-
-
-
-
-
-
-/*
-  Copyright (c) 2009 Dave Gamble
-
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-
-  The above copyright notice and this permission notice shall be included in
-  all copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-  THE SOFTWARE.
-*/
-
-/* cJSON */
-/* JSON parser in C. */
-
-#include <string.h>
-#include <stdio.h>
-#include <math.h>
-#include <stdlib.h>
-#include <float.h>
-#include <limits.h>
-#include <ctype.h>
-#include "cJSON.h"
-
-
-static int cJSON_strcasecmp(const char *s1,const char *s2)
-{
-	if (!s1) return (s1==s2)?0:1;if (!s2) return 1;
-	for(; tolower(*s1) == tolower(*s2); ++s1, ++s2)	if(*s1 == 0)	return 0;
-	return tolower(*(const unsigned char *)s1) - tolower(*(const unsigned char *)s2);
-}
-
-/* Internal constructor. */
-static cJSON *cJSON_New_Item()
-{
-	cJSON* node = (cJSON*)malloc(sizeof(cJSON));
-	if (node) memset(node,0,sizeof(cJSON));
-	return node;
-}
-
-/* Delete a cJSON structure. */
-void cJSON_Delete(cJSON *c)
-{
-	cJSON *next;
-	while (c)
-	{
-		next=c->next;
-		if (!(c->type&cJSON_IsReference) && c->child) cJSON_Delete(c->child);
-		if (!(c->type&cJSON_IsReference) && c->valuestring) free(c->valuestring);
-		if (c->string) free(c->string);
-		free(c);
-		c=next;
-	}
-}
-
-/* Parse the input text to generate a number, and populate the result into item. */
-static const char *parse_number(cJSON *item,const char *num)
-{
-	double n=0,sign=1,scale=0;int subscale=0,signsubscale=1;
-
-	/* Could use sscanf for this? */
-	if (*num=='-') sign=-1,num++;	/* Has sign? */
-	if (*num=='0') num++;			/* is zero */
-	if (*num>='1' && *num<='9')	do	n=(n*10.0)+(*num++ -'0');	while (*num>='0' && *num<='9');	/* Number? */
-	if (*num=='.' && num[1]>='0' && num[1]<='9') {num++;		do	n=(n*10.0)+(*num++ -'0'),scale--; while (*num>='0' && *num<='9');}	/* Fractional part? */
-	if (*num=='e' || *num=='E')		/* Exponent? */
-	{	num++;if (*num=='+') num++;	else if (*num=='-') signsubscale=-1,num++;		/* With sign? */
-		while (*num>='0' && *num<='9') subscale=(subscale*10)+(*num++ - '0');	/* Number? */
-	}
-
-	n=sign*n*pow(10.0,(scale+subscale*signsubscale));	/* number = +/- number.fraction * 10^+/- exponent */
-	
-	item->valuedouble=n;
-	item->valueint=(int)n;
-	item->type=cJSON_Number;
-	return num;
-}
-
-/* Parse the input text into an unescaped cstring, and populate item. */
-static const unsigned char firstByteMark[7] = { 0x00, 0x00, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC };
-static const char *parse_string(cJSON *item,const char *str)
-{
-	const char *ptr=str+1;char *ptr2;char *out;int len=0;unsigned uc,uc2;
-	if (*str!='\"') {ep=str;return 0;}	/* not a string! */
-	
-	while (*ptr!='\"' && *ptr && ++len) if (*ptr++ == '\\') ptr++;	/* Skip escaped quotes. */
-	
-	out=(char*)malloc(len+1);	/* This is how long we need for the string, roughly. */
-	if (!out) return 0;
-	
-	ptr=str+1;ptr2=out;
-	while (*ptr!='\"' && *ptr)
-	{
-		if (*ptr!='\\') *ptr2++=*ptr++;
-		else
-		{
-			ptr++;
-			switch (*ptr)
-			{
-				case 'b': *ptr2++='\b';	break;
-				case 'f': *ptr2++='\f';	break;
-				case 'n': *ptr2++='\n';	break;
-				case 'r': *ptr2++='\r';	break;
-				case 't': *ptr2++='\t';	break;
-				case 'u':	 /* transcode utf16 to utf8. */
-					sscanf(ptr+1,"%4x",&uc);ptr+=4;	/* get the unicode char. */
-
-					if ((uc>=0xDC00 && uc<=0xDFFF) || uc==0)	break;	// check for invalid.
-
-					if (uc>=0xD800 && uc<=0xDBFF)	// UTF16 surrogate pairs.
-					{
-						if (ptr[1]!='\\' || ptr[2]!='u')	break;	// missing second-half of surrogate.
-						sscanf(ptr+3,"%4x",&uc2);ptr+=6;
-						if (uc2<0xDC00 || uc2>0xDFFF)		break;	// invalid second-half of surrogate.
-						uc=0x10000 | ((uc&0x3FF)<<10) | (uc2&0x3FF);
-					}
-
-					len=4;if (uc<0x80) len=1;else if (uc<0x800) len=2;else if (uc<0x10000) len=3; ptr2+=len;
-					
-					switch (len) {
-						case 4: *--ptr2 =((uc | 0x80) & 0xBF); uc >>= 6;
-						case 3: *--ptr2 =((uc | 0x80) & 0xBF); uc >>= 6;
-						case 2: *--ptr2 =((uc | 0x80) & 0xBF); uc >>= 6;
-						case 1: *--ptr2 =(uc | firstByteMark[len]);
-					}
-					ptr2+=len;
-					break;
-				default:  *ptr2++=*ptr; break;
-			}
-			ptr++;
-		}
-	}
-	*ptr2=0;
-	if (*ptr=='\"') ptr++;
-	item->valuestring=out;
-	item->type=cJSON_String;
-	return ptr;
-}
-
-/* Predeclare these prototypes. */
-static const char *parse_value(cJSON *item,const char *value);
-static const char *parse_array(cJSON *item,const char *value);
-static const char *parse_object(cJSON *item,const char *value);
-
-/* Utility to jump whitespace and cr/lf */
-static const char *skip(const char *in) {while (in && *in && (unsigned char)*in<=32) in++; return in;}
-
-
-
-
-/* Build an array from input text. */
-static const char *parse_array(cJSON *item,const char *value)
-{
-	cJSON *child;
-	if (*value!='[')	{ep=value;return 0;}	/* not an array! */
-
-	item->type=cJSON_Array;
-	value=skip(value+1);
-	if (*value==']') return value+1;	/* empty array. */
-
-	item->child=child=cJSON_New_Item();
-	if (!item->child) return 0;		 /* memory fail */
-	value=skip(parse_value(child,skip(value)));	/* skip any spacing, get the value. */
-	if (!value) return 0;
-
-	while (*value==',')
-	{
-		cJSON *new_item;
-		if (!(new_item=cJSON_New_Item())) return 0; 	/* memory fail */
-		child->next=new_item;new_item->prev=child;child=new_item;
-		value=skip(parse_value(child,skip(value+1)));
-		if (!value) return 0;	/* memory fail */
-	}
-
-	if (*value==']') return value+1;	/* end of array */
-	ep=value;return 0;	/* malformed. */
 }

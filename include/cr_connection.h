@@ -96,10 +96,10 @@ class cr_connection : public cr_connection_internal
 
 								/** Fetch data from remote HTTP server. */
 		bool					fetch(
-									const char*		url,
-									char*&			out,
-									size_t&			out_len,
-									cr_string_map*	headers = NULL );
+									const char*			url,
+									char*&				out,
+									size_t&				out_len,
+									cr_string_map*		headers = NULL );
 		
 								/** 'fetch' method for std::string. */
 		bool					fetch(
@@ -116,10 +116,10 @@ class cr_connection : public cr_connection_internal
 								/** Generates and sends HTTP responce with 
 								 *  status code, data-length header and data. */
 		void					respond(
-									cr_http_status	rc,
-									const char*		data	 = NULL,
-									size_t			data_len = 0,
-									cr_string_map*	headers	 = NULL );
+									cr_http_status		rc,
+									const char*			data	 = NULL,
+									size_t				data_len = 0,
+									cr_string_map*		headers	 = NULL );
 
 								/** 'respond' method for std::string. */
 		void					respond(
@@ -130,9 +130,9 @@ class cr_connection : public cr_connection_internal
 								/** Generates and sends HTTP server responce with 
 								 *  status code and data-length header. */
 		void					respond_header(
-									cr_http_status	rc,
-									size_t			data_len,
-									cr_string_map*	headers	 = NULL );
+									cr_http_status		rc,
+									size_t				data_len,
+									cr_string_map*		headers	 = NULL );
 		
 								/** Sends content of file, or respond HTTP_BAD_REQUEST if
 								 *  file doesn't exist or not readable. */

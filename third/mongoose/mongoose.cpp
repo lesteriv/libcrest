@@ -227,9 +227,9 @@ union usa
 	struct sockaddr sa;
 	struct sockaddr_in sin;
 
-#if defined(USE_IPV6)
+#ifdef USE_IPV6
 	struct sockaddr_in6 sin6;
-#endif
+#endif // USE_IPV6
 };
 
 /**********************************************************************************************/
@@ -295,7 +295,6 @@ struct mg_connection
 	int				content_len;			// Content-Length header value
 	int				consumed_content;		// How many bytes of content have been read
 	char			buf[ MAX_REQUEST_SIZE ];// Buffer for received data
-	int				must_close;				// 1 if connection must be closed
 	int				request_len;			// Size of the request + headers in a buffer
 	int				data_len;				// Total size of data in a buffer
 } ;
@@ -356,7 +355,7 @@ static char* skip( char** buf, const char* delimiters )
 /**********************************************************************************************/
 static int should_keep_alive( mg_connection *conn )
 {
-	if( 1 || conn->must_close )
+	if( 1 /*|| conn->must_close*/ )
 		return 0;
 
 	const char* header = conn->request_info.headers_[ "connection" ];
@@ -1092,8 +1091,8 @@ static void uninitialize_ssl( mg_context* ctx )
 /**********************************************************************************************/
 static void reset_per_request_attributes( mg_connection* conn )
 {
-	conn->consumed_content = 0;
-	conn->must_close = conn->request_len = 0;
+	conn->consumed_content	= 0;
+	conn->request_len		= 0;
 }
 
 /**********************************************************************************************/
@@ -1167,7 +1166,6 @@ static void process_new_connection( mg_connection* conn )
 		if( parse_http_message( conn->buf, MAX_REQUEST_SIZE, ri ) <= 0 || *ri.uri_ != '/' )
 		{
 			mg_write( conn, "HTTP/1.1 400 Bad Request Too Large\r\nContent-Length: 0\r\n\r\n", 57 );
-			conn->must_close = 1;
 		}
 		else
 		{
@@ -1444,8 +1442,7 @@ mg_context* mg_start(
 #ifndef NO_SSL	  
 		!set_ssl_option( ctx, pem_file ) ||
 #endif // NO_SSL
-		!set_ports_option( ctx, ports, pem_file )
-		 )
+		!set_ports_option( ctx, ports, pem_file ) )
 	{
 		free_context( ctx );
 		return NULL;
@@ -1459,10 +1456,10 @@ mg_context* mg_start(
 	signal( SIGCHLD, SIG_IGN );
 #endif // !_WIN32
 
-	pthread_mutex_init( &ctx->mutex, NULL );
-	pthread_cond_init( &ctx->cond, NULL );
-	pthread_cond_init( &ctx->sq_empty, NULL );
-	pthread_cond_init( &ctx->sq_full, NULL );
+	pthread_mutex_init	( &ctx->mutex	 , NULL );
+	pthread_cond_init	( &ctx->cond	 , NULL );
+	pthread_cond_init	( &ctx->sq_empty , NULL );
+	pthread_cond_init	( &ctx->sq_full	 , NULL );
 
 	// Start master (listening) thread
 	mg_start_thread( (mg_thread_func_t) master_thread, ctx );
@@ -1548,9 +1545,9 @@ static mg_connection* mg_connect(
 	}
 	else
 	{
-		sin.sin_family = AF_INET;
-		sin.sin_port = htons( (uint16_t) port );
-		sin.sin_addr = *(in_addr*) he->h_addr_list[ 0 ];
+		sin.sin_family	= AF_INET;
+		sin.sin_port	= htons( (uint16_t) port );
+		sin.sin_addr	= *(in_addr*) he->h_addr_list[ 0 ];
 		
 		if( connect( sock, (sockaddr*) &sin, sizeof( sin ) ) )
 		{

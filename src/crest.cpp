@@ -83,7 +83,7 @@ struct resource
 {
 	bool				admin_;
 	cr_api_callback_t	handler_;
-	cr_string_array	keys_;
+	cr_string_array		keys_;
 	bool				public_;
 };
 
@@ -332,7 +332,7 @@ void event_handler( mg_connection* conn )
 	else if( !strcmp( method_name, "PUT"	) ) method = CR_METHOD_PUT;
 	else
 	{
-		mg_write( conn, "HTTP/1.1 400 Bad Request\r\nContent-Length: 20\r\n\r\nNon-supported method", 68 );
+		mg_write( conn, "HTTP/1.1 501 Not Implemented\r\nContent-Length: 24\r\n\r\nNon-supported method", 72 );
 		return;
 	}
 

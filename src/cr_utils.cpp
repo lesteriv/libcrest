@@ -394,17 +394,13 @@ void parse_post_parameters(
 	
 	switch( *text )
 	{
-#ifndef CREST_OMIT_JSON		
 		case '{':
 			cr_json().parse( out, text ); 
 			break;
-#endif // CREST_OMIT_JSON
 		
-#ifndef CREST_OMIT_XML
 		case '<':
 			cr_xml().parse( out, text ); 
 			break;
-#endif // CREST_OMIT_XML
 		
 		default :
 			parameters_from_form( out, text );
@@ -636,6 +632,15 @@ void md5(
 
 	md5_transform( buf, (uint32_t*) in);
 	memmove( hash, buf, 16 );
+}
+
+/**********************************************************************************************/
+void set_cookie(
+	cr_string_map&	headers,
+	const char*		name,
+	const char*		value )
+{
+	// TODO
 }
 
 /**********************************************************************************************/

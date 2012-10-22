@@ -109,5 +109,11 @@ void			parse_query_parameters(
 					cr_string_map&	out,
 					char*			text );
 
+				/** Adds header to set cookie. */
+void			set_cookie(
+					cr_string_map&	headers,
+					const char*		name,
+					const char*		value );
+
 				/** Converts integer value to string, returns end of string - \0 pos. */
 char*			to_string( char* buf, int value );
