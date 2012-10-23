@@ -76,7 +76,7 @@ bool auth_basic(
 				size_t len[] = { strlen( user ), 1, 0, 1, strlen( pass ) };
 				
 				char auth_hash[ 16 ];
-				md5( auth_hash, 5, data, len );
+				cr_md5( auth_hash, 5, data, len );
 				
 				res = !memcmp( stored_hash, auth_hash, 16 );
 			}

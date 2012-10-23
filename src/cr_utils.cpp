@@ -165,55 +165,7 @@ size_t cr_base64_decode(
 }
 
 /**********************************************************************************************/
-size_t cr_deflate(
-	const char*		buf,
-	size_t			len,
-	char*			out,
-	size_t			out_len )
-{
-	z_stream zstream;
-	zstream.avail_in	= (unsigned int) len;
-	zstream.next_in		= (byte*) buf;
-	zstream.avail_out	= out_len;
-	zstream.next_out	= (byte*) out;
-	deflate( &zstream );
-
-	return (char*) zstream.next_out - out;
-}
-
-/**********************************************************************************************/
-int cr_strcasecmp(
-	const char*	str1,
-	const char* str2 )
-{
-	int r;
-
-	do r = tolower( *str1++ ) - tolower( *str2++ );
-	while( !r && str1[ -1 ] );
-
-	return r;
-}
-
-/**********************************************************************************************/
-char* cr_strdup( 
-	const char* str,
-	int			len )
-{
-	if( !str )
-		return 0;
-
-	if( len < 0 )
-		len = strlen( str );
-	
-	char* res = (char*) malloc( len + 1 );
-	memmove( res, str, len );
-	res[ len ] = 0;
-	
-	return res;
-}
-
-/**********************************************************************************************/
-void create_responce(
+void cr_create_responce(
 	char*&			out,
 	size_t&			out_len,
 	cr_http_status	status,
@@ -248,7 +200,7 @@ void create_responce(
 }
 
 /**********************************************************************************************/
-void create_responce_header(
+void cr_create_responce_header(
 	char*			out,
 	size_t&			out_len,
 	cr_http_status	status,
@@ -278,14 +230,31 @@ void create_responce_header(
 }
 
 /**********************************************************************************************/
-bool file_exists( const char* path )
+size_t cr_deflate(
+	const char*		buf,
+	size_t			len,
+	char*			out,
+	size_t			out_len )
+{
+	z_stream zstream;
+	zstream.avail_in	= (unsigned int) len;
+	zstream.next_in		= (byte*) buf;
+	zstream.avail_out	= out_len;
+	zstream.next_out	= (byte*) out;
+	deflate( &zstream );
+
+	return (char*) zstream.next_out - out;
+}
+
+/**********************************************************************************************/
+bool cr_file_exists( const char* path )
 {
 	struct stat st;
 	return stat( path, &st ) == 0 && ( st.st_mode & S_IFREG );
 }
 
 /**********************************************************************************************/
-time_t file_modification_time( const char* path )
+time_t cr_file_modification_time( const char* path )
 {
 	struct stat st;
 	return ( stat( path, &st ) == 0 ) ?
@@ -294,7 +263,7 @@ time_t file_modification_time( const char* path )
 }
 
 /**********************************************************************************************/
-size_t file_size( const char* path )
+size_t cr_file_size( const char* path )
 {
 	size_t size = 0;
 	
@@ -489,6 +458,47 @@ void parse_query_parameters(
 }
 
 
+/**********************************************************************************************/
+void cr_set_cookie(
+	cr_string_map&	headers,
+	const char*		name,
+	const char*		value )
+{
+	// TODO
+}
+
+/**********************************************************************************************/
+int cr_strcasecmp(
+	const char*	str1,
+	const char* str2 )
+{
+	int r;
+
+	do r = tolower( *str1++ ) - tolower( *str2++ );
+	while( !r && str1[ -1 ] );
+
+	return r;
+}
+
+/**********************************************************************************************/
+char* cr_strdup( 
+	const char* str,
+	int			len )
+{
+	if( !str )
+		return 0;
+
+	if( len < 0 )
+		len = strlen( str );
+	
+	char* res = (char*) malloc( len + 1 );
+	memmove( res, str, len );
+	res[ len ] = 0;
+	
+	return res;
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 // md5
 //////////////////////////////////////////////////////////////////////////
@@ -591,7 +601,7 @@ static void md5_transform(
 }
 
 /**********************************************************************************************/
-void md5(
+void cr_md5(
 	char			hash[ 16 ],
 	size_t			data_count,
 	const char**	adata,
@@ -663,13 +673,4 @@ void md5(
 
 	md5_transform( buf, (uint32_t*) in);
 	memmove( hash, buf, 16 );
-}
-
-/**********************************************************************************************/
-void set_cookie(
-	cr_string_map&	headers,
-	const char*		name,
-	const char*		value )
-{
-	// TODO
 }

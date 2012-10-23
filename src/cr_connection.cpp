@@ -219,7 +219,7 @@ void cr_connection::respond(
 			
 			char header[ 16384 ];
 			size_t header_len;
-			create_responce_header( header, header_len, rc, data_len, headers );
+			cr_create_responce_header( header, header_len, rc, data_len, headers );
 			mg_write( conn_, header, header_len );
 			mg_write( conn_, out, data_len );
 			
@@ -230,7 +230,7 @@ void cr_connection::respond(
 	// Write non-compressed data
 	char header[ 16384 ];
 	size_t header_len;
-	create_responce_header( header, header_len, rc, data_len, headers );
+	cr_create_responce_header( header, header_len, rc, data_len, headers );
 	mg_write( conn_, header, header_len );
 	mg_write( conn_, data, data_len );
 }
@@ -243,7 +243,7 @@ void cr_connection::respond_header(
 {
 	char header[ 16384 ];
 	size_t header_len;
-	create_responce_header( header, header_len, rc, data_len, headers );
+	cr_create_responce_header( header, header_len, rc, data_len, headers );
 	mg_write( conn_, header, header_len );	
 }
 		
@@ -252,7 +252,7 @@ void cr_connection::send_file(
 	const char* path,
 	const char* content_type )
 {
-	time_t t = file_modification_time( path );
+	time_t t = cr_file_modification_time( path );
 	if( !t )
 	{
 		respond( CR_HTTP_NOT_FOUND );
@@ -298,7 +298,7 @@ void cr_connection::send_file(
 	
 	char header[ 256 ];
 	size_t header_len;
-	create_responce_header( header, header_len, CR_HTTP_OK, ftell( f ), &headers );
+	cr_create_responce_header( header, header_len, CR_HTTP_OK, ftell( f ), &headers );
 	mg_write( conn_, header, header_len );
 
 	fseek( f, 0, SEEK_SET );

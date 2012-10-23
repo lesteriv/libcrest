@@ -206,7 +206,7 @@ struct sl_connection : public cr_connection
 					add_number ( str, index );
 					add_string ( str, ".log", 5 );
 
-					if( !file_exists( buf ) )
+					if( !cr_file_exists( buf ) )
 					{
 						nfile = cr_strdup( buf );
 						break;
@@ -219,7 +219,7 @@ struct sl_connection : public cr_connection
 					rename( g_log_file_path, nfile );
 
 					g_log_file = fopen( g_log_file_path, "at" );
-					g_log_size = file_size( g_log_file_path );				
+					g_log_size = cr_file_size( g_log_file_path );				
 				}
 				
 				free( nfile );
@@ -526,7 +526,7 @@ bool cr_start( cr_options& opts )
 		}
 		
 		g_log_file = fopen( g_log_file_path, "at" );
-		g_log_size = file_size( g_log_file_path );
+		g_log_size = cr_file_size( g_log_file_path );
 	}
 	
 	// Start server

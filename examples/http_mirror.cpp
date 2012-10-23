@@ -132,7 +132,7 @@ GET( * )( cr_connection& conn )
 			// Generate responce with status, headers and content
 			char* data;
 			size_t data_len;
-			create_responce( data, data_len, CR_HTTP_OK, content, content_size, &cache_headers );
+			cr_create_responce( data, data_len, CR_HTTP_OK, content, content_size, &cache_headers );
 			free( content );
 			
 			// Save responce into cache if it not too big

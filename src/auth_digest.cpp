@@ -67,12 +67,12 @@ static bool check_password(
 
 	const char* ha2_data[] = { method, ":", adata.uri };
 	size_t ha2_len[] = { strlen( method ), 1, strlen( adata.uri ) };
-	md5( ha2, 3, ha2_data, ha2_len );
+	cr_md5( ha2, 3, ha2_data, ha2_len );
 	bin2str( ha2_str, (unsigned char*) ha2, 16 );
 
 	const char* resp_data[] = { ha1_str, ":", adata.nonce, ":", adata.nc, ":", adata.cnonce, ":", adata.qop, ":", ha2_str };
 	size_t resp_len[] = { strlen( ha1_str ), 1, strlen( adata.nonce ), 1, strlen( adata.nc ), 1, strlen( adata.cnonce ), 1, strlen( adata.qop ), 1, 32 };
-	md5( response, 11, resp_data, resp_len );
+	cr_md5( response, 11, resp_data, resp_len );
 	bin2str( response_str, (unsigned char*) response, 16 );  
 
 	return !memcmp( adata.response, response_str, 32 );
