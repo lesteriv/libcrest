@@ -39,6 +39,7 @@
         <itemPath>src/cr_string_map.cpp</itemPath>
         <itemPath>src/cr_user_manager.cpp</itemPath>
         <itemPath>src/cr_utils.cpp</itemPath>
+        <itemPath>src/cr_utils_private.h</itemPath>
         <itemPath>src/cr_xml.cpp</itemPath>
         <itemPath>src/cr_xml.h</itemPath>
         <itemPath>src/crest.cpp</itemPath>
@@ -117,6 +118,9 @@
         <ccTool>
           <commandlineTool>g++</commandlineTool>
           <commandLine>-Wall -Wextra -fno-rtti -fno-exceptions</commandLine>
+          <preprocessorList>
+            <Elem>NO_SSL</Elem>
+          </preprocessorList>
         </ccTool>
         <linkerTool>
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/storage</output>
@@ -128,9 +132,11 @@
           <commandLine>-fno-exceptions -fno-rtti</commandLine>
         </linkerTool>
       </compileType>
+      <item path="examples/file_server.cpp" ex="true" tool="1" flavor="0">
+      </item>
       <item path="examples/file_server_stl.cpp" ex="true" tool="1" flavor="0">
       </item>
-      <item path="examples/http_mirror.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/http_mirror.cpp" ex="false" tool="1" flavor="0">
         <ccTool>
           <commandLine>-std=c++11</commandLine>
         </ccTool>
@@ -153,14 +159,7 @@
           <developmentMode>0</developmentMode>
           <stripSymbols>true</stripSymbols>
           <commandlineTool>g++</commandlineTool>
-          <commandLine>-fno-exceptions -fno-rtti -flto -Os -m32</commandLine>
-          <preprocessorList>
-            <Elem>NO_AUTH</Elem>
-            <Elem>NO_DEFLATE</Elem>
-            <Elem>NO_INFO</Elem>
-            <Elem>NO_LOG</Elem>
-            <Elem>NO_SSL</Elem>
-          </preprocessorList>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast</commandLine>
           <useLinkerLibraries>false</useLinkerLibraries>
         </ccTool>
         <linkerTool>
@@ -169,8 +168,9 @@
           <commandlineTool>gcc</commandlineTool>
           <linkerLibItems>
             <linkerLibStdlibItem>PosixThreads</linkerLibStdlibItem>
+            <linkerLibStdlibItem>DynamicLinking</linkerLibStdlibItem>
           </linkerLibItems>
-          <commandLine>-fno-exceptions -fno-rtti -flto -Os -Wl,--gc-sections -m32 -Wl,--hash-style=sysv</commandLine>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -Wl,--hash-style=sysv</commandLine>
         </linkerTool>
       </compileType>
       <item path="examples/file_server_stl.cpp" ex="true" tool="1" flavor="0">
@@ -198,14 +198,7 @@
           <developmentMode>0</developmentMode>
           <stripSymbols>true</stripSymbols>
           <commandlineTool>g++</commandlineTool>
-          <commandLine>-fno-exceptions -fno-rtti -flto -Os -m32</commandLine>
-          <preprocessorList>
-            <Elem>NO_AUTH</Elem>
-            <Elem>NO_DEFLATE</Elem>
-            <Elem>NO_INFO</Elem>
-            <Elem>NO_LOG</Elem>
-            <Elem>NO_SSL</Elem>
-          </preprocessorList>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -m32</commandLine>
           <useLinkerLibraries>false</useLinkerLibraries>
         </ccTool>
         <linkerTool>
@@ -215,7 +208,7 @@
           <linkerLibItems>
             <linkerLibStdlibItem>PosixThreads</linkerLibStdlibItem>
           </linkerLibItems>
-          <commandLine>-fno-exceptions -fno-rtti -flto -Os -Wl,--gc-sections -m32 -Wl,--hash-style=sysv -static-libstdc++</commandLine>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -m32 -Wl,--hash-style=sysv -static-libstdc++</commandLine>
         </linkerTool>
       </compileType>
       <item path="examples/file_server.cpp" ex="true" tool="1" flavor="0">
@@ -245,10 +238,6 @@
           <commandlineTool>g++</commandlineTool>
           <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -m32</commandLine>
           <preprocessorList>
-            <Elem>NO_AUTH</Elem>
-            <Elem>NO_DEFLATE</Elem>
-            <Elem>NO_INFO</Elem>
-            <Elem>NO_LOG</Elem>
             <Elem>NO_SSL</Elem>
           </preprocessorList>
           <useLinkerLibraries>false</useLinkerLibraries>
@@ -260,7 +249,7 @@
           <linkerLibItems>
             <linkerLibStdlibItem>PosixThreads</linkerLibStdlibItem>
           </linkerLibItems>
-          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -Wl,--gc-sections -m32 -Wl,--hash-style=sysv -static-libstdc++</commandLine>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -m32 -Wl,--hash-style=sysv -static-libstdc++</commandLine>
         </linkerTool>
       </compileType>
       <item path="examples/file_server.cpp" ex="true" tool="1" flavor="0">
@@ -383,14 +372,7 @@
           <developmentMode>0</developmentMode>
           <stripSymbols>true</stripSymbols>
           <commandlineTool>g++</commandlineTool>
-          <commandLine>-fno-exceptions -fno-rtti -flto -Os -m32</commandLine>
-          <preprocessorList>
-            <Elem>NO_AUTH</Elem>
-            <Elem>NO_DEFLATE</Elem>
-            <Elem>NO_INFO</Elem>
-            <Elem>NO_LOG</Elem>
-            <Elem>NO_SSL</Elem>
-          </preprocessorList>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -m32</commandLine>
           <useLinkerLibraries>false</useLinkerLibraries>
         </ccTool>
         <linkerTool>
@@ -400,7 +382,7 @@
           <linkerLibItems>
             <linkerLibStdlibItem>PosixThreads</linkerLibStdlibItem>
           </linkerLibItems>
-          <commandLine>-fno-exceptions -fno-rtti -flto -Os -Wl,--gc-sections -m32 -Wl,--hash-style=sysv -static-libstdc++</commandLine>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -m32 -Wl,--hash-style=sysv -static-libstdc++</commandLine>
         </linkerTool>
       </compileType>
       <item path="examples/file_server.cpp" ex="true" tool="1" flavor="0">

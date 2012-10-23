@@ -15,9 +15,7 @@
 // CREST
 #include "../include/crest.h"
 #include "../include/cr_utils.h"
-
-/**********************************************************************************************/
-#ifndef NO_AUTH
+#include "cr_utils_private.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -194,18 +192,14 @@ bool auth_digest(
 	{
 		char responce[ 256 ];
 		char* str = responce;
-		str = add_string ( str, "HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\nWWW-Authenticate: Digest qop=\"auth\", realm=\"\", nonce=\"", 100 );
-		str = to_string	 ( str, (long) time( NULL ) );
-		str = add_char	 ( str, '"' );
-		if( stale ) str = add_string( str, ", stale=TRUE", 12 );
-		str = add_string ( str, "\r\n\r\n", 4 );
+		add_string	( str, "HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\nWWW-Authenticate: Digest qop=\"auth\", realm=\"\", nonce=\"", 100 );
+		add_number	( str, (long) time( NULL ) );
+		add_char	( str, '"' );
+		if( stale ) add_string( str, ", stale=TRUE", 12 );
+		add_string( str, "\r\n\r\n", 4 );
 		
 		conn.write( responce, str - responce );
 	}
 	
 	return res;
 }
-
-
-/**********************************************************************************************/
-#endif // NO_AUTH

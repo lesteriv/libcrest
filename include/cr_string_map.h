@@ -12,7 +12,7 @@
 
 
 /**********************************************************************************************/
-class cr_string_map : public cr_string_map_internal
+class cr_string_map : protected cr_string_map_internal
 {
 	public://////////////////////////////////////////////////////////////////////////
 	

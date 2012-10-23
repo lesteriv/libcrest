@@ -42,7 +42,7 @@
 #include <time.h>
 
 // CREST
-#include "../../include/cr_utils.h"
+#include "../../src/cr_utils_private.h"
 
 #if defined(_WIN32) // Windows specific
 #    define _CRT_SECURE_NO_WARNINGS // Disable deprecation warning in VS2005
@@ -1531,13 +1531,17 @@ static mg_connection* mg_connect(
 	hostent* he;
 	int sock;
 
+#ifdef NO_SSL
+	(void) use_ssl;
+#endif // NO_SSL
+	
 #ifndef NO_SSL	
 	if( use_ssl && (ctx == NULL || ctx->client_ssl_ctx == NULL) )
 	{
 	}
 	else
 #endif // NO_SSL	
-	if( !( he = gethostbyname(host) ) )
+	if( !( he = gethostbyname( host ) ) )
 	{
 	}
 	else if( ( sock = socket( PF_INET, SOCK_STREAM, 0 ) ) == INVALID_SOCKET )
@@ -1616,11 +1620,11 @@ bool mg_fetch(
 	else
 	{
 		char* str = buf;
-		str = add_string( str, "GET /", 5 );
-		str = add_string( str, url + n, strlen( url + n ) );
-		str = add_string( str, " HTTP/1.0\r\nHost: ", 17 );
-		str = add_string( str, host, strlen( host ) );
-		str = add_string( str, "\r\nUser-Agent: Mozilla/5.0 Gecko Firefox/18\r\n\r\n", 46 );
+		add_string( str, "GET /", 5 );
+		add_string( str, url + n, strlen( url + n ) );
+		add_string( str, " HTTP/1.0\r\nHost: ", 17 );
+		add_string( str, host, strlen( host ) );
+		add_string( str, "\r\nUser-Agent: Mozilla/5.0 Gecko Firefox/18\r\n\r\n", 46 );
 		mg_write( conn, buf, str - buf );
 		
 		int data_length = 0;
@@ -1637,7 +1641,7 @@ bool mg_fetch(
 				*headers = ri.headers_;
 			
 			const char* location = ri.headers_[ "location" ];
-			if( location && redirect_count < 5 )
+			if( location && *location && redirect_count < 5 )
 			{
 				close_connection( conn );
 				free( conn );
@@ -1656,7 +1660,7 @@ bool mg_fetch(
 			str = out;
 			
 			if( data_length > 0 )
-				str = add_string( str, buf + req_length, data_length );
+				add_string( str, buf + req_length, data_length );
 			
 			// Read the rest of the response and write it to the file. Do not use
 			// mg_read() cause we didn't set newconn->content_len properly.
@@ -1672,7 +1676,7 @@ bool mg_fetch(
 					str = out + diff;
 				}
 				
-				str = add_string( str, buf2, data_length );
+				add_string( str, buf2, data_length );
 			}
 			
 			out_size = str - out;

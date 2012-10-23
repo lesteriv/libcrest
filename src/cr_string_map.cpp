@@ -11,6 +11,7 @@
 // CREST
 #include "../include/cr_string_map.h"
 #include "../include/cr_utils.h"
+#include "cr_utils_private.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -21,8 +22,7 @@
 /**********************************************************************************************/
 cr_string_map::cr_string_map( void )
 {
-	bytes_ = 0;
-	size_  = 0;
+	size_ = 0;
 }
 
 /**********************************************************************************************/
@@ -30,9 +30,7 @@ cr_string_map::cr_string_map(
 	const char* name,
 	const char* value )
 {
-	bytes_ = 0;
-	size_  = 0;
-	
+	size_ = 0;
 	add( name, value );
 }
 
@@ -96,16 +94,14 @@ void cr_string_map::add(
 		value_[ size_ ] = value;
 		value_len_[ size_ ] = value_len;
 
-		bytes_ += name_len + value_len + 4;
-		size_++;
+		++size_;
 	}	
 }
 
 /**********************************************************************************************/
 void cr_string_map::clear( void )
 {
-	bytes_ = 0;
-	size_  = 0;
+	size_ = 0;
 }
 
 /**********************************************************************************************/

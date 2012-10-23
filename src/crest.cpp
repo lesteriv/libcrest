@@ -9,16 +9,15 @@
 #include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 // MONGOOSE
 #include "../third/mongoose/mongoose.h"
 
 // CREST
 #include "../include/crest.h"
-#include "../include/cr_utils.h"
 #include "auth_basic.h"
 #include "auth_digest.h"
+#include "cr_utils_private.h"
 
 /**********************************************************************************************/
 #ifdef _MSC_VER
@@ -32,35 +31,23 @@
 
 
 /**********************************************************************************************/
-#ifndef NO_INFO
-static cr_connection*	g_conns[ 20 ];
-static mg_mutex			g_conns_mutex;
-#endif // NO_INFO
+static cr_http_auth		g_auth_kind;		// Current auth method
+static cr_connection*	g_conns[ 20 ];		// Set of current connections
+static mg_mutex			g_conns_mutex;		// Mutex for g_conns
+static const char*		g_error;			// Error string for cr_error_string
+static size_t			g_request_count;	// Statistics - count of processed requests
+static bool				g_shutdown;			// TRUE if we wait to process last active connections to stop server
+static time_t			g_time_start;		// Time when server was start
 
 /**********************************************************************************************/
-static const char*		g_error;
-static size_t			g_request_count;
-static bool				g_shutdown;
-static time_t			g_time_start;
+bool g_deflate;								// TRUE if server will use deflate if client support it
 
 /**********************************************************************************************/
-#ifndef NO_AUTH
-static cr_http_auth		g_auth_kind;
-#endif // NO_AUTH
-
-/**********************************************************************************************/
-#ifndef NO_DEFLATE
-bool g_deflate;
-#endif // NO_DEFLATE
-
-/**********************************************************************************************/
-#ifndef NO_LOG
-static bool				g_log_enabled;
-static FILE*			g_log_file;
-static char*			g_log_file_path;
-static mg_mutex			g_log_mutex;
-static size_t			g_log_size;
-#endif // NO_LOG
+static bool				g_log_enabled;		// TRUE if server logs all requests to file
+static FILE*			g_log_file;			// Destination log file
+static char*			g_log_file_path;	// Path of destination log file
+static mg_mutex			g_log_mutex;		// Mutex for g_log_file
+static size_t			g_log_size;			// Size of current log file
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -138,7 +125,7 @@ inline void sort_resource_array( resource_array& arr )
 struct sl_connection : public cr_connection
 {
 	sl_connection( 
-		mg_connection*		conn,
+		mg_connection*	conn,
 		cr_string_array	params )
 	{
 		// Properties
@@ -157,8 +144,6 @@ struct sl_connection : public cr_connection
 		post_params_buffer_		= 0;
 	}
 	
-#ifndef NO_LOG
-	
 	void log( void )
 	{
 		mg_request_info* request = mg_get_request_info( conn_ );
@@ -176,21 +161,21 @@ struct sl_connection : public cr_connection
 		
 		char buf[ 256 ];
 		char* str = buf;
-		str = add_string( str, stime, strlen( stime ) );
-		str = add_string( str, request->method_, mlen );
-		str = add_char	( str, ' ' );
-		str = add_string( str, request->uri_, ulen );
-		str = add_string( str, " from ", 6 );
-		str = to_string	( str, request->remote_ip_ >> 24 );
-		str = add_char	( str, '.' );
-		str = to_string	( str, ( request->remote_ip_ >> 16 ) & 0xFF );
-		str = add_char	( str, '.' );
-		str = to_string	( str, ( request->remote_ip_ >> 8  ) & 0xFF );
-		str = add_char	( str, '.' );
-		str = to_string	( str, request->remote_ip_ & 0xFF );
-		str = add_char	( str, ':' );
-		str = to_string	( str, request->remote_port_ );
-		str = add_char	( str, '\n' );
+		add_string	( str, stime, strlen( stime ) );
+		add_string	( str, request->method_, mlen );
+		add_char	( str, ' ' );
+		add_string	( str, request->uri_, ulen );
+		add_string	( str, " from ", 6 );
+		add_number	( str, request->remote_ip_ >> 24 );
+		add_char	( str, '.' );
+		add_number	( str, ( request->remote_ip_ >> 16 ) & 0xFF );
+		add_char	( str, '.' );
+		add_number	( str, ( request->remote_ip_ >> 8  ) & 0xFF );
+		add_char	( str, '.' );
+		add_number	( str, request->remote_ip_ & 0xFF );
+		add_char	( str, ':' );
+		add_number	( str, request->remote_port_ );
+		add_char	( str, '\n' );
 		*str = 0;
 		int blen = str - buf;
 
@@ -217,9 +202,9 @@ struct sl_connection : public cr_connection
 					char* buf = (char*) alloca( glen + 32 );
 					
 					char* str = buf;
-					str = add_string ( str, rfile, glen - 4 );
-					str = to_string  ( str, index );
-					str = add_string ( str, ".log", 5 );
+					add_string ( str, rfile, glen - 4 );
+					add_number ( str, index );
+					add_string ( str, ".log", 5 );
 
 					if( !file_exists( buf ) )
 					{
@@ -244,8 +229,6 @@ struct sl_connection : public cr_connection
 
 		mg_mutex_unlock( g_log_mutex ); // ------------------------
 	}
-
-#endif // NO_LOG
 };
 
 
@@ -351,8 +334,6 @@ void event_handler( mg_connection* conn )
 	{
 		sl_connection sconn( conn, key.keys_ );
 		
-#ifndef NO_AUTH
-		
 		if( !it->public_ )
 		{
 			if( g_auth_kind == CR_AUTH_BASIC && !auth_basic( sconn, it->admin_ ) )
@@ -362,9 +343,6 @@ void event_handler( mg_connection* conn )
 				return;
 		}
 		
-#endif // NO_AUTH
-		
-#ifndef NO_INFO		
 		mg_mutex_lock( g_conns_mutex );
 		
 		for( size_t i = 0 ; i < 20 ; ++i )
@@ -377,11 +355,9 @@ void event_handler( mg_connection* conn )
 		}
 		
 		mg_mutex_unlock( g_conns_mutex );
-#endif // NO_INFO
 		
 		(*it->handler_)( sconn );
 
-#ifndef NO_INFO
 		mg_mutex_lock( g_conns_mutex );
 		
 		for( size_t i = 0 ; i < 20 ; ++i )
@@ -394,14 +370,9 @@ void event_handler( mg_connection* conn )
 		}
 		
 		mg_mutex_unlock( g_conns_mutex );
-#endif // NO_INFO
-
-#ifndef NO_LOG
 
 		if( g_log_file && g_log_enabled )
 			sconn.log();
-			
-#endif // NO_LOG
 	}
 	else
 	{
@@ -434,10 +405,6 @@ const char* cr_error_string( void )
 	return g_error ? g_error : "";
 }
 
-
-/**********************************************************************************************/
-#ifndef NO_AUTH
-
 /**********************************************************************************************/
 cr_http_auth cr_get_auth_kind( void )
 {
@@ -452,13 +419,6 @@ void crest_set_auth_kind( cr_http_auth auth )
 }
 
 /**********************************************************************************************/
-#endif // NO_AUTH
-
-
-/**********************************************************************************************/
-#ifndef NO_LOG
-
-/**********************************************************************************************/
 bool cr_get_log_enabled( void )
 {
 	return g_log_enabled;
@@ -469,10 +429,6 @@ void crest_set_log_enabled( bool value )
 {
 	g_log_enabled = value && g_log_file;
 }
-
-/**********************************************************************************************/
-#endif // NO_LOG
-
 
 /**********************************************************************************************/
 void cr_register_handler(
@@ -541,29 +497,19 @@ bool cr_start( cr_options& opts )
 	}
 	
 	// Allocate mutexes
-#ifndef NO_INFO	
 	g_conns_mutex = mg_mutex_create();
-#endif // NO_INFO
 	
 	// Prepare resources
 	for( size_t i = 0 ; i < CR_METHOD_COUNT ; ++i )
 		sort_resource_array( resources( i ) );
 	
 	// Init authentification
-#ifndef NO_AUTH
-
 	g_auth_kind = opts.auth_file && *opts.auth_file ? opts.auth_kind : CR_AUTH_NONE;
 	the_cr_user_manager.set_auth_file( opts.auth_file );
-
-#endif // NO_AUTH
 	
-#ifndef NO_DEFLATE	
 	g_deflate = opts.deflate;
-#endif // NO_DEFLATE
 		
 	// Init logging
-#ifndef NO_LOG
-
 	g_log_enabled = opts.log_enabled && opts.log_file && *opts.log_file;
 	g_log_mutex   = mg_mutex_create();
 	
@@ -582,8 +528,6 @@ bool cr_start( cr_options& opts )
 		g_log_file = fopen( g_log_file_path, "at" );
 		g_log_size = file_size( g_log_file_path );
 	}
-
-#endif // NO_LOG
 	
 	// Start server
 	mg_context* ctx = mg_start( opts.ports, opts.pem_file, opts.thread_count );
@@ -603,15 +547,9 @@ bool cr_start( cr_options& opts )
 	}
 	
 	// Clean
-#ifndef NO_INFO
 	mg_mutex_destroy( g_conns_mutex );
-#endif // NO_INFO
 
-#ifndef NO_AUTH
 	the_cr_user_manager.clean();
-#endif // NO_AUTH
-
-#ifndef NO_LOG
 
 	mg_mutex_destroy( g_log_mutex );
 	
@@ -623,8 +561,6 @@ bool cr_start( cr_options& opts )
 		fclose( g_log_file );
 		g_log_file = 0;
 	}
-
-#endif // NO_LOG	
 	
 	return ctx != NULL;
 }

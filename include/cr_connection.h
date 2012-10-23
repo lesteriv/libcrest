@@ -14,7 +14,7 @@
 /**********************************************************************************************/
 // Connection for single request
 //
-class cr_connection : public cr_connection_internal
+class cr_connection : protected cr_connection_internal
 {
 	public://////////////////////////////////////////////////////////////////////////
 

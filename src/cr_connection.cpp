@@ -19,19 +19,18 @@
 // CREST
 #include "../include/crest.h"
 #include "../include/cr_utils.h"
+#include "cr_utils_private.h"
 
 /**********************************************************************************************/
 #ifdef _MSC_VER
 #pragma warning( disable: 4996 )
 #endif // _WIN32
 
-#ifndef NO_DEFLATE
 /**********************************************************************************************/
 extern bool g_deflate;
 
 /**********************************************************************************************/
 static cr_string_map g_deflate_headers( "Content-Encoding", "deflate" );
-#endif // NO_DEFLATE
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -204,7 +203,6 @@ void cr_connection::respond(
 	cr_string_map*	headers )
 {
 	// Compress data if need
-#ifndef NO_DEFLATE	
 	if( g_deflate && data && data_len > 128 )
 	{
 		const char* enc_header = header( "accept-encoding" );
@@ -212,7 +210,7 @@ void cr_connection::respond(
 		{
 			size_t out_len = compress_bound( data_len );
 			char* out = (char*) alloca( out_len );
-			data_len = deflate( data, data_len, out, out_len );
+			data_len = cr_deflate( data, data_len, out, out_len );
 
 			if( !headers )
 				headers = &g_deflate_headers;
@@ -228,7 +226,6 @@ void cr_connection::respond(
 			return;
 		}
 	}
-#endif // NO_DEFLATE	
 	
 	// Write non-compressed data
 	char header[ 16384 ];
@@ -263,7 +260,8 @@ void cr_connection::send_file(
 	}
 
 	char tstr[ 64 ];
-	to_string( tstr, t );
+	char* buf = tstr;
+	add_number( buf, t );
 	
 	const char* etag = header( "if-none-match" );
 	if( etag && !strcmp( etag, tstr ) )

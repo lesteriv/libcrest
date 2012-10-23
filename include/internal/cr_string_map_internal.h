@@ -21,7 +21,6 @@ class cr_string_map_internal
 
 // Properties
 		
-		size_t				bytes_;
 		const char*			name_[ CREST_MAP_SIZE ];
 		size_t				name_len_[ CREST_MAP_SIZE ];
 		size_t				size_;

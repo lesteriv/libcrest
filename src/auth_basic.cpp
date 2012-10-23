@@ -14,9 +14,6 @@
 #include "../include/crest.h"
 #include "../include/cr_utils.h"
 
-/**********************************************************************************************/
-#ifndef NO_AUTH
-
 
 //////////////////////////////////////////////////////////////////////////
 // helper functions
@@ -35,7 +32,7 @@ static bool parse_basic_auth(
 		return false;
 	
 	auth_header += 6;
-	size_t len = base64_decode( buf, auth_header, auth_header_len - 6 );
+	size_t len = cr_base64_decode( buf, auth_header, auth_header_len - 6 );
 	buf[ len ] = 0;
 
 	char* sp = strchr( buf, ':' );
@@ -91,7 +88,3 @@ bool auth_basic(
 	
 	return res;	
 }
-
-
-/**********************************************************************************************/
-#endif // NO_AUTH

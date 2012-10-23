@@ -13,6 +13,7 @@
 #include "cr_mutex.h"
 #include "cr_options.h"
 #include "cr_user_manager.h"
+#include "cr_utils.h"
 
 
 /**********************************************************************************************/

@@ -40,8 +40,8 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/cr_string_map.o \
 	${OBJECTDIR}/third/zlib/trees.o \
 	${OBJECTDIR}/third/zlib/deflate.o \
-	${OBJECTDIR}/src/crest.o \
 	${OBJECTDIR}/src/cr_user_manager.o \
+	${OBJECTDIR}/src/crest.o \
 	${OBJECTDIR}/src/cr_utils.o \
 	${OBJECTDIR}/src/auth_digest.o \
 	${OBJECTDIR}/src/cr_mutex.o \
@@ -72,77 +72,77 @@ LDLIBSOPTIONS=-lpthread
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/http_mirror: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	g++ -fno-exceptions -fno-rtti -flto -Ofast -Wl,--gc-sections -m32 -Wl,--hash-style=sysv -static-libstdc++ -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/http_mirror -s ${OBJECTFILES} ${LDLIBSOPTIONS} 
+	g++ -fno-exceptions -fno-rtti -flto -Ofast -m32 -Wl,--hash-style=sysv -static-libstdc++ -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/http_mirror -s ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
 ${OBJECTDIR}/src/cr_xml.o: src/cr_xml.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_AUTH -DNO_DEFLATE -DNO_INFO -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_xml.o src/cr_xml.cpp
+	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_xml.o src/cr_xml.cpp
 
 ${OBJECTDIR}/src/cr_connection.o: src/cr_connection.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_AUTH -DNO_DEFLATE -DNO_INFO -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_connection.o src/cr_connection.cpp
+	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_connection.o src/cr_connection.cpp
 
 ${OBJECTDIR}/examples/http_mirror.o: examples/http_mirror.cpp 
 	${MKDIR} -p ${OBJECTDIR}/examples
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_AUTH -DNO_DEFLATE -DNO_INFO -DNO_LOG -DNO_SSL -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/http_mirror.o examples/http_mirror.cpp
+	$(COMPILE.cc) -s -DNO_SSL -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/http_mirror.o examples/http_mirror.cpp
 
 ${OBJECTDIR}/src/cr_string_map.o: src/cr_string_map.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_AUTH -DNO_DEFLATE -DNO_INFO -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_string_map.o src/cr_string_map.cpp
+	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_string_map.o src/cr_string_map.cpp
 
 ${OBJECTDIR}/third/zlib/trees.o: third/zlib/trees.cpp 
 	${MKDIR} -p ${OBJECTDIR}/third/zlib
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_AUTH -DNO_DEFLATE -DNO_INFO -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/zlib/trees.o third/zlib/trees.cpp
+	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/zlib/trees.o third/zlib/trees.cpp
 
 ${OBJECTDIR}/third/zlib/deflate.o: third/zlib/deflate.cpp 
 	${MKDIR} -p ${OBJECTDIR}/third/zlib
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_AUTH -DNO_DEFLATE -DNO_INFO -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/zlib/deflate.o third/zlib/deflate.cpp
-
-${OBJECTDIR}/src/crest.o: src/crest.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_AUTH -DNO_DEFLATE -DNO_INFO -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest.o src/crest.cpp
+	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/zlib/deflate.o third/zlib/deflate.cpp
 
 ${OBJECTDIR}/src/cr_user_manager.o: src/cr_user_manager.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_AUTH -DNO_DEFLATE -DNO_INFO -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_user_manager.o src/cr_user_manager.cpp
+	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_user_manager.o src/cr_user_manager.cpp
+
+${OBJECTDIR}/src/crest.o: src/crest.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest.o src/crest.cpp
 
 ${OBJECTDIR}/src/cr_utils.o: src/cr_utils.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_AUTH -DNO_DEFLATE -DNO_INFO -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_utils.o src/cr_utils.cpp
+	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_utils.o src/cr_utils.cpp
 
 ${OBJECTDIR}/src/auth_digest.o: src/auth_digest.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_AUTH -DNO_DEFLATE -DNO_INFO -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/auth_digest.o src/auth_digest.cpp
+	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/auth_digest.o src/auth_digest.cpp
 
 ${OBJECTDIR}/src/cr_mutex.o: src/cr_mutex.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_AUTH -DNO_DEFLATE -DNO_INFO -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_mutex.o src/cr_mutex.cpp
+	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_mutex.o src/cr_mutex.cpp
 
 ${OBJECTDIR}/third/mongoose/mongoose.o: third/mongoose/mongoose.cpp 
 	${MKDIR} -p ${OBJECTDIR}/third/mongoose
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_AUTH -DNO_DEFLATE -DNO_INFO -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.cpp
+	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.cpp
 
 ${OBJECTDIR}/src/cr_json.o: src/cr_json.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_AUTH -DNO_DEFLATE -DNO_INFO -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_json.o src/cr_json.cpp
+	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_json.o src/cr_json.cpp
 
 ${OBJECTDIR}/src/auth_basic.o: src/auth_basic.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_AUTH -DNO_DEFLATE -DNO_INFO -DNO_LOG -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/auth_basic.o src/auth_basic.cpp
+	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/auth_basic.o src/auth_basic.cpp
 
 # Subprojects
 .build-subprojects:

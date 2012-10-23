@@ -17,14 +17,33 @@
 // CREST
 #include "../include/crest.h"
 #include "../include/cr_utils.h"
+#include "cr_utils_private.h"
 
 /**********************************************************************************************/
 #ifdef _MSC_VER
 #pragma warning( disable: 4996 )
 #endif // _WIN32
 
+
+//////////////////////////////////////////////////////////////////////////
+// construction
+//////////////////////////////////////////////////////////////////////////
+
+
 /**********************************************************************************************/
-#ifndef NO_AUTH
+cr_user_manager_internal::cr_user_manager_internal( void )
+{
+	auth_file_		= 0;
+	mutex_			= mg_mutex_create();
+	users_count_	= 0;
+	users_			= 0;
+}
+
+/**********************************************************************************************/
+cr_user_manager_internal::~cr_user_manager_internal( void )
+{
+	mg_mutex_destroy( mutex_ );
+}
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -91,7 +110,7 @@ void cr_user_manager::get_users(
 	for( size_t i = 0 ; i < users_count_ ; ++i )
 	{
 		names[ i ] = s;
-		s = add_string( s,users_[ i ].name_, users_[ i ].name_len_ + 1 );
+		add_string( s, users_[ i ].name_, users_[ i ].name_len_ + 1 );
 	}
 
 	mg_mutex_unlock( mutex_ ); // -----------------------------
@@ -303,15 +322,6 @@ const char* cr_user_manager::update_user_password(
 
 
 /**********************************************************************************************/
-cr_user_manager_internal::cr_user_manager_internal( void )
-{
-	auth_file_		= 0;
-	mutex_			= mg_mutex_create();
-	users_count_	= 0;
-	users_			= 0;
-}
-
-/**********************************************************************************************/
 crest_user* cr_user_manager_internal::create_user( const char* name )
 {
 	++users_count_;
@@ -453,7 +463,3 @@ void cr_user_manager_internal::load( void )
 	if( need_flush )
 		flush();
 }
-
-
-/**********************************************************************************************/
-#endif // NO_AUTH

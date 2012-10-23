@@ -20,6 +20,7 @@
 #include "../include/crest.h"
 #include "../include/cr_utils.h"
 #include "cr_json.h"
+#include "cr_utils_private.h"
 #include "cr_xml.h"
 
 /**********************************************************************************************/
@@ -96,7 +97,37 @@ inline char hex_to_int( char ch )
 
 
 /**********************************************************************************************/
-size_t base64_decode(
+void add_number( char*& buf, int value )
+{
+	char	ch;
+	char*	ptr1 = buf;
+	char*	ptr2 = buf;
+	int		tmp;
+
+	do
+	{
+		tmp = value;
+		value /= 10;
+		*ptr1++ = "9876543210123456789" [ 9 + ( tmp - value * 10 ) ];
+	}
+	while( value );
+
+	if( tmp < 0 )
+		*ptr1++ = '-';
+
+	buf = ptr1;
+	*ptr1-- = '\0';
+
+	while( ptr2 < ptr1 )
+	{
+		ch		= *ptr1;
+		*ptr1--	= *ptr2;
+		*ptr2++	= ch;
+	}
+}
+
+/**********************************************************************************************/
+size_t cr_base64_decode(
 	char*		vout,
 	const char*	vdata,
 	size_t		data_size )
@@ -134,68 +165,20 @@ size_t base64_decode(
 }
 
 /**********************************************************************************************/
-void create_responce(
-	char*&			out,
-	size_t&			out_len,
-	cr_http_status	status,
-	const char*		content,
-	size_t			content_len,
-	cr_string_map*	headers )
-{
-	out = (char*) malloc( content_len + 128 + headers->size() );
-	
-	char* str = out;
-	str = add_string ( str, RESPONCE_PREFIX[ status ], RESPONCE_PREFIX_SIZE[ status ] );
-	str = to_string	 ( str, (int) content_len );
-	str = add_string ( str, "\r\n", 2 );
-	
-	if( headers )
-	{
-		size_t count = headers->size();
-		for( size_t i = 0 ; i < count ; ++i )
-		{
-			str = add_string( str, headers->name( i ), headers->name_len( i ) );
-			str = add_string( str, ": ", 2 );
-			str = add_string( str, headers->value( i ), headers->value_len( i ) );
-			str = add_string ( str, "\r\n", 2 );
-		}
-	}
-	
-	str = add_string ( str, "\r\n", 2 );
-	str = add_string ( str, content, content_len);
-	
-	*str = 0;
-	out_len = str - out;
-}
-
-/**********************************************************************************************/
-void create_responce_header(
+size_t cr_deflate(
+	const char*		buf,
+	size_t			len,
 	char*			out,
-	size_t&			out_len,
-	cr_http_status	status,
-	size_t			content_len,
-	cr_string_map*	headers )
+	size_t			out_len )
 {
-	char* str = out;
-	str = add_string ( str, RESPONCE_PREFIX[ status ], RESPONCE_PREFIX_SIZE[ status ] );
-	str = to_string  ( str, (int) content_len );
-	str = add_string ( str, "\r\n", 2 );
-	
-	if( headers )
-	{
-		size_t count = headers->size();
-		for( size_t i = 0 ; i < count ; ++i )
-		{
-			str = add_string( str, headers->name( i ), headers->name_len( i ) );
-			str = add_string( str, ": ", 2 );
-			str = add_string( str, headers->value( i ), headers->value_len( i ) );
-			str = add_string ( str, "\r\n", 2 );
-		}
-	}
-	
-	str = add_string( str, "\r\n", 3 );
-	
-	out_len = str - out - 1;
+	z_stream zstream;
+	zstream.avail_in	= (unsigned int) len;
+	zstream.next_in		= (byte*) buf;
+	zstream.avail_out	= out_len;
+	zstream.next_out	= (byte*) out;
+	deflate( &zstream );
+
+	return (char*) zstream.next_out - out;
 }
 
 /**********************************************************************************************/
@@ -230,20 +213,68 @@ char* cr_strdup(
 }
 
 /**********************************************************************************************/
-size_t deflate(
-	const char*		buf,
-	size_t			len,
-	char*			out,
-	size_t			out_len )
+void create_responce(
+	char*&			out,
+	size_t&			out_len,
+	cr_http_status	status,
+	const char*		content,
+	size_t			content_len,
+	cr_string_map*	headers )
 {
-	z_stream zstream;
-	zstream.avail_in	= (unsigned int) len;
-	zstream.next_in		= (byte*) buf;
-	zstream.avail_out	= out_len;
-	zstream.next_out	= (byte*) out;
-	deflate( &zstream );
+	out = (char*) malloc( content_len + 128 + headers->size() );
+	
+	char* str = out;
+	add_string ( str, RESPONCE_PREFIX[ status ], RESPONCE_PREFIX_SIZE[ status ] );
+	add_number  ( str, (int) content_len );
+	add_string ( str, "\r\n", 2 );
+	
+	if( headers )
+	{
+		size_t count = headers->size();
+		for( size_t i = 0 ; i < count ; ++i )
+		{
+			add_string( str, headers->name( i ), headers->name_len( i ) );
+			add_string( str, ": ", 2 );
+			add_string( str, headers->value( i ), headers->value_len( i ) );
+			add_string( str, "\r\n", 2 );
+		}
+	}
+	
+	add_string( str, "\r\n", 2 );
+	add_string( str, content, content_len);
+	
+	*str = 0;
+	out_len = str - out;
+}
 
-	return (char*) zstream.next_out - out;
+/**********************************************************************************************/
+void create_responce_header(
+	char*			out,
+	size_t&			out_len,
+	cr_http_status	status,
+	size_t			content_len,
+	cr_string_map*	headers )
+{
+	char* str = out;
+	add_string ( str, RESPONCE_PREFIX[ status ], RESPONCE_PREFIX_SIZE[ status ] );
+	add_number  ( str, (int) content_len );
+	add_string ( str, "\r\n", 2 );
+	
+	if( headers )
+	{
+		size_t count = headers->size();
+		for( size_t i = 0 ; i < count ; ++i )
+		{
+			add_string( str, headers->name( i ), headers->name_len( i ) );
+			add_string( str, ": ", 2 );
+			add_string( str, headers->value( i ), headers->value_len( i ) );
+			add_string( str, "\r\n", 2 );
+		}
+	}
+	
+	add_string( str, "\r\n", 3 );
+	
+	out_len = str - out - 1;
 }
 
 /**********************************************************************************************/
@@ -641,36 +672,4 @@ void set_cookie(
 	const char*		value )
 {
 	// TODO
-}
-
-/**********************************************************************************************/
-char* to_string( char* buf, int value )
-{
-	char	ch;
-	char*	ptr1 = buf;
-	char*	ptr2 = buf;
-	int		tmp;
-
-	do
-	{
-		tmp = value;
-		value /= 10;
-		*ptr1++ = "9876543210123456789" [ 9 + ( tmp - value * 10 ) ];
-	}
-	while( value );
-
-	if( tmp < 0 )
-		*ptr1++ = '-';
-
-	char* end = ptr1;
-	*ptr1-- = '\0';
-
-	while( ptr2 < ptr1 )
-	{
-		ch		= *ptr1;
-		*ptr1--	= *ptr2;
-		*ptr2++	= ch;
-	}
-	
-	return end;
 }

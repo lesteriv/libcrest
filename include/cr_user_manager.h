@@ -11,16 +11,13 @@
 #include "internal/cr_user_manager_internal.h"
 
 /**********************************************************************************************/
-#ifndef NO_AUTH
-
-/**********************************************************************************************/
 #define the_cr_user_manager ( cr_user_manager::instance() )
 
 
 /**********************************************************************************************/
 // Class to manage users and it's passwords
 //
-class cr_user_manager : public cr_user_manager_internal
+class cr_user_manager : protected cr_user_manager_internal
 {
 	public://////////////////////////////////////////////////////////////////////////
 
@@ -83,7 +80,3 @@ static	cr_user_manager&	instance( void );
 								const char*	name,
 								const char*	password );
 };
-
-
-/**********************************************************************************************/
-#endif // NO_AUTH
