@@ -26,13 +26,22 @@
 
 
 //////////////////////////////////////////////////////////////////////////
+// constants
+//////////////////////////////////////////////////////////////////////////
+
+
+/**********************************************************************************************/
+#define MAX_PATH_PARAMETERS 16
+
+
+//////////////////////////////////////////////////////////////////////////
 // static data
 //////////////////////////////////////////////////////////////////////////
 
 
 /**********************************************************************************************/
 static cr_http_auth		g_auth_kind;		// Current auth method
-static cr_connection*	g_conns[ 20 ];		// Set of current connections
+static cr_connection*	g_conns[ 256 ];		// Set of current connections, for users only - crest don't use it
 static mg_mutex			g_conns_mutex;		// Mutex for g_conns
 static const char*		g_error;			// Error string for cr_error_string
 static size_t			g_request_count;	// Statistics - count of processed requests
@@ -243,10 +252,10 @@ static cr_string_array parse_resource_name(
 	size_t		len )
 {
 	cr_string_array res;
-	res.items_ = (char**) malloc( len + 1 + 16 * sizeof * res.items_ );
+	res.items_ = (char**) malloc( len + 1 + MAX_PATH_PARAMETERS * sizeof * res.items_ );
 	res.count_ = 0;
 	
-	char* curl = (char*) res.items_ + 16 * sizeof * res.items_;
+	char* curl = (char*) res.items_ + MAX_PATH_PARAMETERS * sizeof * res.items_;
 	memmove( curl, url, len + 1 );
 	
 	while( *curl )
@@ -258,7 +267,7 @@ static cr_string_array parse_resource_name(
 			*sp = 0;
 			curl = sp + 1;
 			
-			if( res.count_ >= 16 )
+			if( res.count_ >= MAX_PATH_PARAMETERS )
 				break;
 		}
 		else
@@ -287,11 +296,11 @@ static resource* default_resource( int method )
 
 /**********************************************************************************************/
 cr_auto_handler_register::cr_auto_handler_register(
-	cr_http_method	 method,
-	const char*			 name,
-	cr_api_callback_t func,
-	bool				 for_admin_only,
-	bool			 	 publ )
+	cr_http_method		method,
+	const char*			name,
+	cr_api_callback_t	func,
+	bool				for_admin_only,
+	bool			 	publ )
 {
 	cr_register_handler( method, name, func, for_admin_only, publ );
 }
@@ -345,11 +354,14 @@ void event_handler( mg_connection* conn )
 		
 		mg_mutex_lock( g_conns_mutex );
 		
-		for( size_t i = 0 ; i < 20 ; ++i )
+		int conn_index = -1;
+		for( size_t i = 0 ; i < sizeof( g_conns ) / sizeof( *g_conns ) ; ++i )
 		{
 			if( !g_conns[ i ] )
 			{
+				conn_index = i;
 				g_conns[ i ] = &sconn;
+				
 				break;
 			}
 		}
@@ -360,14 +372,8 @@ void event_handler( mg_connection* conn )
 
 		mg_mutex_lock( g_conns_mutex );
 		
-		for( size_t i = 0 ; i < 20 ; ++i )
-		{
-			if( g_conns[ i ] == &sconn )
-			{
-				g_conns[ i ] = 0;
-				break;
-			}
-		}
+		if( conn_index >= 0 )
+			g_conns[ conn_index ] = 0;
 		
 		mg_mutex_unlock( g_conns_mutex );
 
@@ -498,6 +504,7 @@ bool cr_start( cr_options& opts )
 	
 	// Allocate mutexes
 	g_conns_mutex = mg_mutex_create();
+	g_log_mutex   = mg_mutex_create();
 	
 	// Prepare resources
 	for( size_t i = 0 ; i < CR_METHOD_COUNT ; ++i )
@@ -511,7 +518,6 @@ bool cr_start( cr_options& opts )
 		
 	// Init logging
 	g_log_enabled = opts.log_enabled && opts.log_file && *opts.log_file;
-	g_log_mutex   = mg_mutex_create();
 	
 	if( opts.log_file && *opts.log_file )
 		g_log_file_path = cr_strdup( opts.log_file );
@@ -525,8 +531,8 @@ bool cr_start( cr_options& opts )
 			memmove( g_log_file_path + len, ".log", 5 );
 		}
 		
-		g_log_file = fopen( g_log_file_path, "at" );
 		g_log_size = cr_file_size( g_log_file_path );
+		g_log_file = fopen( g_log_file_path, "at" );
 	}
 	
 	// Start server
@@ -548,10 +554,9 @@ bool cr_start( cr_options& opts )
 	
 	// Clean
 	mg_mutex_destroy( g_conns_mutex );
+	mg_mutex_destroy( g_log_mutex );
 
 	the_cr_user_manager.clean();
-
-	mg_mutex_destroy( g_log_mutex );
 	
 	free( g_log_file_path );
 	g_log_file_path = 0;

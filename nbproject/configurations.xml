@@ -132,11 +132,9 @@
           <commandLine>-fno-exceptions -fno-rtti</commandLine>
         </linkerTool>
       </compileType>
-      <item path="examples/file_server.cpp" ex="true" tool="1" flavor="0">
-      </item>
       <item path="examples/file_server_stl.cpp" ex="true" tool="1" flavor="0">
       </item>
-      <item path="examples/http_mirror.cpp" ex="false" tool="1" flavor="0">
+      <item path="examples/http_mirror.cpp" ex="true" tool="1" flavor="0">
         <ccTool>
           <commandLine>-std=c++11</commandLine>
         </ccTool>

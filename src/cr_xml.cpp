@@ -93,16 +93,13 @@ void cr_xml::parse(
 	while( *text )
 	{
 		skip_whitespace_xml( text );
+		if( !*text )
+			break;
 
-		if( *text == '<' )
-		{
-			++text;
+		if( *text++ == '<' )
 			parse_node( text, 0 );
-		}
-		else if( *text )
-		{
+		else
 			XML_ERROR;
-		}
 	}	
 }
 
@@ -152,23 +149,6 @@ void cr_xml::decode_character(
 	}
 }
 
-/**********************************************************************************************/
-char cr_xml::parse_and_append_data( char*& text, size_t level )
-{
-	char* value = text;
-	char* end	= skip_and_expand_character_refs( text );
-
-	while( strchr( "\r\n\t ", *( end - 1 ) ) )
-		--end;
-
-	if( !level )
-		out_->add( name_, value, name_len_, end - value );
-	
-	char ch = *text;
-	*end = 0;
-	return ch;
-}
-	
 /**********************************************************************************************/
 void cr_xml::parse_element( char*& text, size_t level )
 {
@@ -229,9 +209,7 @@ void cr_xml::parse_node( char*& text, size_t level )
 
 		case '!':
 		{
-			++text;
-			
-			switch( *text )
+			switch( *++text )
 			{
 				case '-':
 				{
@@ -321,137 +299,29 @@ void cr_xml::parse_node_contents( char*& text, size_t level )
 			}
 			else
 			{
-				ch = parse_and_append_data( text, level );
+				ch = parse_value( text, level );
 			}
 		}
 	}
 }
 
 /**********************************************************************************************/
-char* cr_xml::skip_and_expand_character_refs( char*& text )
+char cr_xml::parse_value( char*& text, size_t level )
 {
-	while( *text && *text != '&' && *text != '<' )
-		++text;
+	char* value = text;
+	char* end	= skip_string( text );
 
-	char* dest = text;
-	char* src  = text;
+	while( strchr( "\r\n\t ", *( end - 1 ) ) )
+		--end;
+
+	if( !level )
+		out_->add( name_, value, name_len_, end - value );
 	
-	while( *src && *src != '<' )
-	{
-		if( *src == '&' )
-		{
-			switch( src[ 1 ] )
-			{
-				case 'a':
-				{
-					if( src[ 2 ] == 'm' && src[ 3 ] == 'p' && src[ 4 ] == ';' )
-					{
-						*dest++ = '&';
-						src += 5;
-						
-						continue;
-					}
-					else if( src[ 2 ] == 'p' && src[ 3 ] == 'o' && src[ 4 ] == 's' && src[ 5 ] == ';' )
-					{
-						*dest++ = '\'';
-						src += 6;
-						
-						continue;
-					}
-				}
-				break;
-
-				case 'g':
-				{
-					if( src[ 2 ] == 't' && src[ 3 ] == ';' )
-					{
-						*dest++ = '>';
-						src += 4;
-						
-						continue;
-					}
-				}
-				break;
-
-				case 'l':
-				{
-					if( src[ 2 ] == 't' && src[ 3 ] == ';' )
-					{
-						*dest++ = '<';
-						src += 4;
-
-						continue;
-					}
-				}
-				break;
-
-				case 'q':
-				{
-					if( src[ 2 ] == 'u' && src[ 3 ] == 'o' && src[ 4 ] == 't' && src[ 5 ] == ';' )
-					{
-						*dest++ = '"';
-						src += 6;
-						
-						continue;
-					}
-				}
-				break;
-
-				case '#':
-				{
-					if( src[ 2 ] == 'x' )
-					{
-						unsigned long code = 0;
-						src += 3;
-						
-						for(;;)
-						{
-							byte digit = to_digit( byte(*src) );
-							if( digit == 0xFF )
-								break;
-							
-							code = code * 16 + digit;
-							++src;
-						}
-						
-						decode_character( dest, code );
-					}
-					else
-					{
-						unsigned long code = 0;
-						src += 2;
-						
-						for(;;)
-						{
-							byte digit = to_digit( byte(*src) );
-							if( digit == 0xFF )
-								break;
-
-							code = code * 10 + digit;
-							++src;
-						}
-						
-						decode_character( dest, code );
-					}
-					
-					if( *src++ != ';' )
-						XML_ERROR;
-					
-					continue;
-				}
-				break;
-				
-				default:;
-			}
-		}
-
-		*dest++ = *src++;
-	}
-	
-	text = src;
-	return dest;
+	char ch = *text;
+	*end = 0;
+	return ch;
 }
-	
+
 /**********************************************************************************************/
 void cr_xml::skip_cdata( char*& text )
 {
@@ -514,4 +384,121 @@ void cr_xml::skip_doctype( char*& text )
 	}
 
 	++text;
+}
+
+/**********************************************************************************************/
+char* cr_xml::skip_string( char*& text )
+{
+	char* dest = text;
+	char* src  = text;
+	
+	while( *src && *src != '<' )
+	{
+		if( *src == '&' )
+		{
+			switch( src[ 1 ] )
+			{
+				case 'a':
+				{
+					if( src[ 2 ] == 'm' && src[ 3 ] == 'p' && src[ 4 ] == ';' )
+					{
+						*dest++ = '&';
+						src += 5;
+						continue;
+					}
+					else if( src[ 2 ] == 'p' && src[ 3 ] == 'o' && src[ 4 ] == 's' && src[ 5 ] == ';' )
+					{
+						*dest++ = '\'';
+						src += 6;
+						continue;
+					}
+				}
+				break;
+
+				case 'g':
+				{
+					if( src[ 2 ] == 't' && src[ 3 ] == ';' )
+					{
+						*dest++ = '>';
+						src += 4;
+						continue;
+					}
+				}
+				break;
+
+				case 'l':
+				{
+					if( src[ 2 ] == 't' && src[ 3 ] == ';' )
+					{
+						*dest++ = '<';
+						src += 4;
+						continue;
+					}
+				}
+				break;
+
+				case 'q':
+				{
+					if( src[ 2 ] == 'u' && src[ 3 ] == 'o' && src[ 4 ] == 't' && src[ 5 ] == ';' )
+					{
+						*dest++ = '"';
+						src += 6;
+						continue;
+					}
+				}
+				break;
+
+				case '#':
+				{
+					if( src[ 2 ] == 'x' )
+					{
+						unsigned long code = 0;
+						src += 3;
+						
+						for(;;)
+						{
+							byte digit = to_digit( byte(*src) );
+							if( digit == 0xFF )
+								break;
+							
+							code = code * 16 + digit;
+							++src;
+						}
+						
+						decode_character( dest, code );
+					}
+					else
+					{
+						unsigned long code = 0;
+						src += 2;
+						
+						for(;;)
+						{
+							byte digit = to_digit( byte(*src) );
+							if( digit == 0xFF )
+								break;
+
+							code = code * 10 + digit;
+							++src;
+						}
+						
+						decode_character( dest, code );
+					}
+					
+					if( *src++ != ';' )
+						XML_ERROR;
+					
+					continue;
+				}
+				break;
+				
+				default:;
+			}
+		}
+
+		*dest++ = *src++;
+	}
+	
+	text = src;
+	return dest;
 }

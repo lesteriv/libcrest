@@ -17,10 +17,10 @@
 using namespace std;
 
 /**********************************************************************************************/
-#define COLLECTION	conn.path_parameter( 0 )
-#define KEY			conn.path_parameter( 1 )
-#define LOCK		g_mutex_hash.lock();
-#define UNLOCK		g_mutex_hash.unlock();
+#define HASH	conn.path_parameter( 0 )
+#define KEY		conn.path_parameter( 1 )
+#define LOCK	g_mutex_hash.lock();
+#define UNLOCK	g_mutex_hash.unlock();
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -66,7 +66,7 @@ DELETE( {hash} )( cr_connection& conn )
 {
 	LOCK
 	
-	auto it = g_hashes.find( COLLECTION );
+	auto it = g_hashes.find( HASH );
 	if( it == g_hashes.end() )
 	{
 		UNLOCK
@@ -88,7 +88,7 @@ GET( {hash} )( cr_connection& conn )
 {
 	LOCK
 	
-	auto it = g_hashes.find( COLLECTION );
+	auto it = g_hashes.find( HASH );
 	if( it == g_hashes.end() )
 	{
 		UNLOCK
@@ -97,7 +97,7 @@ GET( {hash} )( cr_connection& conn )
 		return;
 	}
 	
-	auto& coll = g_hashes[ COLLECTION ];
+	auto& coll = g_hashes[ HASH ];
 		
 	string data;
 	data.reserve( coll.size() * 32 );
@@ -125,7 +125,7 @@ POST( {hash} )( cr_connection& conn )
 
 	LOCK
 	
-	g_hashes[ COLLECTION ][ id ] = str;
+	g_hashes[ HASH ][ id ] = str;
 
 	UNLOCK
 	
@@ -137,10 +137,10 @@ DELETE( {hash}/{key} )( cr_connection& conn )
 {
 	LOCK
 	
-	auto it = g_hashes.find( COLLECTION );
+	auto it = g_hashes.find( HASH );
 	if( it != g_hashes.end() )
 	{
-		g_hashes[ COLLECTION ].erase( KEY );
+		g_hashes[ HASH ].erase( KEY );
 		
 		UNLOCK
 		
@@ -159,7 +159,7 @@ GET( {hash}/{key} )( cr_connection& conn )
 {
 	LOCK
 	
-	auto it = g_hashes.find( COLLECTION );
+	auto it = g_hashes.find( HASH );
 	if( it != g_hashes.end() )
 	{
 		auto it2 = it->second.find( KEY );
@@ -187,7 +187,7 @@ PUT( {hash}/{key} )( cr_connection& conn )
 	
 	LOCK
 	
-	g_hashes[ COLLECTION ][ KEY ] = str;
+	g_hashes[ HASH ][ KEY ] = str;
 	
 	UNLOCK
 	

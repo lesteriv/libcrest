@@ -20,21 +20,22 @@
 
 				/** Adds char to string. */
 inline void		add_char(
-					char*&			dest,
-					char			c )
+					char*&		dest,
+					char		c )
 				{
 					*dest++ = c;
 				}
 
-
 				/** Converts and adds integer value to string. */
-void			add_number( char*& buf, int value );
+void			add_number( 
+					char*&		buf,
+					int			value );
 
 				/** Adds string to another. */
 inline void		add_string(
-					char*&			dest,
-					const char*		src,
-					size_t			len )
+					char*&		dest,
+					const char*	src,
+					size_t		len )
 				{
 					memmove( dest, src, len + 1 );
 					dest += len;
@@ -46,7 +47,15 @@ int				cr_strcasecmp(
 					const char* str2 );
 
 				/** The same as strdup. */
-char*			cr_strdup( const char* str, int en = -1 );
+char*			cr_strdup(
+					const char* str,
+					int			len = -1 );
+
+				/** Converts A..Z to a..z. */
+inline char		cr_tolower( char ch )
+				{
+					return ( ch >= 'A' && ch <= 'Z' ) ? ch + 32 : ch;
+				}
 
 				/** Extract cookies from header. */
 void			parse_cookie_header(

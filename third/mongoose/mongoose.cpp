@@ -366,12 +366,6 @@ static int should_keep_alive( mg_connection *conn )
 }
 
 /**********************************************************************************************/
-inline char mg_tolower( char ch )
-{
-	return ( ch >= 'A' && ch <= 'Z' ) ? ch + 32 : ch;
-}
-
-/**********************************************************************************************/
 typedef void * ( *mg_thread_func_t )(void *) ;
 
 
@@ -651,8 +645,8 @@ static size_t url_decode( char* buf, size_t len )
 			isxdigit( *(unsigned char*) ( buf + i + 1 ) ) &&
 			isxdigit( *(unsigned char*) ( buf + i + 2 ) ) )
 		{
-			a = mg_tolower( *(unsigned char*) ( buf + i + 1 ) );
-			b = mg_tolower( *(unsigned char*) ( buf + i + 2 ) );
+			a = cr_tolower( *(unsigned char*) ( buf + i + 1 ) );
+			b = cr_tolower( *(unsigned char*) ( buf + i + 2 ) );
 			
 			buf[ j ] = (char) ( ( HEXTOI( a ) << 4 ) | HEXTOI( b ) );
 			i += 2;
@@ -728,7 +722,7 @@ static void parse_http_headers( char** buf, mg_request_info& ri )
 			ri.headers_.add( name, value );
 			while( *name )
 			{
-				*name = mg_tolower( *name );
+				*name = cr_tolower( *name );
 				++name;
 			}
 		}

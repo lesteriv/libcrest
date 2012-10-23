@@ -333,58 +333,6 @@ inline char hex2d( char ch )
 }
 
 /**********************************************************************************************/
-static void parameters_from_form(
-	cr_string_map&	out,
-	char*			text )
-{
-	while( text && *text )
-	{
-		// Name
-		char* name = text;
-
-		// Search for '='
-		for( ; *text && *text != '=' ; ++text );
-
-		// If found = read value
-		if( *text == '=' )
-		{
-			size_t name_len = text - name;
-			*text++ = 0;
-
-			char* value = text;
-			char* end = text;
-
-			for( ; *text && *text != '&' ; ++text, ++end )
-			{
-				if( *text == '+' )
-				{
-					*end = ' ';
-				}
-				else if( *text == '%' && isxdigit( text[ 1 ] ) && isxdigit( text[ 2 ] ) )
-				{
-					*end = ( hex2d( text[ 1 ] ) << 4 ) | hex2d( text[ 2 ] );
-					text += 2;
-				}
-				else
-				{
-					*end = *text;
-				}
-			}
-
-			bool finish = !*text;
-			
-			*end = 0;
-			
-			out.add( name, value, name_len, end - value );
-			++text;
-			
-			if( finish || out.size() >= 64 )
-				break;
-		}
-	}	
-}
-
-/**********************************************************************************************/
 void parse_post_parameters(
 	cr_string_map&	out,
 	char*			text )
@@ -403,7 +351,7 @@ void parse_post_parameters(
 			break;
 		
 		default :
-			parameters_from_form( out, text );
+			parse_query_parameters( out, text );
 			break;
 	}	
 }
@@ -438,7 +386,7 @@ void parse_query_parameters(
 				}
 				else if( *str == '%' && isxdigit( str[ 1 ] ) && isxdigit( str[ 2 ] ) )
 				{
-					*end = ( hex_to_int( tolower( str[ 1 ] ) ) << 4 ) | hex_to_int( tolower( str[ 2 ] ) );
+					*end = ( hex_to_int( cr_tolower( str[ 1 ] ) ) << 4 ) | hex_to_int( cr_tolower( str[ 2 ] ) );
 					str += 2;
 				}
 				else
@@ -448,10 +396,12 @@ void parse_query_parameters(
 				}
 			}
 
+			char ch = *str++;
+			
 			*end = 0;
 			out.add( name, value, name_len, end - value );
 			
-			if( !*str++ || out.size() > 63 )
+			if( !ch || out.size() > 63 )
 				break;
 		}
 	}
@@ -505,10 +455,10 @@ char* cr_strdup(
 
 
 /**********************************************************************************************/
-#define F1(x, y, z) ( z ^ ( x & ( y ^ z ) ) )
-#define F2(x, y, z) F1( z, x, y )
-#define F3(x, y, z) ( x ^ y ^ z )
-#define F4(x, y, z) ( y ^ ( x | ~z ) )
+#define F1( x, y, z ) ( z ^ ( x & ( y ^ z ) ) )
+#define F2( x, y, z ) ( F1( z, x, y ) )
+#define F3( x, y, z ) ( x ^ y ^ z )
+#define F4( x, y, z ) ( y ^ ( x | ~z ) )
 
 /**********************************************************************************************/
 #define MD5STEP( f, w, x, y, z, data, s ) \
