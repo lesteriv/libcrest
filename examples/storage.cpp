@@ -140,7 +140,7 @@ DELETE( {hash}/{key} )( cr_connection& conn )
 	auto it = g_hashes.find( HASH );
 	if( it != g_hashes.end() )
 	{
-		g_hashes[ HASH ].erase( KEY );
+		it->second.erase( KEY );
 		
 		UNLOCK
 		
