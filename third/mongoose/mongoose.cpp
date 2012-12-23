@@ -178,6 +178,7 @@ struct ssl_func
 #    define SSL_CTX_free						(* (void (*)(SSL_CTX *)) ssl_sw[14].ptr)
 #    define SSL_CTX_use_certificate_chain_file	(* (int (*)(SSL_CTX *, const char *)) ssl_sw[15].ptr)
 #    define SSLv23_client_method				(* (SSL_METHOD * (*)(void)) ssl_sw[16].ptr)
+#	 define SSL_pending							(* (int (*)(SSL *)) ssl_sw[17].ptr)
 
 #    define CRYPTO_num_locks					(* (int (*)(void)) crypto_sw[0].ptr)
 #    define CRYPTO_set_locking_callback			(* (void (*)(void (*)(int, int, const char *, int))) crypto_sw[1].ptr)
@@ -206,6 +207,7 @@ static struct ssl_func ssl_sw[] = {
 	{ "SSL_CTX_free"						, NULL },
 	{ "SSL_CTX_use_certificate_chain_file"	, NULL },
 	{ "SSLv23_client_method"				, NULL },
+	{ "SSL_pending"							, NULL },
 	{ NULL									, NULL }
 };
 
@@ -509,7 +511,13 @@ static int wait_until_socket_is_readable( mg_connection* conn )
 		tv.tv_usec = 300 * 1000;
 		FD_ZERO( &set );
 		FD_SET( conn->client.sock, &set );
+
 		result = select( conn->client.sock + 1, &set, NULL, NULL, &tv );
+		
+#ifndef NO_SSL		
+		if( !result && conn->ssl )
+			result = SSL_pending( conn->ssl );
+#endif // NO_SSL
 	}
 	while( ( !result || ( result < 0 && ERRNO == EINTR ) ) && !conn->ctx->stop_flag );
 
@@ -1142,6 +1150,8 @@ static void process_new_connection( mg_connection* conn )
 	mg_request_info& ri = conn->request_info;
 	int discard_len;
 	const char* cl;
+	
+	conn->data_len = 0;
 	
 	do
 	{
