@@ -38,11 +38,21 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string>
 #include <string.h>
 #include <time.h>
 
-// CREST
+// LIBCREST
+#include "../../include/cr_utils.h"
+#include "../../src/cr_thread_pool.h"
 #include "../../src/cr_utils_private.h"
+
+/**********************************************************************************************/
+using namespace std;
+
+/**********************************************************************************************/
+extern const char* g_error;
+
 
 #if defined(_WIN32) // Windows specific
 #    define _CRT_SECURE_NO_WARNINGS // Disable deprecation warning in VS2005
@@ -62,27 +72,11 @@
 #    define SHUT_WR		1
 #    define SSL_LIB		"ssleay32.dll"
 
-#    define mg_sleep_int(x) Sleep(x)
-
 #    define close(x)	_close(x)
 #    define dlsym(x,y)	GetProcAddress((HINSTANCE) (x), (y))
 #    define RTLD_LAZY	0
 #    define write(x, y, z) _write((x), (y), (unsigned) z)
 #    define read(x, y, z) _read((x), (y), (unsigned) z)
-
-typedef HANDLE pthread_mutex_t;
-
-typedef struct
-{
-	HANDLE signal, broadcast;
-}
-pthread_cond_t;
-
-typedef DWORD pthread_t;
-#    define pid_t HANDLE // MINGW typedefs pid_t to int. Using #define here.
-
-static int pthread_mutex_lock( pthread_mutex_t * );
-static int pthread_mutex_unlock( pthread_mutex_t * );
 
 // Mark required libraries
 #    pragma comment(lib, "Ws2_32.lib")
@@ -92,7 +86,6 @@ static int pthread_mutex_unlock( pthread_mutex_t * );
 #    include <dlfcn.h>
 #    include <netinet/in.h>
 #	 include <netdb.h>
-#    include <pthread.h>
 #    include <unistd.h>
 
 #    ifdef __MACH__
@@ -104,7 +97,6 @@ static int pthread_mutex_unlock( pthread_mutex_t * );
 #    endif // __MACH__
 
 #    define closesocket(a) close(a)
-#    define mg_sleep_int(x) usleep((x) * 1000)
 #    define ERRNO errno
 #    define INVALID_SOCKET (-1)
 
@@ -117,13 +109,6 @@ typedef int SOCKET;
 
 #define MAX_REQUEST_SIZE	16384
 #define ARRAY_SIZE(array)	(sizeof(array) / sizeof(array[0]))
-
-#ifdef _WIN32
-static pthread_t pthread_self( void )
-{
-	return GetCurrentThreadId();
-}
-#endif // _WIN32
 
 // Darwin prior to 7.0 and Win32 do not have socklen_t
 #ifdef NO_SOCKLEN_T
@@ -140,7 +125,6 @@ typedef int socklen_t;
 #    define SOMAXCONN 100
 #endif
 
-#ifndef NO_SSL
 // Snatched from OpenSSL includes. I put the prototypes here to be independent
 // from the OpenSSL source installation. Having this, mongoose + SSL can be
 // built on any system with binary SSL libraries installed.
@@ -218,7 +202,6 @@ static struct ssl_func crypto_sw[] = {
 	{ "CRYPTO_set_id_callback"				, NULL },
 	{ NULL									, NULL }
 };
-#endif // NO_SSL
 
 /**********************************************************************************************/
 // Unified socket address. For IPv6 support, add IPv6 address structure
@@ -235,15 +218,6 @@ union usa
 };
 
 /**********************************************************************************************/
-// Describes a string (chunk of memory).
-//
-struct vec
-{
-	const char*	ptr;
-	size_t		len;
-};
-
-/**********************************************************************************************/
 // Describes listening socket, or socket which was accept()-ed by the master
 // thread and queued for future handling by the worker thread.
 //
@@ -253,42 +227,32 @@ struct mg_socket
 	SOCKET		sock;   // Listening socket
 	union usa	lsa;	// Local socket address
 	union usa	rsa;	// Remote socket address
-
-#ifndef NO_SSL	
 	bool		is_ssl; // Is socket SSL-ed
-#endif // NO_SSL
 };
-
-/**********************************************************************************************/
-static const char* error_string;
 
 /**********************************************************************************************/
 struct mg_context
 {
-#ifndef NO_SSL
+	mg_context( size_t thread_count )
+	:
+		client_ssl_ctx( 0 ),
+		ssl_ctx( 0 ),
+		listening_sockets( 0 ),
+		thread_pool( thread_count )
+	{
+	}
+	
 	SSL_CTX*		client_ssl_ctx;		// Client SSL context
 	SSL_CTX*		ssl_ctx;			// SSL context
-#endif // NO_SLL
 	
 	mg_socket*		listening_sockets;
-	volatile int	num_threads;		// Number of threads
-	mg_socket		queue[ 64 ];		// Accepted sockets
-	pthread_cond_t	sq_empty;			// Signaled when socket is consumed
-	pthread_cond_t	sq_full;			// Signaled when socket is produced
-	volatile int	sq_head;			// Head of the socket queue
-	volatile int	sq_tail;			// Tail of the socket queue
-	volatile int	stop_flag;			// Should we stop event loop
-
-	pthread_mutex_t mutex;				// Protects (max|num)_threads
-	pthread_cond_t  cond;				// Condvar for tracking workers terminations
+	cr_thread_pool	thread_pool;
 } ;
 
 /**********************************************************************************************/
 struct mg_connection
 {
-#ifndef NO_SSL	
 	void*			ssl;					// SSL descriptor
-#endif // NO_SSL
 	
 	time_t			birth_time;				// Time when request was received
 	mg_socket		client;					// Connected client
@@ -373,85 +337,13 @@ typedef void * ( *mg_thread_func_t )(void *) ;
 
 #if defined(_WIN32)
 
-/**********************************************************************************************/
-static int pthread_mutex_init( pthread_mutex_t* mutex, void* )
-{
-	*mutex = CreateMutex( NULL, FALSE, NULL );
-	return !*mutex ? -1 : 0;
-}
-
-/**********************************************************************************************/
-static int pthread_mutex_destroy( pthread_mutex_t* mutex )
-{
-	return !CloseHandle( *mutex ) ? -1 : 0;
-}
-
-/**********************************************************************************************/
-static int pthread_mutex_lock( pthread_mutex_t* mutex )
-{
-	return WaitForSingleObject( *mutex, INFINITE ) == WAIT_OBJECT_0 ? 0 : -1;
-}
-
-/**********************************************************************************************/
-static int pthread_mutex_unlock( pthread_mutex_t* mutex )
-{
-	return !ReleaseMutex( *mutex ) ? -1 : 0;
-}
-
-/**********************************************************************************************/
-static int pthread_cond_init( pthread_cond_t* cv, const void* )
-{
-	cv->signal = CreateEvent( NULL, FALSE, FALSE, NULL );
-	cv->broadcast = CreateEvent( NULL, TRUE, FALSE, NULL );
-	return cv->signal != NULL && cv->broadcast != NULL ? 0 : -1;
-}
-
-/**********************************************************************************************/
-static int pthread_cond_wait( pthread_cond_t* cv, pthread_mutex_t* mutex )
-{
-	HANDLE handles[] = { cv->signal, cv->broadcast };
-	ReleaseMutex( *mutex );
-	WaitForMultipleObjects( 2, handles, FALSE, INFINITE );
-	return WaitForSingleObject( *mutex, INFINITE ) == WAIT_OBJECT_0 ? 0 : -1;
-}
-
-/**********************************************************************************************/
-static int pthread_cond_signal( pthread_cond_t* cv )
-{
-	return !SetEvent( cv->signal ) ? -1 : 0;
-}
-
-/**********************************************************************************************/
-static int pthread_cond_broadcast( pthread_cond_t* cv )
-{
-	// Implementation with PulseEvent() has race condition, see
-	// http://www.cs.wustl.edu/~schmidt/win32-cv-1.html
-	return !PulseEvent( cv->broadcast ) ? -1 : 0;
-}
-
-/**********************************************************************************************/
-static int pthread_cond_destroy( pthread_cond_t* cv )
-{
-	return CloseHandle( cv->signal ) && CloseHandle( cv->broadcast ) ? 0 : -1;
-}
-
-#    define set_close_on_exec(fd) // No FD_CLOEXEC on Windows
-
-/**********************************************************************************************/
-static int mg_start_thread( mg_thread_func_t f, void* p )
-{
-	return _beginthread( (void (__cdecl *) (void *) ) f, 0, p ) == -1L ? -1 : 0;
-}
-
-#    ifndef NO_SSL
+#define set_close_on_exec(fd) // No FD_CLOEXEC on Windows
 
 /**********************************************************************************************/
 static HANDLE dlopen( const char* dll_name, int )
 {
 	return LoadLibraryA( dll_name );
 }
-
-#    endif // NO_SSL
 
 /**********************************************************************************************/
 static int set_non_blocking_mode( SOCKET sock )
@@ -469,17 +361,6 @@ static void set_close_on_exec( int fd )
 }
 
 /**********************************************************************************************/
-static int mg_start_thread( mg_thread_func_t func, void* param )
-{
-	pthread_t thread_id;
-	pthread_attr_t attr;
-
-	pthread_attr_init( &attr );
-	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
-	return pthread_create( &thread_id, &attr, func, param );
-}
-
-/**********************************************************************************************/
 static int set_non_blocking_mode( SOCKET sock )
 {
 	int flags;
@@ -491,6 +372,17 @@ static int set_non_blocking_mode( SOCKET sock )
 }
 
 #endif // _WIN32
+
+/**********************************************************************************************/
+static int mg_start_thread( mg_thread_func_t func, void* param )
+{
+	pthread_t thread_id;
+	pthread_attr_t attr;
+
+	pthread_attr_init( &attr );
+	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
+	return pthread_create( &thread_id, &attr, func, param );
+}
 
 /**********************************************************************************************/
 // This function is needed to prevent Mongoose to be stuck in a blocking
@@ -514,14 +406,12 @@ static int wait_until_socket_is_readable( mg_connection* conn )
 
 		result = select( conn->client.sock + 1, &set, NULL, NULL, &tv );
 		
-#ifndef NO_SSL		
 		if( !result && conn->ssl )
-			result = SSL_pending( conn->ssl );
-#endif // NO_SSL
+			result = SSL_pending( (SSL*) conn->ssl );
 	}
-	while( ( !result || ( result < 0 && ERRNO == EINTR ) ) && !conn->ctx->stop_flag );
+	while( ( !result || ( result < 0 && ERRNO == EINTR ) ) && !conn->ctx->thread_pool.stop_ );
 
-	return conn->ctx->stop_flag || result < 0 ? 0 : 1;
+	return conn->ctx->thread_pool.stop_ || result < 0 ? 0 : 1;
 }
 
 /**********************************************************************************************/
@@ -535,19 +425,17 @@ static int pull( mg_connection* conn, char* buf, int len )
 	if( !wait_until_socket_is_readable( conn ) )
 	{
 		nread = -1;
-#ifndef NO_SSL	
 	}
 	else if ( conn->ssl != NULL )
 	{
 		nread = SSL_read( (SSL*) conn->ssl, buf, len );
-#endif // NO_SSL	
 	}
 	else
 	{
 		nread = recv( conn->client.sock, buf, (size_t) len, 0 );
 	}
 
-	return conn->ctx->stop_flag ? -1 : nread;
+	return conn->ctx->thread_pool.stop_ ? -1 : nread;
 }
 
 /**********************************************************************************************/
@@ -617,11 +505,9 @@ int mg_write( mg_connection* conn, const char* buf, size_t len )
 		// How many bytes we send in this iteration
 		k = (int) ( len - sent );
 
-#ifndef NO_SSL	
 		if( conn->ssl )
 			n = SSL_write( (SSL*) conn->ssl, buf + sent, k );
 		else
-#endif // NO_SSL		
 			n = send( conn->client.sock, buf + sent, (size_t) k, MSG_NOSIGNAL );
 
 		if( n < 0 )
@@ -670,8 +556,6 @@ static size_t url_decode( char* buf, size_t len )
 	return j;
 }
 
-#ifndef NO_SSL
-
 /**********************************************************************************************/
 static int sslize( mg_connection* conn, SSL_CTX* s, int (*func )( SSL * ) )
 {
@@ -679,8 +563,6 @@ static int sslize( mg_connection* conn, SSL_CTX* s, int (*func )( SSL * ) )
 		SSL_set_fd( (SSL*) conn->ssl, conn->client.sock ) == 1 &&
 		func( (SSL*) conn->ssl ) == 1;
 }
-
-#endif // NO_SSL
 
 /**********************************************************************************************/
 // Check whether full request is buffered. Return:
@@ -832,86 +714,48 @@ static void close_all_listening_sockets( mg_context* ctx )
 }
 
 /**********************************************************************************************/
-// Valid listening port specification is: [ip_address:]port[s]
-// Examples: 80, 443s, 127.0.0.1:3128, 1.2.3.4:8080s
-// TODO(lsm): add parsing of the IPv6 address
-//
-static int parse_port_string( const vec* vec, mg_socket* so )
-{
-	// MacOS needs that. If we do not zero it, subsequent bind() will fail.
-	// Also, all-zeroes in the socket address means binding to all addresses
-	// for both IPv4 and IPv6 (INADDR_ANY and IN6ADDR_ANY_INIT).
-	memset( so, 0, sizeof( *so ) );
-
-	int a, b, c, d, port, len;
-	if( sscanf( vec->ptr, "%d.%d.%d.%d:%d%n", &a, &b, &c, &d, &port, &len ) == 5 )
-	{
-		// Bind to a specific IPv4 address
-		so->lsa.sin.sin_addr.s_addr = htonl( ( a << 24 ) | ( b << 16 ) | ( c << 8 ) | d );
-	}
-	else if(
-		sscanf( vec->ptr, "%d%n", &port, &len ) != 1 ||
-		len <= 0 || len > (int) vec->len ||
-		( vec->ptr[ len ] && vec->ptr[ len ] != 's' && vec->ptr[ len ] != ',' ) )
-	{
-		return 0;
-	}
-
-#ifndef NO_SSL  
-	so->is_ssl = vec->ptr[ len ] == 's';
-#endif // NO_SSL
-
-#ifdef USE_IPV6
-	so->lsa.sin6.sin6_family = AF_INET6;
-	so->lsa.sin6.sin6_port = htons( (uint16_t) port );
-#else
-	so->lsa.sin.sin_family = AF_INET;
-	so->lsa.sin.sin_port = htons( (uint16_t) port );
-#endif
-
-	return 1;
-}
-
-/**********************************************************************************************/
-static const char* next_option( const char* str, vec& vc )
-{
-	if( !str || !*str )
-		return NULL;
-
-	vc.ptr = str;
-	const char* sp = strchr( str, ',' );
-	return sp ?
-		( vc.len = sp - str ), ++sp :
-		str + ( vc.len = strlen( str ) );
-}
-
-/**********************************************************************************************/
-static int set_ports_option( mg_context* ctx, const char* list, const char* pem_file )
+static int set_ports_option(
+	mg_context*				ctx,
+	const vector<cr_port>&	ports,
+	const string&			pem_file )
 {
 	int on = 1, success = 1;
 	SOCKET sock;
-	vec vc;
 	mg_socket so, *listener;
 
-#ifdef NO_SSL
-	(void) pem_file;
-#endif // NO_SSL
-
-	while( success && ( list = next_option( list, vc ) ) )
+	if( ports.empty() )
 	{
-		if( !parse_port_string( &vc, &so ) )
-		{
-			error_string = "Invalid port spec. Expecting list of: [IP_ADDRESS:]PORT[s|p]";
-			success = 0;
-			
-#ifndef NO_SSL	  
-		}
-		else if ( so.is_ssl && ( !ctx->ssl_ctx || !pem_file ) )
-		{
-			error_string = "Cannot add SSL socket, is ssl certificate option set?";
-			success = 0;
-#endif // NO_SSL	  
+		g_error = "Invalid port spec. Expecting list of: [IP_ADDRESS:]PORT[s|p]";
+		success = 0;
+	}
+	
+	size_t i = 0;
+	while( success && i < ports.size() )
+	{
+		memset( &so, 0, sizeof( so ) );
 
+		const cr_port& port = ports[ i++ ];
+		if( port.a )
+			so.lsa.sin.sin_addr.s_addr = htonl( ( port.a << 24 ) | ( port.b << 16 ) | ( port.c << 8 ) | port.d );
+		
+		so.is_ssl = port.ssl;
+		
+#ifdef USE_IPV6
+
+		so.lsa.sin6.sin6_family = AF_INET6;
+		so.lsa.sin6.sin6_port	= htons( (uint16_t) port );
+
+#else // USE_IPV6
+
+		so.lsa.sin.sin_family	= AF_INET;
+		so.lsa.sin.sin_port		= htons( (uint16_t) port.port );
+
+#endif // USE_IPV6
+	
+		if ( so.is_ssl && ( !ctx->ssl_ctx || pem_file.empty() ) )
+		{
+			g_error = "Cannot add SSL socket, is ssl certificate option set?";
+			success = 0;
 		}
 		else if( ( sock = socket( so.lsa.sa.sa_family, SOCK_STREAM, 6 ) ) == INVALID_SOCKET ||
 			 
@@ -930,7 +774,7 @@ static int set_ports_option( mg_context* ctx, const char* list, const char* pem_
 			bind( sock, &so.lsa.sa, sizeof(so.lsa ) ) != 0 || listen( sock, SOMAXCONN ) != 0 )
 		{
 			closesocket( sock );
-			error_string = "Cannot bind socket, another socket is already listening on the same port or you must have more privileges";
+			g_error = "Cannot bind socket, another socket is already listening on the same port or you must have more privileges";
 			success = 0;
 		}
 		else
@@ -958,24 +802,25 @@ static void add_to_set( SOCKET fd, fd_set* set, int* max_fd )
 		*max_fd = (int) fd;
 }
 
-#ifndef NO_SSL
-
 /**********************************************************************************************/
-static pthread_mutex_t* ssl_mutexes;
+static mutex* ssl_mutexes;
 
 /**********************************************************************************************/
 static void ssl_locking_callback( int mode, int mutex_num, const char*, int )
 {
 	if( mode & CRYPTO_LOCK )
-		pthread_mutex_lock( &ssl_mutexes[ mutex_num ] );
+		ssl_mutexes[ mutex_num ].lock();
 	else
-		pthread_mutex_unlock( &ssl_mutexes[ mutex_num ] );
+		ssl_mutexes[ mutex_num ].unlock();
 }
 
 /**********************************************************************************************/
 static unsigned long ssl_id_callback( void )
 {
-	return (unsigned long) pthread_self();
+	thread::id id = this_thread::get_id();
+	unsigned long* p = (unsigned long*) &id;
+	
+	return *p;
 }
 
 /**********************************************************************************************/
@@ -993,7 +838,7 @@ static int load_dll( const char* dll_name, ssl_func* sw )
 
 	if( !( dll_handle = dlopen( dll_name, RTLD_LAZY ) ) )
 	{
-		error_string = "cannot load ssl dll";
+		g_error = "cannot load ssl dll";
 		return 0;
 	}
 
@@ -1010,7 +855,7 @@ static int load_dll( const char* dll_name, ssl_func* sw )
 		
 		if( !u.fp )
 		{
-			error_string = "cannot find ssl symbol";
+			g_error = "cannot find ssl symbol";
 			return 0;
 		}
 		else
@@ -1027,8 +872,6 @@ static int load_dll( const char* dll_name, ssl_func* sw )
 //
 static int set_ssl_option( mg_context* ctx, const char* pem )
 {
-	int i, size;
-
 	// If PEM file is not specified, skip SSL initialization.
 	if( !pem || !*pem )
 		return 1;
@@ -1040,11 +883,11 @@ static int set_ssl_option( mg_context* ctx, const char* pem )
 	SSL_library_init();
 
 	if( !( ctx->client_ssl_ctx = SSL_CTX_new( SSLv23_client_method( ) ) ) )
-		error_string = "SSL_CTX_new (client) error";
+		g_error = "SSL_CTX_new (client) error";
 
 	if( !( ctx->ssl_ctx = SSL_CTX_new( SSLv23_server_method( ) ) ) )
 	{
-		error_string = "SSL_CTX_new (server) error";
+		g_error = "SSL_CTX_new (server) error";
 		return 0;
 	}
 
@@ -1053,7 +896,7 @@ static int set_ssl_option( mg_context* ctx, const char* pem )
 	if( !SSL_CTX_use_certificate_file( ctx->ssl_ctx, pem, SSL_FILETYPE_PEM ) ||
 		!SSL_CTX_use_PrivateKey_file( ctx->ssl_ctx, pem, SSL_FILETYPE_PEM ) )
 	{
-		error_string = "cannot open pem";
+		g_error = "cannot open pem";
 		return 0;
 	}
 
@@ -1062,11 +905,7 @@ static int set_ssl_option( mg_context* ctx, const char* pem )
 
 	// Initialize locking callbacks, needed for thread safety.
 	// http://www.openssl.org/support/faq.html#PROG1
-	size = sizeof(pthread_mutex_t) * CRYPTO_num_locks();
-	ssl_mutexes = (pthread_mutex_t*) malloc( (size_t) size );
-
-	for( i = 0 ; i < CRYPTO_num_locks() ; i++ )
-		pthread_mutex_init( &ssl_mutexes[ i ], NULL );
+	ssl_mutexes = new mutex[ CRYPTO_num_locks() ];
 
 	CRYPTO_set_locking_callback( &ssl_locking_callback );
 	CRYPTO_set_id_callback( &ssl_id_callback );
@@ -1080,15 +919,12 @@ static void uninitialize_ssl( mg_context* ctx )
 	if( ctx->ssl_ctx )
 	{
 		CRYPTO_set_locking_callback( NULL );
-		for( int i = 0 ; i < CRYPTO_num_locks() ; i++ )
-			pthread_mutex_destroy( &ssl_mutexes[ i ] );
-
 		CRYPTO_set_locking_callback( NULL );
 		CRYPTO_set_id_callback( NULL );
+		
+		delete[] ssl_mutexes;
 	}
 }
-
-#endif // NO_SSL
 
 /**********************************************************************************************/
 static void reset_per_request_attributes( mg_connection* conn )
@@ -1132,13 +968,11 @@ static void close_socket_gracefully( mg_connection* conn )
 /**********************************************************************************************/
 static void close_connection( mg_connection* conn )
 {
-#ifndef NO_SSL	
 	if( conn->ssl )
 	{
 		SSL_free( (SSL*) conn->ssl );
 		conn->ssl = NULL;
 	}
-#endif // NO_SSL
 
 	if( conn->client.sock != INVALID_SOCKET )
 		close_socket_gracefully( conn );
@@ -1193,102 +1027,35 @@ static void process_new_connection( mg_connection* conn )
 		memmove( conn->buf, conn->buf + discard_len, conn->data_len - discard_len );
 		conn->data_len -= discard_len;
 	}
-	while( !conn->ctx->stop_flag && conn->content_len >= 0 && should_keep_alive( conn ) );
+	while( !conn->ctx->thread_pool.stop_ && conn->content_len >= 0 && should_keep_alive( conn ) );
 }
 
 /**********************************************************************************************/
-// Worker threads take accepted socket from the queue
-//
-static int consume_socket( mg_context* ctx, mg_socket* sp )
-{
-	pthread_mutex_lock( &ctx->mutex );
-
-	// If the queue is empty, wait. We're idle at this point.
-	while( ctx->sq_head == ctx->sq_tail && !ctx->stop_flag )
-		pthread_cond_wait( &ctx->sq_full, &ctx->mutex );
-
-	// If we're stopping, sq_head may be equal to sq_tail.
-	if( ctx->sq_head > ctx->sq_tail )
-	{
-		// Copy socket from the queue and increment tail
-		*sp = ctx->queue[ ctx->sq_tail % ARRAY_SIZE( ctx->queue ) ];
-		ctx->sq_tail++;
-
-		// Wrap pointers if needed
-		while( ctx->sq_tail > (int) ARRAY_SIZE( ctx->queue ) )
-		{
-			ctx->sq_tail -= ARRAY_SIZE( ctx->queue );
-			ctx->sq_head -= ARRAY_SIZE( ctx->queue );
-		}
-	}
-
-	pthread_cond_signal( &ctx->sq_empty );
-	pthread_mutex_unlock( &ctx->mutex );
-
-	return !ctx->stop_flag;
-}
-
-/**********************************************************************************************/
-static void worker_thread( mg_context *ctx )
+static void worker_thread( mg_context *ctx, mg_socket socket )
 {
 	mg_connection conn;
 	
 	// TODO: reset only some bytes
 	memset( &conn, 0, sizeof conn );
 
-	// Call consume_socket() even when ctx->stop_flag > 0, to let it signal
-	// sq_empty condvar to wake up the master waiting in produce_socket()
-	while( consume_socket( ctx, &conn.client ) )
-	{
-		conn.ctx = ctx;
+	conn.client = socket;
+	conn.ctx = ctx;
 
-		// Fill in IP, port info early so even if SSL setup below fails,
-		// error handler would have the corresponding info.
-		// Thanks to Johannes Winkelmann for the patch.
-		// TODO(lsm): Fix IPv6 case
-		conn.request_info.remote_port_ = ntohs( conn.client.rsa.sin.sin_port );
-		memmove( &conn.request_info.remote_ip_, &conn.client.rsa.sin.sin_addr.s_addr, 4 );
-		conn.request_info.remote_ip_ = ntohl( conn.request_info.remote_ip_ );
+	// Fill in IP, port info early so even if SSL setup below fails,
+	// error handler would have the corresponding info.
+	// Thanks to Johannes Winkelmann for the patch.
+	// TODO(lsm): Fix IPv6 case
+	conn.request_info.remote_port_ = ntohs( conn.client.rsa.sin.sin_port );
+	memmove( &conn.request_info.remote_ip_, &conn.client.rsa.sin.sin_addr.s_addr, 4 );
+	conn.request_info.remote_ip_ = ntohl( conn.request_info.remote_ip_ );
 
-#ifndef NO_SSL	
-		conn.request_info.is_ssl_ = conn.client.is_ssl;
+	conn.request_info.is_ssl_ = conn.client.is_ssl;
 
-		if ( !conn.client.is_ssl ||
-			 ( conn.client.is_ssl &&
-			   sslize( &conn, conn.ctx->ssl_ctx, SSL_accept ) ) )
-#endif // NO_SSL		
-			process_new_connection( &conn );
+	if ( !conn.client.is_ssl ||
+		 ( conn.client.is_ssl && sslize( &conn, conn.ctx->ssl_ctx, SSL_accept ) ) )
+		process_new_connection( &conn );
 
-		close_connection( &conn );
-	}
-
-	// Signal master that we're done with connection and exiting
-	pthread_mutex_lock( &ctx->mutex );
-	ctx->num_threads--;
-	pthread_cond_signal( &ctx->cond );
-	pthread_mutex_unlock( &ctx->mutex );
-}
-
-/**********************************************************************************************/
-// Master thread adds accepted socket to a queue
-//
-static void produce_socket( mg_context* ctx, const mg_socket* sp )
-{
-	pthread_mutex_lock( &ctx->mutex );
-
-	// If the queue is full, wait
-	while( ctx->stop_flag == 0 && ctx->sq_head - ctx->sq_tail >= (int) ARRAY_SIZE( ctx->queue ) )
-		pthread_cond_wait( &ctx->sq_empty, &ctx->mutex );
-
-	if( ctx->sq_head - ctx->sq_tail < (int) ARRAY_SIZE( ctx->queue ) )
-	{
-		// Copy socket to the queue and increment head
-		ctx->queue[ctx->sq_head % ARRAY_SIZE( ctx->queue )] = *sp;
-		ctx->sq_head++;
-	}
-
-	pthread_cond_signal( &ctx->sq_full );
-	pthread_mutex_unlock( &ctx->mutex );
+	close_connection( &conn );
 }
 
 /**********************************************************************************************/
@@ -1305,10 +1072,8 @@ static void accept_new_connection(
 	if( accepted.sock != INVALID_SOCKET )
 	{
 		// Put accepted socket structure into the queue
-#ifndef NO_SSL	  
 		accepted.is_ssl = listener->is_ssl;
-#endif // NO_SSL
-		produce_socket( ctx, &accepted );
+		ctx->thread_pool.enqueue( bind( worker_thread, ctx, accepted ) );
 	}
 }
 
@@ -1321,11 +1086,11 @@ static void master_thread( mg_context *ctx )
 	int max_fd;
 
 	// Increase priority of the master thread
-#if defined(_WIN32)
-	SetThreadPriority( GetCurrentThread( ), THREAD_PRIORITY_ABOVE_NORMAL );
-#endif
+#ifdef _WIN32
+	SetThreadPriority( GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL );
+#endif // _WIN32
 
-	while( !ctx->stop_flag )
+	while( !ctx->thread_pool.stop_ )
 	{
 		FD_ZERO( &read_set );
 		max_fd = -1;
@@ -1343,14 +1108,14 @@ static void master_thread( mg_context *ctx )
 			// On windows, if read_set and write_set are empty,
 			// select() returns "Invalid parameter" error
 			// (at least on my Windows XP Pro). So in this case, we sleep here.
-			mg_sleep_int( 1000 );
+			cr_sleep( 1000 );
 #endif // _WIN32
 		}
 		else
 		{
 			for( sp = ctx->listening_sockets ; sp ; sp = sp->next )
 			{
-				if( !ctx->stop_flag && FD_ISSET( sp->sock, &read_set ) )
+				if( !ctx->thread_pool.stop_ && FD_ISSET( sp->sock, &read_set ) )
 					accept_new_connection( sp, ctx );
 			}
 		}
@@ -1359,37 +1124,18 @@ static void master_thread( mg_context *ctx )
 	// Stop signal received: somebody called mg_stop. Quit.
 	close_all_listening_sockets( ctx );
 
-	// Wakeup workers that are waiting for connections to handle.
-	pthread_cond_broadcast( &ctx->sq_full );
-
-	// Wait until all threads finish
-	pthread_mutex_lock( &ctx->mutex );
-	while( ctx->num_threads > 0 )
-		pthread_cond_wait( &ctx->cond, &ctx->mutex );
-
-	pthread_mutex_unlock( &ctx->mutex );
-
-	// All threads exited, no sync is needed. Destroy mutex and condvars
-	pthread_mutex_destroy( &ctx->mutex );
-	pthread_cond_destroy( &ctx->cond );
-	pthread_cond_destroy( &ctx->sq_empty );
-	pthread_cond_destroy( &ctx->sq_full );
-
-#ifndef NO_SSL
 	uninitialize_ssl( ctx );
-#endif // NO_SSL
 
 	// Signal mg_stop() that we're done.
 	// WARNING: This must be the very last thing this
 	// thread does, as ctx becomes invalid after this line.
-	ctx->stop_flag = 2;
+	ctx->thread_pool.stop_ = 2;
 }
 
 /**********************************************************************************************/
 static void free_context( mg_context *ctx )
 {
 	// Deallocate SSL context
-#ifndef NO_SSL	
 	if( ctx->ssl_ctx )
 		SSL_CTX_free( ctx->ssl_ctx );
 
@@ -1401,126 +1147,72 @@ static void free_context( mg_context *ctx )
 		free( ssl_mutexes );
 		ssl_mutexes = NULL;
 	}
-#endif // NO_SSL
 
 	// Deallocate context itself
 	free( ctx );
 }
 
 /**********************************************************************************************/
-void mg_stop( mg_context *ctx )
-{
-	ctx->stop_flag = 1;
-
-	// Wait until mg_fini() stops
-	while( ctx->stop_flag != 2 )
-		mg_sleep_int( 10 );
-
-	free_context( ctx );
-
-#if defined(_WIN32)
-	WSACleanup();
-#endif // _WIN32
-}
-
-/**********************************************************************************************/
-mg_context* mg_start(
-	const char* ports,
-	const char* pem_file,
-	size_t		thread_count )
+bool mg_start(
+	const vector<cr_port>&	ports,
+	const string&			pem_file,
+	size_t					thread_count )
 {
 	mg_context *ctx;
-	error_string = "";
+	g_error = "";
 
-#if defined(_WIN32)
+#ifdef _WIN32
+	
 	WSADATA data;
 	WSAStartup( MAKEWORD( 2, 2 ), &data );
+	
 #endif // _WIN32
 
 	// Allocate context and initialize reasonable general case defaults.
-	ctx = (mg_context *) calloc( 1, sizeof(*ctx ) );
+	ctx = new mg_context( thread_count );
 
 	// NOTE(lsm): order is important here. SSL certificates must
 	// be initialized before listening ports. UID must be set last.
 	if (
-#ifndef NO_SSL	  
-		!set_ssl_option( ctx, pem_file ) ||
-#endif // NO_SSL
+		!set_ssl_option( ctx, pem_file.c_str() ) ||
 		!set_ports_option( ctx, ports, pem_file ) )
 	{
 		free_context( ctx );
-		return NULL;
+		return false;
 	}
 
-#if !defined(_WIN32)
+#ifndef _WIN32
+	
 	// Ignore SIGPIPE signal, so if browser cancels the request, it
 	// won't kill the whole process.
 	signal( SIGPIPE, SIG_IGN );
 	// Also ignoring SIGCHLD to let the OS to reap zombies properly.
 	signal( SIGCHLD, SIG_IGN );
+	
 #endif // !_WIN32
-
-	pthread_mutex_init	( &ctx->mutex	 , NULL );
-	pthread_cond_init	( &ctx->cond	 , NULL );
-	pthread_cond_init	( &ctx->sq_empty , NULL );
-	pthread_cond_init	( &ctx->sq_full	 , NULL );
-
+	
 	// Start master (listening) thread
-	mg_start_thread( (mg_thread_func_t) master_thread, ctx );
+	master_thread( ctx );
+	
+	ctx->thread_pool.stop_ = 1;
 
-	// Start worker threads
-	for( size_t i = 0 ; i < thread_count ; i++ )
-	{
-		if ( mg_start_thread( (mg_thread_func_t) worker_thread, ctx ) == 0 )
-			ctx->num_threads++;
-	}
+	// Wait until mg_fini() stops
+	while( ctx->thread_pool.stop_ != 2 )
+		cr_sleep( 10 );
 
-	return ctx;
-}
+	free_context( ctx );
 
-/**********************************************************************************************/
-mg_mutex mg_mutex_create( void )
-{
-	pthread_mutex_t* m = (pthread_mutex_t*) calloc( sizeof(pthread_mutex_t ), 1 );
-	pthread_mutex_init( m, NULL );
-	return m;
-}
+#if defined(_WIN32)
+	WSACleanup();
+#endif // _WIN32	
 
-/**********************************************************************************************/
-void mg_mutex_destroy( mg_mutex m )
-{
-	pthread_mutex_destroy( (pthread_mutex_t*) m );
-	free( m );
-}
-
-/**********************************************************************************************/
-void mg_mutex_lock( mg_mutex m )
-{
-	pthread_mutex_lock( (pthread_mutex_t*) m );
-}
-
-/**********************************************************************************************/
-void mg_mutex_unlock( mg_mutex m )
-{
-	pthread_mutex_unlock( (pthread_mutex_t*) m );
-}
-
-/**********************************************************************************************/
-void mg_sleep( int ms )
-{
-	mg_sleep_int( ms );
+	return true;
 }
 
 /**********************************************************************************************/
 mg_context* mg_get_context( mg_connection* conn )
 {
 	return conn->ctx;
-}
-
-/**********************************************************************************************/
-const char* mg_get_error_string( void )
-{
-	return error_string;
 }
 
 /**********************************************************************************************/
@@ -1535,16 +1227,10 @@ static mg_connection* mg_connect(
 	hostent* he;
 	int sock;
 
-#ifdef NO_SSL
-	(void) use_ssl;
-#endif // NO_SSL
-	
-#ifndef NO_SSL	
 	if( use_ssl && (ctx == NULL || ctx->client_ssl_ctx == NULL) )
 	{
 	}
 	else
-#endif // NO_SSL	
 	if( !( he = gethostbyname( host ) ) )
 	{
 	}
@@ -1568,11 +1254,9 @@ static mg_connection* mg_connect(
 			newconn->client.sock = sock;
 			newconn->client.rsa.sin = sin;
 			
-#ifndef NO_SSL				
 			newconn->client.is_ssl = use_ssl;
 			if( use_ssl )
 				sslize( newconn, ctx->client_ssl_ctx, SSL_connect );
-#endif // NO_SSL			
 		}
 	}
 

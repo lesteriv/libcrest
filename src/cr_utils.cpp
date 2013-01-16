@@ -1,7 +1,7 @@
 /**********************************************************************************************/
 /* utils.cpp		  		                                                   				  */
 /*                                                                       					  */
-/* Igor Nikitin, 2012																		  */
+/* Igor Nikitin, 2013																		  */
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <thread>
 
 // ZLIB
 #include "../third/zlib/deflate.h"
@@ -165,6 +166,12 @@ size_t cr_base64_decode(
 }
 
 /**********************************************************************************************/
+size_t cr_compress_bound( size_t len )
+{
+	return len + ( len >> 12 ) + ( len >> 14 ) + ( len >> 25 ) + 13;
+}
+
+/**********************************************************************************************/
 void cr_create_responce(
 	char*&			out,
 	size_t&			out_len,
@@ -177,7 +184,7 @@ void cr_create_responce(
 	
 	char* str = out;
 	add_string ( str, RESPONCE_PREFIX[ status ], RESPONCE_PREFIX_SIZE[ status ] );
-	add_number  ( str, (int) content_len );
+	add_number ( str, (int) content_len );
 	add_string ( str, "\r\n", 2 );
 	
 	if( headers )
@@ -200,6 +207,19 @@ void cr_create_responce(
 }
 
 /**********************************************************************************************/
+std::string cr_create_responce(
+	cr_http_status		status,
+	const std::string&	content,
+	cr_string_map*		headers )
+{
+	char* data;
+	size_t len;
+	cr_create_responce( data, len, status, content.c_str(), content.length(), headers );
+	
+	return std::string( data, len );
+}
+
+/**********************************************************************************************/
 void cr_create_responce_header(
 	char*			out,
 	size_t&			out_len,
@@ -209,7 +229,7 @@ void cr_create_responce_header(
 {
 	char* str = out;
 	add_string ( str, RESPONCE_PREFIX[ status ], RESPONCE_PREFIX_SIZE[ status ] );
-	add_number  ( str, (int) content_len );
+	add_number ( str, (int) content_len );
 	add_string ( str, "\r\n", 2 );
 	
 	if( headers )
@@ -247,27 +267,27 @@ size_t cr_deflate(
 }
 
 /**********************************************************************************************/
-bool cr_file_exists( const char* path )
+bool cr_file_exists( const std::string& path )
 {
 	struct stat st;
-	return stat( path, &st ) == 0 && ( st.st_mode & S_IFREG );
+	return stat( path.c_str(), &st ) == 0 && ( st.st_mode & S_IFREG );
 }
 
 /**********************************************************************************************/
-time_t cr_file_modification_time( const char* path )
+time_t cr_file_modification_time( const std::string& path )
 {
 	struct stat st;
-	return ( stat( path, &st ) == 0 ) ?
+	return ( stat( path.c_str(), &st ) == 0 ) ?
 		st.st_mtime :
 		0;
 }
 
 /**********************************************************************************************/
-size_t cr_file_size( const char* path )
+size_t cr_file_size( const std::string& path )
 {
 	size_t size = 0;
 	
-	FILE* f = fopen( path, "rb" );
+	FILE* f = fopen( path.c_str(), "rb" );
 	if( f )
 	{
 		fseek( f, 0, SEEK_END );
@@ -320,6 +340,70 @@ void parse_cookie_header(
 			in_value = true;
 		}
 	}
+}
+
+/**********************************************************************************************/
+inline int pop_int( const char*& s )
+{
+	return strtol( s, (char**) &s, 10 );
+}
+
+/**********************************************************************************************/
+inline bool skip( const char*&s, char c )
+{
+	return *s++ == c;
+}
+
+/**********************************************************************************************/
+vector<cr_port> parse_ports( const string& ports )
+{
+	vector<cr_port> r;
+	
+	const char* s = ports.c_str();
+	while( *s )
+	{
+		int n;
+		if( !( n = pop_int( s ) ) )
+			return vector<cr_port>();
+		
+		// port(s)
+		if( *s == 's' )
+		{
+			r.push_back( { 0, 0, 0, 0, n, true } );
+			++s;
+		}
+		// a.b.c.d:port and a.b.c.d:port(s)
+		else if( *s )
+		{
+			int b, c, d, port;
+			if( skip( s, '.' ) &&
+				( b = pop_int( s ) ) && skip( s, '.' ) &&
+				( c = pop_int( s ) ) && skip( s, '.' ) &&
+				( d = pop_int( s ) ) && skip( s, ':' ) &&
+				( port = pop_int( s ) ) )
+			{
+				if( *s == 's' )
+				{
+					++s;
+					r.push_back( { n, b, c, d, port, true } );
+				}
+				else
+				{
+					r.push_back( { n, b, c, d, port, false } );
+				}
+			}
+		}
+		// port
+		else
+		{
+			r.push_back( { 0, 0, 0, 0, n, false } );
+		}
+		
+		if( *s && !skip( s, ',' ) )
+			return vector<cr_port>();
+	}
+	
+	return r;
 }
 
 /**********************************************************************************************/
@@ -415,6 +499,15 @@ void cr_set_cookie(
 	const char*		value )
 {
 	// TODO
+	(void) headers;
+	(void) name;
+	(void) value;
+}
+
+/**********************************************************************************************/
+void cr_sleep( int ms )
+{
+	std::this_thread::sleep_for( std::chrono::seconds( ms ) );
 }
 
 /**********************************************************************************************/
@@ -428,24 +521,6 @@ int cr_strcasecmp(
 	while( !r && str1[ -1 ] );
 
 	return r;
-}
-
-/**********************************************************************************************/
-char* cr_strdup( 
-	const char* str,
-	int			len )
-{
-	if( !str )
-		return 0;
-
-	if( len < 0 )
-		len = strlen( str );
-	
-	char* res = (char*) malloc( len + 1 );
-	memmove( res, str, len );
-	res[ len ] = 0;
-	
-	return res;
 }
 
 
@@ -548,6 +623,46 @@ static void md5_transform(
 	buf[ 1 ] += b;
 	buf[ 2 ] += c;
 	buf[ 3 ] += d;
+}
+
+/**********************************************************************************************/
+const char* cr_get_auth_name( cr_http_auth auth )
+{
+	switch( auth )
+	{
+		case CR_AUTH_NONE	: return "none";
+		case CR_AUTH_BASIC	: return "basic";
+		case CR_AUTH_DIGEST	: return "digest";
+	}
+	
+	return "";
+}
+
+/**********************************************************************************************/
+const char* cr_get_format_name( cr_result_format format )
+{
+	switch( format )
+	{
+		case CR_FORMAT_BINARY	: return "binary";
+		case CR_FORMAT_JSON		: return "json";
+		case CR_FORMAT_XML		: return "xml";
+	}
+	
+	return "";
+}
+
+/**********************************************************************************************/
+cr_result_format cr_get_result_format( cr_connection& conn )
+{
+	const char* accept = conn.header( "Accept" );
+	if( accept && strstr( accept, "xml" ) )
+		return CR_FORMAT_XML;
+	else if( accept && strstr( accept, "json" ) )
+		return CR_FORMAT_JSON;
+	else if( accept && strstr( accept, "octet" ) )
+		return CR_FORMAT_BINARY;
+		
+	return cr_get_default_result_format();	
 }
 
 /**********************************************************************************************/

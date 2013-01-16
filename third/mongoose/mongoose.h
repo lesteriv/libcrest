@@ -28,18 +28,15 @@
 #pragma once
 
 // STD
-#include <stddef.h>
 #include <time.h>
 
 // CREST
 #include "../../include/cr_string_map.h"
+#include "../../src/cr_utils_private.h"
 
 /**********************************************************************************************/
 struct mg_connection;
 struct mg_context;
-
-/**********************************************************************************************/
-typedef void* mg_mutex;
 
 
 /**********************************************************************************************/
@@ -59,28 +56,27 @@ struct mg_request_info
 time_t				mg_get_birth_time( mg_connection* );
 size_t				mg_get_content_len( mg_connection* );
 mg_context*			mg_get_context( mg_connection* );
-const char*			mg_get_error_string( void );
 mg_request_info*	mg_get_request_info( mg_connection* );
 
-/**********************************************************************************************/
-mg_mutex			mg_mutex_create( void );
-void				mg_mutex_destroy( mg_mutex mtx );
-void				mg_mutex_lock( mg_mutex mtx );
-void				mg_mutex_unlock( mg_mutex mtx );
 
 /**********************************************************************************************/
 int					mg_read( mg_connection*, void* buf, size_t len );
-void				mg_sleep( int ms );
-mg_context*			mg_start( const char* ports, const char* pem_file, size_t thread_count );
-void				mg_stop( mg_context* );
 int					mg_write( mg_connection*, const char* buf, size_t len );
+
 
 /**********************************************************************************************/
 bool				mg_fetch(
-						char*			buf,
-						char*&			out,
-						size_t&			out_size,
-						mg_context*		ctx,
-						const char*		url,
-						cr_string_map*	headers,
-						int				redirect_count = 0 /* For internal use */ );
+						char*					buf,
+						char*&					out,
+						size_t&					out_size,
+						mg_context*				ctx,
+						const char*				url,
+						cr_string_map*			headers,
+						int						redirect_count = 0 /* For internal use */ );
+
+
+/**********************************************************************************************/
+bool				mg_start(
+						const vector<cr_port>&	ports,
+						const std::string&		pem_file,
+						size_t					thread_count );

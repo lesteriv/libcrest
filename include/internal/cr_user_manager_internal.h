@@ -1,26 +1,16 @@
 /**********************************************************************************************/
 /* cr_user_manager_internal.h  		                                               			  */
 /*                                                                       					  */
-/* Igor Nikitin, 2012																		  */
+/* Igor Nikitin, 2013																		  */
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
 #pragma once
 
 // STD
-#include <stddef.h>
-
-
-/**********************************************************************************************/
-// Internal structure to store single user's info
-//
-struct crest_user
-{
-	bool	admin_;
-	char*	name_;
-	size_t	name_len_;
-	char	password_[ 16 ];
-};
+#include <mutex>
+#include <unordered_map>
+#include <vector>
 
 
 /**********************************************************************************************/
@@ -28,28 +18,34 @@ struct crest_user
 //
 class cr_user_manager_internal
 {
-	protected://////////////////////////////////////////////////////////////////////////
-	
-							cr_user_manager_internal( void );
-							~cr_user_manager_internal( void );
+	protected://////////////////////////////////////////////////////////////////////////	
+
+	// ---------------------
+	// Sub types
+		
+		struct user_t
+		{
+			bool admin_;
+			char password_[ 16 ];
+		};
+
+		typedef std::unordered_map<std::string, user_t> users_t;
+
 
 	protected://////////////////////////////////////////////////////////////////////////
 		
 	// ---------------------
 	// Internal methods		
 		
-		crest_user*			create_user( const char* name );
-		crest_user*			find_user( const char* name ) const;
 		void				flush( void );
 		void				load( void );
 
-		
+	
 	protected://////////////////////////////////////////////////////////////////////////
 
 // Properties		
 		
-		char*				auth_file_;
-		void*				mutex_;
-		size_t				users_count_;
-		crest_user*			users_;
+		std::string			auth_file_;
+mutable	std::mutex			mutex_;
+		users_t				users_;
 };

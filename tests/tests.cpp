@@ -44,14 +44,14 @@ int main( void )
 	
 	TEST( cr_user_manager::cr_user_manager )
 	{
-		the_cr_user_manager.clean();
+		the_cr_user_manager.set_auth_file( "" );
 		
 		RETURN( the_cr_user_manager.get_user_count() == 0 );
 	}
 
 	TEST( cr_user_manager::flush )
 	{
-		the_cr_user_manager.clean();
+		the_cr_user_manager.set_auth_file( "" );
 		
 		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd" );
 		bool res = cr_file_exists( "/tmp/auth.passwd" );
@@ -82,10 +82,8 @@ int main( void )
 	TEST( cr_user_manager::get_auth_file and
 		  cr_user_manager::set_auth_file )
 	{
-		the_cr_user_manager.clean();
-		
 		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd" );
-		bool res = !strcmp( "/tmp/auth.passwd", the_cr_user_manager.get_auth_file() );
+		bool res = the_cr_user_manager.get_auth_file() == "/tmp/auth.passwd";
 		
 		remove( "/tmp/auth.passwd" );
 		RETURN( res );
@@ -93,7 +91,7 @@ int main( void )
 	
 	TEST( cr_user_manager::get_user_count )
 	{
-		the_cr_user_manager.clean();
+		the_cr_user_manager.set_auth_file( "" );
 		
 		bool res = the_cr_user_manager.get_user_count() == 0;
 		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd" );
@@ -105,7 +103,7 @@ int main( void )
 	
 	TEST( cr_user_manager::get_user_flags )
 	{
-		the_cr_user_manager.clean();
+		the_cr_user_manager.set_auth_file( "" );
 		
 		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd" );
 		bool res = the_cr_user_manager.get_user_is_admin( "root" );
@@ -116,16 +114,10 @@ int main( void )
 	
 	TEST( cr_user_manager::get_users )
 	{
-		the_cr_user_manager.clean();
-		
 		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd" );
 		
-		size_t count;
-		char** users;
-		the_cr_user_manager.get_users( count, users );
-		
-		bool res = ( count == 1 ) && ( !strcmp( users[ 0 ], "root" ) );
-		free( users );
+		auto users = the_cr_user_manager.get_users();
+		bool res = ( users.size() == 1 ) && ( users[ 0 ] == "root" );
 		
 		remove( "/tmp/auth.passwd" );
 		RETURN( res );
@@ -155,7 +147,7 @@ int main( void )
 
 	TEST( cr_user_manager::delete_user )
 	{
-		the_cr_user_manager.clean();
+		the_cr_user_manager.set_auth_file( "" );
 		
 		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd" );
 		the_cr_user_manager.add_user( "test", "qwerty", true );
@@ -170,7 +162,7 @@ int main( void )
 	
 	TEST( cr_user_manager::update_user_flags )
 	{
-		the_cr_user_manager.clean();
+		the_cr_user_manager.set_auth_file( "" );
 		
 		the_cr_user_manager.set_auth_file( "/tmp/auth.passwd" );
 		the_cr_user_manager.add_user( "test", "qwerty", false );
@@ -472,6 +464,13 @@ int main( void )
 		
 		RETURN( res );
 	}
+	
+/*	TEST( cr_base64_decode )
+	{
+		TODO
+		
+		RETURN( res );
+	} */
 	
 	FINISH
 }

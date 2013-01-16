@@ -1,18 +1,9 @@
 /**********************************************************************************************/
 /* cr_user_manager.cpp																		  */
 /*                                                                       					  */
-/* Igor Nikitin, 2012																		  */
+/* Igor Nikitin, 2013																		  */
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
-
-// STD
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-// MONGOOSE
-#include "../third/mongoose/mongoose.h"
 
 // CREST
 #include "../include/crest.h"
@@ -26,25 +17,13 @@
 
 
 //////////////////////////////////////////////////////////////////////////
-// construction
+// global data
 //////////////////////////////////////////////////////////////////////////
 
 
 /**********************************************************************************************/
-cr_user_manager_internal::cr_user_manager_internal( void )
-{
-	auth_file_		= 0;
-	mutex_			= mg_mutex_create();
-	users_count_	= 0;
-	users_			= 0;
-}
-
-/**********************************************************************************************/
-cr_user_manager_internal::~cr_user_manager_internal( void )
-{
-	mg_mutex_destroy( mutex_ );
-}
-
+static cr_user_manager g_user_manager;
+	
 
 //////////////////////////////////////////////////////////////////////////
 // properties
@@ -52,19 +31,20 @@ cr_user_manager_internal::~cr_user_manager_internal( void )
 
 
 /**********************************************************************************************/
-const char* cr_user_manager::get_auth_file( void ) const
+const std::string& cr_user_manager::get_auth_file( void ) const
 {
 	return auth_file_;
 }
 
 /**********************************************************************************************/
-void cr_user_manager::set_auth_file( const char* file )
+void cr_user_manager::set_auth_file( const std::string& file )
 {
-	clean();
+	mutex_.lock(); // -----------------------------
 	
-	mg_mutex_lock( mutex_ );
-	auth_file_ = cr_strdup( file );
-	mg_mutex_unlock( mutex_ );
+	auth_file_ = file;
+	users_.clear();
+	
+	mutex_.unlock(); // -----------------------------
 	
 	load();
 }
@@ -72,48 +52,40 @@ void cr_user_manager::set_auth_file( const char* file )
 /**********************************************************************************************/
 size_t cr_user_manager::get_user_count( void ) const
 {
-	return users_count_;
+	return users_.size();
 }
 
 /**********************************************************************************************/
-bool cr_user_manager::get_user_is_admin( const char* name ) const
+bool cr_user_manager::get_user_is_admin( const std::string& name ) const
 {
 	bool res = false;
 	
-	mg_mutex_lock( mutex_ ); // -----------------------------
+	mutex_.lock(); // -----------------------------
+
+	auto it = users_.find( name );	
+	if( it != users_.end() )
+		res = it->second.admin_;
 	
-	crest_user* user = find_user( name );
-	if( user )
-		res = user->admin_;
-	
-	mg_mutex_unlock( mutex_ ); // -----------------------------
+	mutex_.unlock(); // -----------------------------
 	
 	return res;
 }
 
 /**********************************************************************************************/
-void cr_user_manager::get_users( 
-	size_t&		count,
-	char**&		names ) const
+std::vector<std::string> cr_user_manager::get_users( void ) const
 {
-	mg_mutex_lock( mutex_ ); // -----------------------------
-
-	size_t flen = ( users_count_ + 1 ) * sizeof( crest_user* );
-	for( size_t i = 0 ; i < users_count_ ; ++i )
-		flen += users_[ i ].name_len_ + 1;
+	std::vector<std::string> res;
 	
-	count = users_count_;
-	names = (char**) malloc( flen );
+	mutex_.lock(); // -----------------------------
 
-	char* s = (char*) names + users_count_ * sizeof( crest_user* );
+	res.reserve( users_.size() );
 	
-	for( size_t i = 0 ; i < users_count_ ; ++i )
-	{
-		names[ i ] = s;
-		add_string( s, users_[ i ].name_, users_[ i ].name_len_ + 1 );
-	}
+	for( auto it : users_ )
+		res.push_back( it.first );
 
-	mg_mutex_unlock( mutex_ ); // -----------------------------
+	mutex_.unlock(); // -----------------------------
+	
+	return res;
 }
 
 
@@ -124,48 +96,47 @@ void cr_user_manager::get_users(
 
 /**********************************************************************************************/
 const char* cr_user_manager::add_user(
-	const char*	name,
-	const char*	pass,
-	bool		admin )
+	const std::string&	name,
+	const std::string&	pass,
+	bool				admin )
 {
 	// Check parameters
 
-	if( !name || !*name )
+	if( name.empty() )
 		return "Empty user name";
 	
-	size_t name_len = strlen( name );
-	size_t pass_len = strlen( pass );
+	if( name.length() > 32 ) return "Name too long";
+	if( pass.length() > 32 ) return "Password too long";
 	
-	if( name_len > 32	  ) return "Name too long";
-	if( !isalpha( *name ) ) return "Invalid name";
-	if( pass_len > 32	  ) return "Password too long";
-	
-	for( size_t i = 0 ; i < name_len ; ++i )
+	for( char c : name )
 	{
-		if( !isalnum( name[ i ] ) )
+		if( !isalnum( c ) )
 			return "Invalid name";
 	}
 	
 	// Add user
 	
+	const char* data[] = {  name.c_str(), ":", "", ":",  pass.c_str() };
+	size_t		len[]  = { name.length(),   1,   0,  1, pass.length() };
+
 	char buf[ 16 ];
-	const char* data[] = { name, ":", "", ":", pass };
-	size_t len[] = { name_len, 1, 0, 1, pass_len };
 	cr_md5( buf, 5, data, len );	
 
-	mg_mutex_lock( mutex_ ); // -----------------------------
+	mutex_.lock(); // -----------------------------
 	
-	crest_user* user = find_user( name );
-	if( !user )
+	auto it = users_.find( name );
+	bool exists = ( it != users_.end() );
+	
+	if( !exists )
 	{
-		crest_user* new_user = create_user( name );
-		memmove( new_user->password_, buf, 16 );
-		new_user->admin_ = admin;
+		user_t& user = users_[ name ];
+		memmove( user.password_, buf, 16 );
+		user.admin_ = admin;
 	}
 	
-	mg_mutex_unlock( mutex_ ); // -----------------------------
+	mutex_.unlock(); // -----------------------------
 
-	if( user )
+	if( exists )
 		return "User already exists";
 	
 	flush();
@@ -173,51 +144,26 @@ const char* cr_user_manager::add_user(
 }
 
 /**********************************************************************************************/
-void cr_user_manager::clean( void )
-{
-	mg_mutex_lock( mutex_ ); // -----------------------------
-	
-	for( size_t i = 0 ; i < users_count_ ; ++i )
-		free( users_[ i ].name_ );
-	
-	free( users_ );
-	users_ = 0;
-	users_count_ = 0;
-	
-	free( auth_file_ );
-	auth_file_ = 0;
-	
-	mg_mutex_unlock( mutex_ ); // -----------------------------
-}
-
-/**********************************************************************************************/
-const char* cr_user_manager::delete_user( const char* name )
+const char* cr_user_manager::delete_user( const std::string& name )
 {
 	// Check parameters
 	
-	if( !name || !*name )
+	if( name.empty() )
 		 return "Empty user name";
 	
 	// Delete user
 			
-	bool deleted = false;
-	
-	mg_mutex_lock( mutex_ ); // -----------------------------
-	
-	for( size_t i = 0 ; i < users_count_ ; ++i )
-	{
-		if( !strcmp( users_[ i ].name_, name ) )
-		{
-			free( users_[ i ].name_ );
-			if( i + 1 < users_count_ )
-				memmove( users_ + i, users_ + i + 1, users_count_ - i - 1 );
+	mutex_.lock(); // -----------------------------
 
-			--users_count_;
-		}
-	}
-	mg_mutex_unlock( mutex_ ); // -----------------------------
+	auto it = users_.find( name );
 
-	if( !deleted )
+	bool exists = ( it != users_.end() );
+	if( exists )
+		users_.erase( it );
+	
+	mutex_.unlock(); // -----------------------------
+
+	if( !exists )
 		return "User not found";
 	
 	flush();
@@ -225,22 +171,22 @@ const char* cr_user_manager::delete_user( const char* name )
 }
 
 /**********************************************************************************************/
-bool cr_user_manager::get_password( 
-	const char*	name,
-	char*		pass )
+bool cr_user_manager::get_password_hash( 
+	const std::string&	name,
+	char*				pass )
 {
 	bool res = false;
 	
-	mg_mutex_lock( mutex_ ); // -----------------------------
+	mutex_.lock(); // -----------------------------
 	
-	crest_user* user = find_user( name );
-	if( user )
+	auto it = users_.find( name );
+	if( it != users_.end() )
 	{
-		memmove( pass, user->password_, 16 );
+		memmove( pass, it->second.password_, 16 );
 		res = true;
 	}
 	
-	mg_mutex_unlock( mutex_ ); // -----------------------------
+	mutex_.unlock(); // -----------------------------
 	
 	return res;
 }
@@ -248,31 +194,32 @@ bool cr_user_manager::get_password(
 /**********************************************************************************************/
 cr_user_manager& cr_user_manager::instance( void )
 {
-	static cr_user_manager res;
-	return res;
+	return g_user_manager;
 }
 
 /**********************************************************************************************/
 const char* cr_user_manager::update_user_is_admin(
-	const char*	name,
-	bool		value )
+	const std::string&	name,
+	bool				value )
 {
 	// Check parameters
 	
-	if( !name || !*name )
+	if( name.empty() )
 		return "Empty user name";
 	
 	// Update flags
 			
-	mg_mutex_lock( mutex_ ); // -----------------------------
+	mutex_.lock(); // -----------------------------
 	
-	crest_user* user = find_user( name );
-	if( user )
-		user->admin_ = value;
+	auto it = users_.find( name );
+	bool exists = it != users_.end();
 	
-	mg_mutex_unlock( mutex_ ); // -----------------------------
+	if( exists )
+		it->second.admin_ = value;
 	
-	if( !user )
+	mutex_.unlock(); // -----------------------------
+	
+	if( !exists )
 		return "User not found";
 	
 	flush();
@@ -281,34 +228,33 @@ const char* cr_user_manager::update_user_is_admin(
 
 /**********************************************************************************************/
 const char* cr_user_manager::update_user_password(
-	const char*	name,
-	const char*	pass )
+	const std::string&	name,
+	const std::string&	pass )
 {
 	// Check parameters
 	
-	if( !pass )	pass = "";
-	size_t name_len = strlen( name );
-	size_t pass_len = strlen( pass );
-	
-	if( !name || !*name	) return "Empty user name";
-	if( pass_len > 32	) return "Password too long";
+	if( name.empty()		) return "Empty user name";
+	if( pass.length() > 32	) return "Password too long";
 	
 	// Update password
 	
+	const char* data[] = {  name.c_str(), ":", "", ":",  pass.c_str() };
+	size_t		len[]  = { name.length(),   1,   0,  1, pass.length() };
+	
 	char buf[ 16 ];
-	const char* data[] = { name, ":", "", ":", pass };
-	size_t len[] = { name_len, 1, 0, 1, pass_len };	
 	cr_md5( buf, 5, data, len );	
 	
-	mg_mutex_lock( mutex_ ); // -----------------------------
+	mutex_.lock(); // -----------------------------
 	
-	crest_user* user = find_user( name );
-	if( user )
-		memmove( user->password_, buf, 16 );
+	auto it = users_.find( name );
+	bool exists = it != users_.end();
 	
-	mg_mutex_unlock( mutex_ ); // -----------------------------
+	if( exists )
+		memmove( it->second.password_, buf, 16 );
 	
-	if( !user )
+	mutex_.unlock(); // -----------------------------
+	
+	if( !exists )
 		return "User not found";
 	
 	flush();
@@ -322,59 +268,23 @@ const char* cr_user_manager::update_user_password(
 
 
 /**********************************************************************************************/
-crest_user* cr_user_manager_internal::create_user( const char* name )
-{
-	++users_count_;
-	
-	if( !users_ )
-	{
-		users_ = (crest_user*) malloc( sizeof( crest_user ) );
-		users_->name_len_ = strlen( name );
-		users_->name_ = cr_strdup( name, users_->name_len_ );
-		
-		return users_;
-	}
-	
-	users_ = (crest_user*) realloc( users_, sizeof( crest_user ) * users_count_ );
-	crest_user* last = users_ + users_count_ - 1;
-	last->name_len_ = strlen( name );
-	last->name_ = cr_strdup( name, last->name_len_ );
-	
-	return last;
-}
-
-/**********************************************************************************************/
-crest_user* cr_user_manager_internal::find_user( const char* name ) const
-{
-	for( size_t i = 0 ; i < users_count_ ; ++i )
-	{
-		if( !strcmp( users_[ i ].name_, name ) )
-			return users_ + i;
-	}	
-	
-	return NULL;
-}
-
-/**********************************************************************************************/
 void cr_user_manager_internal::flush( void )
 {
-	mg_mutex_lock( mutex_ ); // -----------------------------
+	mutex_.lock(); // -----------------------------
 
-	if( auth_file_ )
+	if( auth_file_.length() )
 	{
-		FILE* f = fopen( auth_file_, "wt" );
+		FILE* f = fopen( auth_file_.c_str(), "wt" );
 		if( f )
 		{
-			for( size_t i = 0 ; i < users_count_ ; ++i )
+			for( auto it : users_ )
 			{
-				crest_user& user = users_[ i ];
-
-				fwrite( user.name_, strlen( user.name_ ), 1, f );
+				fwrite( it.first.c_str(), it.first.length(), 1, f );
 				fputc( ' ', f );
-				fputc( user.admin_ ? '1' : '0', f );
+				fputc( it.second.admin_ ? '1' : '0', f );
 				fputc( ' ', f );
 
-				const unsigned char* bt = (const unsigned char*) user.password_;
+				const unsigned char* bt = (const unsigned char*) it.second.password_;
 				for( size_t i = 0 ; i < 16 ; ++i )
 				{
 					fputc( "0123456789abcdef"[ *bt / 16 ], f );
@@ -389,7 +299,7 @@ void cr_user_manager_internal::flush( void )
 		}
 	}
 	
-	mg_mutex_unlock( mutex_ ); // -----------------------------
+	mutex_.unlock(); // -----------------------------
 }
 
 /**********************************************************************************************/
@@ -397,11 +307,11 @@ void cr_user_manager_internal::load( void )
 {
 	bool need_flush = false;
 	
-	mg_mutex_lock( mutex_ ); // -----------------------------
+	mutex_.lock(); // -----------------------------
 	
-	if( auth_file_ )
+	if( auth_file_.length() )
 	{
-		FILE* f = fopen( auth_file_, "rt" );
+		FILE* f = fopen( auth_file_.c_str(), "rt" );
 		if( f )
 		{	
 			char bt[ 3 ] = "00";
@@ -428,10 +338,10 @@ void cr_user_manager_internal::load( void )
 
 				passwd[ 32 ] = 0;
 
-				crest_user* user = create_user( name );
-				user->admin_ = ( *flags == '1' );
+				user_t& user = users_[ name ];
+				user.admin_ = ( *flags == '1' );
 
-				char* dpass = user->password_;
+				char* dpass = user.password_;
 				while( *passwd && *(passwd + 1) )
 				{
 					bt[ 0 ] = *passwd++;
@@ -445,20 +355,20 @@ void cr_user_manager_internal::load( void )
 		}
 
 		// Add default 'root' user if need
-		if( !users_count_ )
+		if( users_.empty() )
 		{
-			crest_user* user = create_user( "root" );
-			user->admin_ = true;
+			user_t& user = users_[  "root" ];
+			user.admin_ = true;
 			
 			const char* data[] = { "root", ":", "", ":", "" };
 			size_t len[] = { 4, 1, 0, 1, 0 };	
-			cr_md5( user->password_, 5, data, len );		
+			cr_md5( user.password_, 5, data, len );		
 
 			need_flush = true;
 		}
 	}
 
-	mg_mutex_unlock( mutex_ ); // -----------------------------
+	mutex_.unlock(); // -----------------------------
 	
 	if( need_flush )
 		flush();

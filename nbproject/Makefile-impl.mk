@@ -31,7 +31,7 @@ DEFAULTCONF=debug_native
 CONF=${DEFAULTCONF}
 
 # All Configurations
-ALLCONFS=debug_native examples_debug file_server file_server_stl http_mirror release_native release_32 release_64 storage tests 
+ALLCONFS=debug_native examples_debug file_server http_mirror release_native release_32 release_64 storage tests 
 
 
 # build

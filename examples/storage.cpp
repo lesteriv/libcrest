@@ -7,6 +7,7 @@
 
 // STD
 #include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 
@@ -29,12 +30,12 @@ using namespace std;
 
 
 /**********************************************************************************************/
-static unordered_map<string,unordered_map<string,shared_ptr<string>>> g_hashes;
-static int64_t		g_counter = 1 << 20;
+unordered_map<string,unordered_map<string,shared_ptr<string>>> g_hashes;
+int64_t		g_counter = 1 << 20;
 
 /**********************************************************************************************/
-static cr_mutex		g_mutex_counter;
-static cr_mutex		g_mutex_hash;
+mutex		g_mutex_counter;
+mutex		g_mutex_hash;
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -49,12 +50,8 @@ GET()( cr_connection& conn )
 	
 	LOCK
 	
-	data.reserve( g_hashes.size() * 32 );
 	for( auto& coll : g_hashes )
-	{
-		data += coll.first;
-		data.push_back( '\n' );
-	}
+		data += coll.first + '\n';
 	
 	UNLOCK
 	
@@ -92,7 +89,7 @@ GET( {hash} )( cr_connection& conn )
 	if( it == g_hashes.end() )
 	{
 		UNLOCK
-		
+
 		conn.respond( CR_HTTP_NOT_FOUND );
 		return;
 	}
@@ -100,14 +97,9 @@ GET( {hash} )( cr_connection& conn )
 	auto& coll = g_hashes[ HASH ];
 		
 	string data;
-	data.reserve( coll.size() * 32 );
-	
 	for( auto& key : coll )
-	{
-		data += key.first;
-		data.push_back( '\n' );
-	}
-	
+		data += key.first + '\n';
+s	
 	UNLOCK
 	
 	conn.respond( CR_HTTP_OK, data );	
@@ -124,10 +116,8 @@ POST( {hash} )( cr_connection& conn )
 	conn.read( *str );
 
 	LOCK
-	
 	g_hashes[ HASH ][ id ] = str;
-
-	UNLOCK
+s	UNLOCK
 	
 	conn.respond( CR_HTTP_OK, id );
 }
@@ -186,9 +176,7 @@ PUT( {hash}/{key} )( cr_connection& conn )
 	conn.read( *str );
 	
 	LOCK
-	
 	g_hashes[ HASH ][ KEY ] = str;
-	
 	UNLOCK
 	
 	conn.respond( CR_HTTP_OK );

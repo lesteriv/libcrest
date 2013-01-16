@@ -22,6 +22,7 @@ AS=as
 
 # Macros
 CND_PLATFORM=GNU-Linux-x86
+CND_DLIB_EXT=so
 CND_CONF=http_mirror
 CND_DISTDIR=dist
 CND_BUILDDIR=build
@@ -37,15 +38,19 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/cr_xml.o \
 	${OBJECTDIR}/src/cr_connection.o \
 	${OBJECTDIR}/examples/http_mirror.o \
+	${OBJECTDIR}/src/cr_result.o \
 	${OBJECTDIR}/src/cr_string_map.o \
 	${OBJECTDIR}/third/zlib/trees.o \
 	${OBJECTDIR}/third/zlib/deflate.o \
 	${OBJECTDIR}/src/cr_user_manager.o \
 	${OBJECTDIR}/src/crest.o \
+	${OBJECTDIR}/src/cr_cache.o \
 	${OBJECTDIR}/src/cr_utils.o \
 	${OBJECTDIR}/src/auth_digest.o \
-	${OBJECTDIR}/src/cr_mutex.o \
 	${OBJECTDIR}/third/mongoose/mongoose.o \
+	${OBJECTDIR}/src/cr_thread_pool.o \
+	${OBJECTDIR}/tests/tests.o \
+	${OBJECTDIR}/examples/file_server.o \
 	${OBJECTDIR}/src/cr_json.o \
 	${OBJECTDIR}/src/auth_basic.o
 
@@ -54,8 +59,8 @@ OBJECTFILES= \
 CFLAGS=
 
 # CC Compiler Flags
-CCFLAGS=-fno-exceptions -fno-rtti -flto -Ofast -m32
-CXXFLAGS=-fno-exceptions -fno-rtti -flto -Ofast -m32
+CCFLAGS=-fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11
+CXXFLAGS=-fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11
 
 # Fortran Compiler Flags
 FFLAGS=
@@ -72,77 +77,97 @@ LDLIBSOPTIONS=-lpthread
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/http_mirror: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	g++ -fno-exceptions -fno-rtti -flto -Ofast -m32 -Wl,--hash-style=sysv -static-libstdc++ -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/http_mirror -s ${OBJECTFILES} ${LDLIBSOPTIONS} 
+	g++ -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/http_mirror ${OBJECTFILES} ${LDLIBSOPTIONS} -fno-exceptions -fno-rtti -flto -Ofast -m32 -Wl,--hash-style=sysv -static-libstdc++ -s
 
 ${OBJECTDIR}/src/cr_xml.o: src/cr_xml.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_xml.o src/cr_xml.cpp
+	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_xml.o src/cr_xml.cpp
 
 ${OBJECTDIR}/src/cr_connection.o: src/cr_connection.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_connection.o src/cr_connection.cpp
+	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_connection.o src/cr_connection.cpp
 
 ${OBJECTDIR}/examples/http_mirror.o: examples/http_mirror.cpp 
 	${MKDIR} -p ${OBJECTDIR}/examples
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_SSL -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/http_mirror.o examples/http_mirror.cpp
+	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/http_mirror.o examples/http_mirror.cpp
+
+${OBJECTDIR}/src/cr_result.o: src/cr_result.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_result.o src/cr_result.cpp
 
 ${OBJECTDIR}/src/cr_string_map.o: src/cr_string_map.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_string_map.o src/cr_string_map.cpp
+	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_string_map.o src/cr_string_map.cpp
 
 ${OBJECTDIR}/third/zlib/trees.o: third/zlib/trees.cpp 
 	${MKDIR} -p ${OBJECTDIR}/third/zlib
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/zlib/trees.o third/zlib/trees.cpp
+	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/zlib/trees.o third/zlib/trees.cpp
 
 ${OBJECTDIR}/third/zlib/deflate.o: third/zlib/deflate.cpp 
 	${MKDIR} -p ${OBJECTDIR}/third/zlib
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/zlib/deflate.o third/zlib/deflate.cpp
+	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/zlib/deflate.o third/zlib/deflate.cpp
 
 ${OBJECTDIR}/src/cr_user_manager.o: src/cr_user_manager.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_user_manager.o src/cr_user_manager.cpp
+	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_user_manager.o src/cr_user_manager.cpp
 
 ${OBJECTDIR}/src/crest.o: src/crest.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest.o src/crest.cpp
+	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/crest.o src/crest.cpp
+
+${OBJECTDIR}/src/cr_cache.o: src/cr_cache.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_cache.o src/cr_cache.cpp
 
 ${OBJECTDIR}/src/cr_utils.o: src/cr_utils.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_utils.o src/cr_utils.cpp
+	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_utils.o src/cr_utils.cpp
 
 ${OBJECTDIR}/src/auth_digest.o: src/auth_digest.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/auth_digest.o src/auth_digest.cpp
-
-${OBJECTDIR}/src/cr_mutex.o: src/cr_mutex.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_mutex.o src/cr_mutex.cpp
+	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/auth_digest.o src/auth_digest.cpp
 
 ${OBJECTDIR}/third/mongoose/mongoose.o: third/mongoose/mongoose.cpp 
 	${MKDIR} -p ${OBJECTDIR}/third/mongoose
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.cpp
+	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.cpp
+
+${OBJECTDIR}/src/cr_thread_pool.o: src/cr_thread_pool.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_thread_pool.o src/cr_thread_pool.cpp
+
+${OBJECTDIR}/tests/tests.o: tests/tests.cpp 
+	${MKDIR} -p ${OBJECTDIR}/tests
+	${RM} $@.d
+	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/tests/tests.o tests/tests.cpp
+
+${OBJECTDIR}/examples/file_server.o: examples/file_server.cpp 
+	${MKDIR} -p ${OBJECTDIR}/examples
+	${RM} $@.d
+	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/examples/file_server.o examples/file_server.cpp
 
 ${OBJECTDIR}/src/cr_json.o: src/cr_json.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_json.o src/cr_json.cpp
+	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_json.o src/cr_json.cpp
 
 ${OBJECTDIR}/src/auth_basic.o: src/auth_basic.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_SSL -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/auth_basic.o src/auth_basic.cpp
+	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/auth_basic.o src/auth_basic.cpp
 
 # Subprojects
 .build-subprojects:

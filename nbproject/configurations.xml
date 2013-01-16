@@ -1,26 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="80">
+<configurationDescriptor version="88">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
       <logicalFolder name="examples" displayName="examples" projectFiles="true">
         <itemPath>examples/file_server.cpp</itemPath>
-        <itemPath>examples/file_server_stl.cpp</itemPath>
         <itemPath>examples/http_mirror.cpp</itemPath>
         <itemPath>examples/storage.cpp</itemPath>
       </logicalFolder>
       <logicalFolder name="include" displayName="include" projectFiles="true">
         <logicalFolder name="f1" displayName="internal" projectFiles="true">
-          <itemPath>include/internal/cr_connection_imp.h</itemPath>
+          <itemPath>include/internal/cr_cache_internal.h</itemPath>
           <itemPath>include/internal/cr_connection_internal.h</itemPath>
           <itemPath>include/internal/cr_handler_register.h</itemPath>
+          <itemPath>include/internal/cr_result_internal.h</itemPath>
           <itemPath>include/internal/cr_string_map_internal.h</itemPath>
           <itemPath>include/internal/cr_user_manager_internal.h</itemPath>
         </logicalFolder>
+        <itemPath>include/cr_cache.h</itemPath>
         <itemPath>include/cr_connection.h</itemPath>
-        <itemPath>include/cr_mutex.h</itemPath>
         <itemPath>include/cr_options.h</itemPath>
+        <itemPath>include/cr_result.h</itemPath>
         <itemPath>include/cr_string_map.h</itemPath>
         <itemPath>include/cr_types.h</itemPath>
         <itemPath>include/cr_user_manager.h</itemPath>
@@ -32,11 +33,14 @@
         <itemPath>src/auth_basic.h</itemPath>
         <itemPath>src/auth_digest.cpp</itemPath>
         <itemPath>src/auth_digest.h</itemPath>
+        <itemPath>src/cr_cache.cpp</itemPath>
         <itemPath>src/cr_connection.cpp</itemPath>
         <itemPath>src/cr_json.cpp</itemPath>
         <itemPath>src/cr_json.h</itemPath>
-        <itemPath>src/cr_mutex.cpp</itemPath>
+        <itemPath>src/cr_result.cpp</itemPath>
         <itemPath>src/cr_string_map.cpp</itemPath>
+        <itemPath>src/cr_thread_pool.cpp</itemPath>
+        <itemPath>src/cr_thread_pool.h</itemPath>
         <itemPath>src/cr_user_manager.cpp</itemPath>
         <itemPath>src/cr_utils.cpp</itemPath>
         <itemPath>src/cr_utils_private.h</itemPath>
@@ -76,9 +80,6 @@
       <itemPath>Makefile</itemPath>
     </logicalFolder>
   </logicalFolder>
-  <sourceRootList>
-    <Elem>third/rapidxml</Elem>
-  </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
     <conf name="debug_native" type="3">
@@ -88,21 +89,123 @@
       </toolsSet>
       <compileType>
         <ccTool>
-          <commandLine>-Wall -Wextra</commandLine>
+          <commandLine>-Wall -Wextra -std=c++11</commandLine>
         </ccTool>
         <archiverTool>
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcrestd.a</output>
         </archiverTool>
       </compileType>
-      <item path="examples/file_server.cpp" ex="true" tool="1" flavor="0">
+      <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="examples/file_server_stl.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="examples/http_mirror.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/http_mirror.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="examples/storage.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/storage.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
+      <item path="include/cr_cache.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_connection.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_options.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_result.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_string_map.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_types.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_user_manager.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_utils.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/crest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/internal/cr_cache_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_connection_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_handler_register.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_result_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_string_map_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_user_manager_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="src/auth_basic.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_basic.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/auth_digest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_digest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_cache.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_connection.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_result.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_thread_pool.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_thread_pool.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils_private.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_xml.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_xml.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/crest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="tests/tests.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/mongoose/mongoose.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/mongoose/mongoose.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/zlib.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
     <conf name="examples_debug" type="1">
@@ -132,19 +235,123 @@
           <commandLine>-fno-exceptions -fno-rtti</commandLine>
         </linkerTool>
       </compileType>
-      <item path="examples/file_server_stl.cpp" ex="true" tool="1" flavor="0">
+      <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="examples/http_mirror.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="examples/http_mirror.cpp" ex="true" tool="1" flavor2="0">
         <ccTool>
           <commandLine>-std=c++11</commandLine>
         </ccTool>
       </item>
-      <item path="examples/storage.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/storage.cpp" ex="true" tool="1" flavor2="0">
         <ccTool>
           <commandLine>-std=c++11</commandLine>
         </ccTool>
       </item>
-      <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
+      <item path="include/cr_cache.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_connection.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_options.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_result.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_string_map.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_types.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_user_manager.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_utils.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/crest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/internal/cr_cache_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_connection_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_handler_register.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_result_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_string_map_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_user_manager_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="src/auth_basic.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_basic.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/auth_digest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_digest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_cache.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_connection.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_result.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_thread_pool.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_thread_pool.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils_private.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_xml.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_xml.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/crest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="tests/tests.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/mongoose/mongoose.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/mongoose/mongoose.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/zlib.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
     <conf name="file_server" type="1">
@@ -154,74 +361,138 @@
       </toolsSet>
       <compileType>
         <ccTool>
-          <developmentMode>0</developmentMode>
-          <stripSymbols>true</stripSymbols>
           <commandlineTool>g++</commandlineTool>
-          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast</commandLine>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Os -fdata-sections -ffunction-sections -std=c++11</commandLine>
+          <preprocessorList>
+            <Elem>NO_SSL</Elem>
+          </preprocessorList>
           <useLinkerLibraries>false</useLinkerLibraries>
         </ccTool>
         <linkerTool>
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/server</output>
-          <stripSymbols>true</stripSymbols>
-          <commandlineTool>gcc</commandlineTool>
+          <commandlineTool>g++</commandlineTool>
           <linkerLibItems>
             <linkerLibStdlibItem>PosixThreads</linkerLibStdlibItem>
             <linkerLibStdlibItem>DynamicLinking</linkerLibStdlibItem>
           </linkerLibItems>
-          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -Wl,--hash-style=sysv</commandLine>
+          <commandLine>-fno-exceptions -fno-rtti -static-libstdc++</commandLine>
         </linkerTool>
       </compileType>
-      <item path="examples/file_server_stl.cpp" ex="true" tool="1" flavor="0">
+      <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="examples/http_mirror.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="examples/http_mirror.cpp" ex="true" tool="1" flavor2="0">
         <ccTool>
           <commandLine>-std=c++11</commandLine>
         </ccTool>
       </item>
-      <item path="examples/storage.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/storage.cpp" ex="true" tool="1" flavor2="0">
         <ccTool>
           <commandLine>-std=c++11</commandLine>
         </ccTool>
       </item>
-      <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
+      <item path="include/cr_cache.h" ex="false" tool="3" flavor2="0">
       </item>
-    </conf>
-    <conf name="file_server_stl" type="1">
-      <toolsSet>
-        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
-        <compilerSet>default</compilerSet>
-      </toolsSet>
-      <compileType>
-        <ccTool>
-          <developmentMode>0</developmentMode>
-          <stripSymbols>true</stripSymbols>
-          <commandlineTool>g++</commandlineTool>
-          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -m32</commandLine>
-          <useLinkerLibraries>false</useLinkerLibraries>
-        </ccTool>
-        <linkerTool>
-          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/server</output>
-          <stripSymbols>true</stripSymbols>
-          <commandlineTool>g++</commandlineTool>
-          <linkerLibItems>
-            <linkerLibStdlibItem>PosixThreads</linkerLibStdlibItem>
-          </linkerLibItems>
-          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -m32 -Wl,--hash-style=sysv -static-libstdc++</commandLine>
-        </linkerTool>
-      </compileType>
-      <item path="examples/file_server.cpp" ex="true" tool="1" flavor="0">
+      <item path="include/cr_connection.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="examples/http_mirror.cpp" ex="true" tool="1" flavor="0">
-        <ccTool>
-          <commandLine>-std=c++11</commandLine>
-        </ccTool>
+      <item path="include/cr_options.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="examples/storage.cpp" ex="true" tool="1" flavor="0">
-        <ccTool>
-          <commandLine>-std=c++11</commandLine>
-        </ccTool>
+      <item path="include/cr_result.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
+      <item path="include/cr_string_map.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_types.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_user_manager.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_utils.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/crest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/internal/cr_cache_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_connection_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_handler_register.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_result_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_string_map_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_user_manager_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="src/auth_basic.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_basic.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/auth_digest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_digest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_cache.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_connection.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_result.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_thread_pool.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_thread_pool.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils_private.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_xml.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_xml.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/crest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/mongoose/mongoose.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/mongoose/mongoose.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/zlib.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
     <conf name="http_mirror" type="1">
@@ -234,7 +505,7 @@
           <developmentMode>0</developmentMode>
           <stripSymbols>true</stripSymbols>
           <commandlineTool>g++</commandlineTool>
-          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -m32</commandLine>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11</commandLine>
           <preprocessorList>
             <Elem>NO_SSL</Elem>
           </preprocessorList>
@@ -250,21 +521,123 @@
           <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -m32 -Wl,--hash-style=sysv -static-libstdc++</commandLine>
         </linkerTool>
       </compileType>
-      <item path="examples/file_server.cpp" ex="true" tool="1" flavor="0">
+      <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="examples/file_server_stl.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="examples/http_mirror.cpp" ex="false" tool="1" flavor="0">
+      <item path="examples/http_mirror.cpp" ex="false" tool="1" flavor2="0">
         <ccTool>
           <commandLine>-std=c++11</commandLine>
         </ccTool>
       </item>
-      <item path="examples/storage.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/storage.cpp" ex="true" tool="1" flavor2="0">
         <ccTool>
           <commandLine>-std=c++11</commandLine>
         </ccTool>
       </item>
-      <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
+      <item path="include/cr_cache.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_connection.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_options.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_result.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_string_map.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_types.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_user_manager.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_utils.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/crest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/internal/cr_cache_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_connection_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_handler_register.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_result_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_string_map_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_user_manager_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="src/auth_basic.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_basic.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/auth_digest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_digest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_cache.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_connection.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_result.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_thread_pool.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_thread_pool.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils_private.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_xml.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_xml.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/crest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="tests/tests.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/mongoose/mongoose.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/mongoose/mongoose.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/zlib.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
     <conf name="release_native" type="3">
@@ -293,9 +666,117 @@
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/librestpp.a</output>
         </archiverTool>
       </compileType>
-      <item path="examples/storage.cpp" ex="true" tool="1" flavor="0">
+      <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="examples/http_mirror.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="examples/storage.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="include/cr_cache.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_connection.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_options.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_result.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_string_map.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_types.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_user_manager.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_utils.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/crest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/internal/cr_cache_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_connection_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_handler_register.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_result_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_string_map_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_user_manager_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="src/auth_basic.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_basic.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/auth_digest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_digest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_cache.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_connection.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_result.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_thread_pool.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_thread_pool.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils_private.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_xml.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_xml.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/crest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="tests/tests.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/mongoose/mongoose.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/mongoose/mongoose.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/zlib.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
     <conf name="release_32" type="3">
@@ -324,9 +805,117 @@
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/librestpp.a</output>
         </archiverTool>
       </compileType>
-      <item path="examples/storage.cpp" ex="true" tool="1" flavor="0">
+      <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="examples/http_mirror.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="examples/storage.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="include/cr_cache.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_connection.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_options.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_result.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_string_map.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_types.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_user_manager.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_utils.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/crest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/internal/cr_cache_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_connection_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_handler_register.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_result_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_string_map_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_user_manager_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="src/auth_basic.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_basic.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/auth_digest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_digest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_cache.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_connection.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_result.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_thread_pool.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_thread_pool.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils_private.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_xml.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_xml.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/crest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="tests/tests.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/mongoose/mongoose.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/mongoose/mongoose.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/zlib.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
     <conf name="release_64" type="3">
@@ -355,9 +944,117 @@
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/librestpp.a</output>
         </archiverTool>
       </compileType>
-      <item path="examples/storage.cpp" ex="true" tool="1" flavor="0">
+      <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="examples/http_mirror.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="examples/storage.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="include/cr_cache.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_connection.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_options.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_result.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_string_map.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_types.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_user_manager.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_utils.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/crest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/internal/cr_cache_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_connection_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_handler_register.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_result_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_string_map_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_user_manager_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="src/auth_basic.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_basic.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/auth_digest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_digest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_cache.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_connection.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_result.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_thread_pool.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_thread_pool.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils_private.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_xml.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_xml.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/crest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="tests/tests.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/mongoose/mongoose.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/mongoose/mongoose.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/zlib.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
     <conf name="storage" type="1">
@@ -370,7 +1067,10 @@
           <developmentMode>0</developmentMode>
           <stripSymbols>true</stripSymbols>
           <commandlineTool>g++</commandlineTool>
-          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -m32</commandLine>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11</commandLine>
+          <preprocessorList>
+            <Elem>NO_SSL</Elem>
+          </preprocessorList>
           <useLinkerLibraries>false</useLinkerLibraries>
         </ccTool>
         <linkerTool>
@@ -383,21 +1083,123 @@
           <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -m32 -Wl,--hash-style=sysv -static-libstdc++</commandLine>
         </linkerTool>
       </compileType>
-      <item path="examples/file_server.cpp" ex="true" tool="1" flavor="0">
+      <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="examples/file_server_stl.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="examples/http_mirror.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/http_mirror.cpp" ex="true" tool="1" flavor2="0">
         <ccTool>
           <commandLine>-std=c++11</commandLine>
         </ccTool>
       </item>
-      <item path="examples/storage.cpp" ex="false" tool="1" flavor="0">
+      <item path="examples/storage.cpp" ex="false" tool="1" flavor2="0">
         <ccTool>
           <commandLine>-std=c++11</commandLine>
         </ccTool>
       </item>
-      <item path="tests/tests.cpp" ex="true" tool="1" flavor="0">
+      <item path="include/cr_cache.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_connection.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_options.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_result.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_string_map.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_types.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_user_manager.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_utils.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/crest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/internal/cr_cache_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_connection_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_handler_register.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_result_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_string_map_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_user_manager_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="src/auth_basic.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_basic.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/auth_digest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_digest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_cache.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_connection.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_result.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_thread_pool.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_thread_pool.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils_private.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_xml.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_xml.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/crest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="tests/tests.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/mongoose/mongoose.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/mongoose/mongoose.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/zlib.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
     <conf name="tests" type="1">
@@ -407,7 +1209,7 @@
       </toolsSet>
       <compileType>
         <ccTool>
-          <commandLine>-Wall -Wextra</commandLine>
+          <commandLine>-Wall -Wextra -std=c++11</commandLine>
         </ccTool>
         <linkerTool>
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/proc</output>
@@ -417,18 +1219,120 @@
           </linkerLibItems>
         </linkerTool>
       </compileType>
-      <item path="examples/file_server.cpp" ex="true" tool="1" flavor="0">
+      <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="examples/file_server_stl.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="examples/http_mirror.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/http_mirror.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="examples/storage.cpp" ex="true" tool="1" flavor="0">
+      <item path="examples/storage.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="tests/tests.cpp" ex="false" tool="1" flavor="0">
+      <item path="include/cr_cache.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_connection.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_options.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_result.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_string_map.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_types.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_user_manager.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_utils.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/crest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/internal/cr_cache_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_connection_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_handler_register.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_result_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_string_map_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_user_manager_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="src/auth_basic.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_basic.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/auth_digest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_digest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_cache.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_connection.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_result.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_thread_pool.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_thread_pool.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils_private.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_xml.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_xml.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/crest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="tests/tests.cpp" ex="false" tool="1" flavor2="0">
         <ccTool>
           <commandLine>-std=c++11</commandLine>
         </ccTool>
+      </item>
+      <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/mongoose/mongoose.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/mongoose/mongoose.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/zlib.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
   </confs>

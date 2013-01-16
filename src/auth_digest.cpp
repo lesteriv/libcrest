@@ -1,7 +1,7 @@
 /**********************************************************************************************/
 /* auth_digest.cpp	  		                                                   				  */
 /*                                                                       					  */
-/* Igor Nikitin, 2012																		  */
+/* Igor Nikitin, 2013																		  */
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
@@ -175,7 +175,7 @@ bool auth_digest(
 	auth_data adata;
 	char ha1[ 16 ];
 
-	if( parse_auth_header( conn, adata ) && the_cr_user_manager.get_password( adata.user, ha1 ) )
+	if( parse_auth_header( conn, adata ) && the_cr_user_manager.get_password_hash( adata.user, ha1 ) )
 	{
 		if( time( NULL ) - strtol( adata.nonce, NULL, 10 ) > 300 )
 		{

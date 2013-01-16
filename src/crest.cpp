@@ -1,14 +1,14 @@
 /**********************************************************************************************/
 /* crest.cpp		  		                                                   				  */
 /*                                                                       					  */
-/* Igor Nikitin, 2012																		  */
+/* Igor Nikitin, 2013																		  */
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
 // STD
-#include <malloc.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <map>
+#include <mutex>
+#include <thread>
 
 // MONGOOSE
 #include "../third/mongoose/mongoose.h"
@@ -18,6 +18,9 @@
 #include "auth_basic.h"
 #include "auth_digest.h"
 #include "cr_utils_private.h"
+
+/**********************************************************************************************/
+using namespace std;
 
 /**********************************************************************************************/
 #ifdef _MSC_VER
@@ -41,32 +44,18 @@
 
 /**********************************************************************************************/
 static cr_http_auth		g_auth_kind;		// Current auth method
-static cr_connection*	g_conns[ 256 ];		// Set of current connections, for users only - crest don't use it
-static mg_mutex			g_conns_mutex;		// Mutex for g_conns
-static const char*		g_error;			// Error string for cr_error_string
+	   const char*		g_error = "";		// Error string for cr_error_string
 static size_t			g_request_count;	// Statistics - count of processed requests
+static cr_result_format	g_result_format;	// Returns default result format
 static bool				g_shutdown;			// TRUE if we wait to process last active connections to stop server
 static time_t			g_time_start;		// Time when server was start
 
 /**********************************************************************************************/
-bool g_deflate;								// TRUE if server will use deflate if client support it
-
-/**********************************************************************************************/
 static bool				g_log_enabled;		// TRUE if server logs all requests to file
 static FILE*			g_log_file;			// Destination log file
-static char*			g_log_file_path;	// Path of destination log file
-static mg_mutex			g_log_mutex;		// Mutex for g_log_file
+static string			g_log_file_path;	// Path of destination log file
+static mutex			g_log_mutex;		// Mutex for g_log_file
 static size_t			g_log_size;			// Size of current log file
-
-
-//////////////////////////////////////////////////////////////////////////
-// to work without libstdc++, we don't need for 'fair' guard
-//////////////////////////////////////////////////////////////////////////
-
-
-/**********************************************************************************************/
-extern "C" int __cxa_guard_acquire( int* guard ) { return !*guard; }
-extern "C" int __cxa_guard_release( int* guard ) { return *guard = 1; }
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -77,70 +66,48 @@ extern "C" int __cxa_guard_release( int* guard ) { return *guard = 1; }
 /**********************************************************************************************/
 struct resource
 {
-	bool				admin_;
+	bool				admin_only_;
 	cr_api_callback_t	handler_;
-	cr_string_array		keys_;
 	bool				public_;
 };
 
 /**********************************************************************************************/
-struct resource_array
+struct compare_keys
 {
-	resource_array( void )
+	bool operator()(
+		const cr_string_array& a,
+		const cr_string_array& b ) const
 	{
-		count_ = 0;
-		items_ = 0;
+		if( a.count < b.count )
+			return true;
+		else if( a.count > b.count )
+			return false;
+
+		for( size_t i = 0 ; i < a.count ; ++i )
+		{
+			// Skip {key} values
+			if( !a.items[ i ] || !b.items[ i ] )
+				continue;
+
+			int c = strcmp( a.items[ i ], b.items[ i ] );
+			if( c )
+				return c < 0;
+		}
+
+		return false;
 	}
-	
-	size_t		count_;
-	resource*	items_;
 };
-
-/**********************************************************************************************/
-static int compare_resources( const void* a, const void* b )
-{
-	const resource* ra = (const resource*) a;
-	const resource* rb = (const resource*) b;
-	
-	const cr_string_array& ka = ra->keys_;
-	const cr_string_array& kb = rb->keys_;
-	
-	if( ka.count_ < kb.count_ )
-		return -1;
-	else if( ka.count_ > kb.count_ )
-		return 1;
-	
-	for( size_t i = 0 ; i < ka.count_ ; ++i )
-	{
-		// Skip {key} values
-		if( !ka.items_[ i ] || !kb.items_[ i ] )
-			continue;
-
-		int c = strcmp( ka.items_[ i ], kb.items_[ i ] );
-		if( c )
-			return c;
-	}
-
-	return 0;
-}
-
-/**********************************************************************************************/
-inline void sort_resource_array( resource_array& arr )
-{
-	qsort( arr.items_, arr.count_, sizeof( resource ), compare_resources );
-}
 
 /**********************************************************************************************/
 struct sl_connection : public cr_connection
 {
 	sl_connection( 
-		mg_connection*	conn,
-		cr_string_array	params )
+		mg_connection*			conn,
+		const cr_string_array&	params )
 	{
 		// Properties
 		
 		conn_					= conn;
-		cookies_inited_			= false;
 		path_params_			= params;
 		
 		// Flags
@@ -188,9 +155,9 @@ struct sl_connection : public cr_connection
 		*str = 0;
 		int blen = str - buf;
 
-		mg_mutex_lock( g_log_mutex ); // ------------------------
+		g_log_mutex.lock(); // ------------------------
 
-		if( g_log_file_path && *g_log_file_path )
+		if( g_log_file_path.length() )
 		{
 			fputs( buf, g_log_file );
 			fflush( g_log_file );
@@ -199,44 +166,32 @@ struct sl_connection : public cr_connection
 			g_log_size += blen;
 			if( g_log_size > 10000000 )
 			{
-				size_t glen = strlen( g_log_file_path );
-				
-				char* nfile = 0;
-				char* rfile = cr_strdup( g_log_file_path, glen );
-				rfile[ glen - 4 ] = 0;
+				string nfile;
+				string rfile = g_log_file_path.substr( 0, g_log_file_path.length() - 4 );
 
 				int index = 0;
 				while( ++index < 1000 )
 				{
-					char* buf = (char*) alloca( glen + 32 );
-					
-					char* str = buf;
-					add_string ( str, rfile, glen - 4 );
-					add_number ( str, index );
-					add_string ( str, ".log", 5 );
-
-					if( !cr_file_exists( buf ) )
+					string str = rfile + to_string( index ) + ".log";
+					if( !cr_file_exists( str ) )
 					{
-						nfile = cr_strdup( buf );
+						nfile = str;
 						break;
 					}
 				}
 
-				if( nfile )
+				if( nfile.length() )
 				{
 					fclose( g_log_file );
-					rename( g_log_file_path, nfile );
+					rename( g_log_file_path.c_str(), nfile.c_str() );
 
-					g_log_file = fopen( g_log_file_path, "at" );
-					g_log_size = cr_file_size( g_log_file_path );				
+					g_log_file = fopen( g_log_file_path.c_str(), "at" );
+					g_log_size = cr_file_size( g_log_file_path.c_str() );				
 				}
-				
-				free( nfile );
-				free( rfile );
 			}
 		}
 
-		mg_mutex_unlock( g_log_mutex ); // ------------------------
+		g_log_mutex.unlock(); // ------------------------
 	}
 };
 
@@ -252,10 +207,10 @@ static cr_string_array parse_resource_name(
 	size_t		len )
 {
 	cr_string_array res;
-	res.items_ = (char**) malloc( len + 1 + MAX_PATH_PARAMETERS * sizeof * res.items_ );
-	res.count_ = 0;
+	res.items = (char**) malloc( len + 1 + MAX_PATH_PARAMETERS * sizeof * res.items );
+	res.count = 0;
 	
-	char* curl = (char*) res.items_ + MAX_PATH_PARAMETERS * sizeof * res.items_;
+	char* curl = (char*) res.items + MAX_PATH_PARAMETERS * sizeof * res.items;
 	memmove( curl, url, len + 1 );
 	
 	while( *curl )
@@ -263,16 +218,16 @@ static cr_string_array parse_resource_name(
 		char* sp = strchr( curl, '/' );
 		if( sp )
 		{
-			res.items_[ res.count_++ ] = curl;
+			res.items[ res.count++ ] = curl;
 			*sp = 0;
 			curl = sp + 1;
 			
-			if( res.count_ >= MAX_PATH_PARAMETERS )
+			if( res.count >= MAX_PATH_PARAMETERS )
 				break;
 		}
 		else
 		{
-			res.items_[ res.count_++ ] = curl;
+			res.items[ res.count++ ] = curl;
 			break;
 		}
 	}
@@ -281,9 +236,9 @@ static cr_string_array parse_resource_name(
 }
 
 /**********************************************************************************************/
-static resource_array& resources( int method )
+static map<cr_string_array,resource,compare_keys>& resources( int method )
 {
-	static resource_array r[ CR_METHOD_COUNT ];
+	static map<cr_string_array,resource,compare_keys> r[ CR_METHOD_COUNT ];
 	return r[ method ];
 }
 
@@ -311,12 +266,11 @@ void event_handler( mg_connection* conn )
 {
 	++g_request_count;
 
-	mg_request_info* request = mg_get_request_info( conn );
-	const char* method_name = request->method_;
+	mg_request_info* request	 = mg_get_request_info( conn );
+	const char*		 method_name = request->method_;
+	cr_http_method	 method;
 
 	// Get method
-
-	cr_http_method method;
 
 		 if( !strcmp( method_name, "DELETE" ) ) method = CR_METHOD_DELETE;
 	else if( !strcmp( method_name, "GET"	) ) method = CR_METHOD_GET;
@@ -330,52 +284,28 @@ void event_handler( mg_connection* conn )
 
 	// Resource
 
-	resource_array& arr = resources( method );
-	
-	resource key;
-	key.keys_ = parse_resource_name( request->uri_ + 1, strlen( request->uri_ + 1 ) );
-	resource* it = (resource*) bsearch( &key, arr.items_, arr.count_, sizeof( resource ), compare_resources );
+	auto& rset = resources( method );
+	cr_string_array key = parse_resource_name( request->uri_ + 1, strlen( request->uri_ + 1 ) );
 
-	if( !it )
-		it = default_resource( method );
+	auto it = rset.find( key );
+	resource* rs = ( it != rset.end() ) ?
+		&it->second :
+		default_resource( method );
 	
-	if( it && it->handler_ )
+	if( rs && rs->handler_ )
 	{
-		sl_connection sconn( conn, key.keys_ );
+		sl_connection sconn( conn, key );
 		
-		if( !it->public_ )
+		if( !rs->public_ )
 		{
-			if( g_auth_kind == CR_AUTH_BASIC && !auth_basic( sconn, it->admin_ ) )
+			if( g_auth_kind == CR_AUTH_BASIC && !auth_basic( sconn, rs->admin_only_ ) )
 				return;
 
-			if( g_auth_kind == CR_AUTH_DIGEST && !auth_digest( sconn, it->admin_ ) )
+			if( g_auth_kind == CR_AUTH_DIGEST && !auth_digest( sconn, rs->admin_only_ ) )
 				return;
 		}
 		
-		mg_mutex_lock( g_conns_mutex );
-		
-		int conn_index = -1;
-		for( size_t i = 0 ; i < sizeof( g_conns ) / sizeof( *g_conns ) ; ++i )
-		{
-			if( !g_conns[ i ] )
-			{
-				conn_index = i;
-				g_conns[ i ] = &sconn;
-				
-				break;
-			}
-		}
-		
-		mg_mutex_unlock( g_conns_mutex );
-		
-		(*it->handler_)( sconn );
-
-		mg_mutex_lock( g_conns_mutex );
-		
-		if( conn_index >= 0 )
-			g_conns[ conn_index ] = 0;
-		
-		mg_mutex_unlock( g_conns_mutex );
+		(*rs->handler_)( sconn );
 
 		if( g_log_file && g_log_enabled )
 			sconn.log();
@@ -386,8 +316,8 @@ void event_handler( mg_connection* conn )
 		{
 			if( i != method )
 			{
-				resource_array& carr = resources( i );
-				if( bsearch( &key, carr.items_, carr.count_, sizeof( resource ), compare_resources ) )
+				auto& crset = resources( i );
+				if( crset.find( key ) != crset.end() )
 				{
 					mg_write( conn, "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\n\r\n", 54 );
 					return;
@@ -408,7 +338,7 @@ void event_handler( mg_connection* conn )
 /**********************************************************************************************/
 const char* cr_error_string( void )
 {
-	return g_error ? g_error : "";
+	return g_error;
 }
 
 /**********************************************************************************************/
@@ -418,10 +348,22 @@ cr_http_auth cr_get_auth_kind( void )
 }
 
 /**********************************************************************************************/
-void crest_set_auth_kind( cr_http_auth auth )
+void cr_set_auth_kind( cr_http_auth auth )
 {
-	if( the_cr_user_manager.get_auth_file() )
+	if( the_cr_user_manager.get_auth_file().length() )
 		g_auth_kind = auth;
+}
+
+/**********************************************************************************************/
+cr_result_format cr_get_default_result_format( void )
+{
+	return g_result_format;
+}
+
+/**********************************************************************************************/
+void cr_set_default_result_format( cr_result_format format )
+{
+	g_result_format = format;
 }
 
 /**********************************************************************************************/
@@ -431,7 +373,7 @@ bool cr_get_log_enabled( void )
 }
 
 /**********************************************************************************************/
-void crest_set_log_enabled( bool value )
+void cr_set_log_enabled( bool value )
 {
 	g_log_enabled = value && g_log_file;
 }
@@ -441,42 +383,14 @@ void cr_register_handler(
 	cr_http_method		method,
 	const char*			name,
 	cr_api_callback_t	func,
-	bool				for_admin_only,
+	bool				admin_only,
 	bool			 	publ )
 {
-	resource* rs;
+	resource* rs = ( *name == '*' ) ?
+		default_resource( method ) :
+		&resources( method )[ parse_resource_name( name, strlen( name ) ) ];
 	
-	if( *name == '*' )
-	{
-		rs = default_resource( method );
-	}
-	else
-	{
-		resource_array& arr = resources( method );
-		if( !arr.count_ )
-		{
-			arr.count_ = 1;
-			arr.items_ = (resource*) malloc( sizeof( resource ) );
-			rs = arr.items_;
-		}
-		else
-		{
-			arr.count_++;
-			arr.items_ = (resource*) realloc( arr.items_, sizeof( resource ) * arr.count_ );
-			rs = arr.items_ + arr.count_ - 1;
-		}
-
-		rs->keys_ = parse_resource_name( name, strlen( name ) );
-
-		size_t count = rs->keys_.count_;
-		for( size_t i = 0 ; i < count ; ++i )
-		{
-			if( rs->keys_.items_[ i ][ 0 ] == '{' )
-				rs->keys_.items_[ i ] = 0;
-		}
-	}
-	
-	rs->admin_		= for_admin_only;
+	rs->admin_only_	= admin_only;
 	rs->handler_	= func;
 	rs->public_		= publ;	
 }
@@ -488,7 +402,7 @@ size_t cr_request_count( void )
 }
 
 /**********************************************************************************************/
-bool cr_start( cr_options& opts )
+bool cr_start( const cr_options& opts )
 {
 	if( g_time_start )
 	{
@@ -496,88 +410,51 @@ bool cr_start( cr_options& opts )
 		return false;
 	}
 
-	if( !opts.thread_count || opts.thread_count > 128 )
+	if( !opts.thread_count || opts.thread_count > CR_MAX_THREADS )
 	{
 		g_error = "Invalid thread count";
 		return false;
 	}
 	
-	// Allocate mutexes
-	g_conns_mutex = mg_mutex_create();
-	g_log_mutex   = mg_mutex_create();
-	
-	// Prepare resources
-	for( size_t i = 0 ; i < CR_METHOD_COUNT ; ++i )
-		sort_resource_array( resources( i ) );
-	
 	// Init authentification
-	g_auth_kind = opts.auth_file && *opts.auth_file ? opts.auth_kind : CR_AUTH_NONE;
+	g_auth_kind = opts.auth_file.length() ? opts.auth_kind : CR_AUTH_NONE;
 	the_cr_user_manager.set_auth_file( opts.auth_file );
 	
-	g_deflate = opts.deflate;
-		
 	// Init logging
-	g_log_enabled = opts.log_enabled && opts.log_file && *opts.log_file;
+	g_log_enabled	= opts.log_enabled && opts.log_file.length();
+	g_log_file_path = opts.log_file;
 	
-	if( opts.log_file && *opts.log_file )
-		g_log_file_path = cr_strdup( opts.log_file );
-	
-	if( g_log_file_path )
+	if( g_log_file_path.length() )
 	{
-		size_t len = strlen( g_log_file_path );
-		if( len < 4 || strcmp( g_log_file_path + len - 4, ".log" ) )
-		{
-			g_log_file_path = (char*) realloc( g_log_file_path, len + 5 );
-			memmove( g_log_file_path + len, ".log", 5 );
-		}
+		size_t len = g_log_file_path.length();
+		if( len < 4 || strcmp( g_log_file_path.c_str() + len - 4, ".log" ) )
+			g_log_file_path += ".log";
 		
 		g_log_size = cr_file_size( g_log_file_path );
-		g_log_file = fopen( g_log_file_path, "at" );
+		g_log_file = fopen( g_log_file_path.c_str(), "at" );
 	}
+
+	// Other
+	g_result_format = opts.result_format;
+	g_time_start = time( 0 );
 	
 	// Start server
-	mg_context* ctx = mg_start( opts.ports, opts.pem_file, opts.thread_count );
-	if( ctx )
-	{	
-		g_time_start = time( NULL );
-		
-		while( !g_shutdown )
-			mg_sleep( 1000 );
-		
-		g_time_start = 0;
-		mg_stop( ctx );
-	}
-	else
-	{
-		g_error = mg_get_error_string();
-	}
+	mg_start( parse_ports( opts.ports ), opts.pem_file, opts.thread_count );
+
+	g_time_start = 0;
 	
 	// Clean
-	mg_mutex_destroy( g_conns_mutex );
-	mg_mutex_destroy( g_log_mutex );
-
-	the_cr_user_manager.clean();
-	
-	free( g_log_file_path );
-	g_log_file_path = 0;
-
 	if( g_log_file )
 	{
 		fclose( g_log_file );
 		g_log_file = 0;
 	}
 	
-	return ctx != NULL;
+	return !g_error;
 }
 
 /**********************************************************************************************/
 void cr_stop( void )
 {
 	g_shutdown = true;
-}
-
-/**********************************************************************************************/
-const char* cr_version( void )
-{
-	return "0.1";
 }

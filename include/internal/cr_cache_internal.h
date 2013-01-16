@@ -1,5 +1,5 @@
 /**********************************************************************************************/
-/* cr_string_map_internal.h		                                                   			  */
+/* cr_cache_internal.h								                                   		  */
 /*                                                                       					  */
 /* Igor Nikitin, 2013																		  */
 /* MIT license			                                                  					  */
@@ -8,22 +8,41 @@
 #pragma once
 
 // STD
-#include <stddef.h>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <unordered_map>
 
 /**********************************************************************************************/
-#define CREST_MAP_SIZE 64
+class cr_connection;
 
 
 /**********************************************************************************************/
-class cr_string_map_internal
+// Internal members for cache
+//
+class cr_cache_internal
 {
+	protected://////////////////////////////////////////////////////////////////////////
+		
+		struct resource
+		{
+			std::shared_ptr<std::string>	data;
+			std::shared_ptr<std::string>	etag;
+			time_t							expire;
+		};
+
+		typedef std::unordered_map<std::string,resource> cache_entries_t;
+		
+	
 	protected://////////////////////////////////////////////////////////////////////////
 
 // Properties
+
+		int				expire_time_;
+
 		
-		const char*			name_[ CREST_MAP_SIZE ];
-		size_t				name_len_[ CREST_MAP_SIZE ];
-		size_t				size_;
-		const char*			value_[ CREST_MAP_SIZE ];
-		size_t				value_len_[ CREST_MAP_SIZE ];
+// Runtime data
+		
+		cache_entries_t entries_;
+		std::mutex		mutex_;
 };

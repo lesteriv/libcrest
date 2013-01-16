@@ -1,5 +1,5 @@
 /**********************************************************************************************/
-/* cr_string_map_internal.h		                                                   			  */
+/* cr_result_internal.h								                                   		  */
 /*                                                                       					  */
 /* Igor Nikitin, 2013																		  */
 /* MIT license			                                                  					  */
@@ -7,23 +7,45 @@
 
 #pragma once
 
-// STD
-#include <stddef.h>
+// CREST
+#include "../cr_types.h"
 
 /**********************************************************************************************/
-#define CREST_MAP_SIZE 64
+class cr_connection;
 
 
 /**********************************************************************************************/
-class cr_string_map_internal
+// Internal members for cr_result
+//
+class cr_result_internal
 {
 	protected://////////////////////////////////////////////////////////////////////////
 
+	// ---------------------
+	// Internal methods
+
+		void					finish( void );
+		
+		
+	protected://////////////////////////////////////////////////////////////////////////
+		
 // Properties
 		
-		const char*			name_[ CREST_MAP_SIZE ];
-		size_t				name_len_[ CREST_MAP_SIZE ];
-		size_t				size_;
-		const char*			value_[ CREST_MAP_SIZE ];
-		size_t				value_len_[ CREST_MAP_SIZE ];
+		const cr_result_fields*	fields_			= NULL;
+		bool					finished_		= false;
+		cr_result_format		format_;
+		bool					has_properties_	= false;
+		const std::string*		name_;
+
+
+// Runtime data
+		
+		size_t					column_			= 0;
+		
+		
+//  Result
+		
+		std::string				data_;
+		size_t					properties_		= 0;
+		size_t					records_		= 0;
 };

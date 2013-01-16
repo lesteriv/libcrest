@@ -1,7 +1,7 @@
 /**********************************************************************************************/
 /* cr_string_map.cpp				                                               			  */
 /*                                                                       					  */
-/* Igor Nikitin, 2012																		  */
+/* Igor Nikitin, 2013																		  */
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
@@ -83,7 +83,7 @@ void cr_string_map::add(
 	size_t		name_len,
 	size_t		value_len )
 {
-	if( size_ < CREST_MAP_SIZE )
+	if( size_ < CREST_MAP_SIZE && name && value )
 	{
 		if( name_len  == (size_t) -1 ) name_len  = strlen( name );
 		if( value_len == (size_t) -1 ) value_len = strlen( value );
@@ -112,7 +112,7 @@ int cr_string_map::find(
 	if( name_len == (size_t) -1 )
 		name_len = strlen( name );
 	
-	for( size_t i = 0 ; i < size_ ; ++i )
+	for( int i = int( size_ ) - 1 ; i >= 0 ; --i )
 	{
 		if( name_len == name_len_[ i ] && !cr_strcasecmp( name, name_[ i ] ) )
 			return i;

@@ -1,7 +1,7 @@
 /**********************************************************************************************/
 /* cr_connection.h		  		                                                   			  */
 /*                                                                       					  */
-/* Igor Nikitin, 2012																		  */
+/* Igor Nikitin, 2013																		  */
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
@@ -107,12 +107,21 @@ class cr_connection : protected cr_connection_internal
 									std::string&		out,
 									cr_string_map*		headers = NULL );
 								
+								/** 'fetch' method for std::vector<char>. */
+		bool					fetch(
+									const std::string&	url,
+									std::vector<char>&	out,
+									cr_string_map*		headers = NULL );
+		
 								/** Reads data from the remote end, return number of bytes read. */
 		size_t					read( char* buf, size_t len );
 		
-								/** Reads data from the remote end to std::string or std::vector<char>. */
+								/** Reads data from the remote end to std::string. */
 		void					read( std::string& out );
-								
+
+								/** Reads data from the remote end to std::vector<char>. */
+		void					read( std::vector<char>& out );
+		
 								/** Generates and sends HTTP responce with 
 								 *  status code, data-length header and data. */
 		void					respond(
@@ -134,12 +143,6 @@ class cr_connection : protected cr_connection_internal
 									size_t				data_len,
 									cr_string_map*		headers	 = NULL );
 		
-								/** Sends content of file, or respond HTTP_BAD_REQUEST if
-								 *  file doesn't exist or not readable. */
-		void					send_file( 
-									const char* path,
-									const char* content_type = NULL );
-		
 								/** 'send_file' method for std::string. */
 		void					send_file( 
 									const std::string&	path,
@@ -154,9 +157,3 @@ class cr_connection : protected cr_connection_internal
 								/** 'write' method for std::string. */
 		int						write( const std::string& data );
 };
-
-
-/**********************************************************************************************/
-// Implement methods for std::string
-//
-#include "internal/cr_connection_imp.h"

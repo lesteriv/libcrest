@@ -5,15 +5,8 @@
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
-// STD
-#include <iostream>
-#include <string>
-
 // CREST
 #include "../include/crest.h"
-
-/**********************************************************************************************/
-using namespace std;
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -22,10 +15,10 @@ using namespace std;
 
 
 /**********************************************************************************************/
-static const string	g_root = "/var/log";
+std::string	g_root = "/var/log";
 
 /**********************************************************************************************/
-static const string g_index	=
+std::string g_index	=
 	"<html>"
 	"<a href=\"apt/history.log\">apt/history.log</a><br>"
 	"<a href=\"Xorg.0.log\">Xorg.0.log</a><br>"
@@ -59,6 +52,8 @@ GET( * )( cr_connection& conn )
 int main( void )
 {
 	cr_options opts;
+	opts.ports = "8080";
+	
 	if( !cr_start( opts ) )
-		cout << cr_error_string() << endl;
+		printf( "%s\n", cr_error_string() );
 }

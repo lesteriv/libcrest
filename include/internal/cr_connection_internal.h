@@ -1,16 +1,16 @@
 /**********************************************************************************************/
 /* cr_connection_internal.h			                                                   		  */
 /*                                                                       					  */
-/* Igor Nikitin, 2012																		  */
+/* Igor Nikitin, 2013																		  */
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
 #pragma once
 
 // STD
-#include <stddef.h>
 #include <string>
 #include <time.h>
+#include <vector>
 
 // CREST
 #include "../cr_string_map.h"
@@ -22,8 +22,8 @@ struct mg_connection;
 /**********************************************************************************************/
 struct cr_string_array
 {
-	size_t	count_;
-	char**	items_;
+	size_t	count;
+	char**	items;
 };
 
 

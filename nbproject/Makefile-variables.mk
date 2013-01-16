@@ -30,14 +30,6 @@ CND_ARTIFACT_PATH_file_server=dist/file_server/GNU-Linux-x86/server
 CND_PACKAGE_DIR_file_server=dist/file_server/GNU-Linux-x86/package
 CND_PACKAGE_NAME_file_server=libcrest.tar
 CND_PACKAGE_PATH_file_server=dist/file_server/GNU-Linux-x86/package/libcrest.tar
-# file_server_stl configuration
-CND_PLATFORM_file_server_stl=GNU-Linux-x86
-CND_ARTIFACT_DIR_file_server_stl=dist/file_server_stl/GNU-Linux-x86
-CND_ARTIFACT_NAME_file_server_stl=server
-CND_ARTIFACT_PATH_file_server_stl=dist/file_server_stl/GNU-Linux-x86/server
-CND_PACKAGE_DIR_file_server_stl=dist/file_server_stl/GNU-Linux-x86/package
-CND_PACKAGE_NAME_file_server_stl=libcrest.tar
-CND_PACKAGE_PATH_file_server_stl=dist/file_server_stl/GNU-Linux-x86/package/libcrest.tar
 # http_mirror configuration
 CND_PLATFORM_http_mirror=GNU-Linux-x86
 CND_ARTIFACT_DIR_http_mirror=dist/http_mirror/GNU-Linux-x86

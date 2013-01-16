@@ -1,7 +1,7 @@
 /**********************************************************************************************/
 /* auth_basic.cpp	  		                                                   				  */
 /*                                                                       					  */
-/* Igor Nikitin, 2012																		  */
+/* Igor Nikitin, 2013																		  */
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
@@ -70,7 +70,7 @@ bool auth_basic(
 		if( !admin || the_cr_user_manager.get_user_is_admin( user ) )
 		{
 			char stored_hash[ 16 ];
-			if( the_cr_user_manager.get_password( user, stored_hash ) )
+			if( the_cr_user_manager.get_password_hash( user, stored_hash ) )
 			{
 				const char* data[] = { user, ":", "", ":", pass };
 				size_t len[] = { strlen( user ), 1, 0, 1, strlen( pass ) };

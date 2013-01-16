@@ -1,7 +1,7 @@
 /**********************************************************************************************/
 /* cr_user_manager.h																		  */
 /*                                                                       					  */
-/* Igor Nikitin, 2012																		  */
+/* Igor Nikitin, 2013																		  */
 /* MIT license			                                                  					  */
 /**********************************************************************************************/
 
@@ -24,21 +24,18 @@ class cr_user_manager : protected cr_user_manager_internal
 	// ---------------------
 	// Properties
 		
-							/** Returns path to file to store auth info. */
-		const char*			get_auth_file( void ) const;
-		void				set_auth_file( const char* file );
+									/** Returns path to file to store auth info. */
+		const std::string&			get_auth_file( void ) const;
+		void						set_auth_file( const std::string& file );
 		
-							/** Returns count of users. */
-		size_t				get_user_count( void ) const;
+									/** Returns count of users. */
+		size_t						get_user_count( void ) const;
 		
-							/** Returns TRUE if user is admin. */
-		bool				get_user_is_admin( const char* name ) const;
+									/** Returns TRUE if user is admin. */
+		bool						get_user_is_admin( const std::string& name ) const;
 
-							/** Returns list of users, it should be deleted by caller
-							 * via "free( names );". */
-		void				get_users( 
-								size_t&		count,
-								char**&		names ) const;
+									/** Returns list of users names. */
+		std::vector<std::string>	get_users( void ) const;
 
 		
 	public://////////////////////////////////////////////////////////////////////////
@@ -46,37 +43,34 @@ class cr_user_manager : protected cr_user_manager_internal
 	// ---------------------
 	// Methods		
 
-							/** Adds new user, returns error's description on fail,
-							 *  and NULL on success. */
-		const char*			add_user(
-								const char*	name,
-								const char*	password,
-								bool		admin );
+									/** Adds new user, returns error's description on fail,
+									 *  and NULL on success. */
+		const char*					add_user(
+										const std::string&	name,
+										const std::string&	password,
+										bool				admin );
 
-							/** Reset all info and free used memory. */
-		void				clean( void );
-
-							/** Deletes existing user, returns error's description on fail,
-							 *  and NULL on success. */
-		const char*			delete_user( const char* name );
+									/** Deletes existing user, returns error's description on fail,
+									 *  and NULL on success. */
+		const char*					delete_user( const std::string& name );
 		
-							/** Returns hash of password for user and TRUE if such user exists. */
-		bool				get_password(
-								const char*	user,
-								char*		pass );
+									/** Returns hash of password for user and TRUE if such user exists. */
+		bool						get_password_hash(
+										const std::string&	name,
+										char*				pass );
 		
-							/** Returns singleton. */
-static	cr_user_manager&	instance( void );
+									/** Returns instance of user manager. */
+static	cr_user_manager&			instance( void );
 		
-							/** Changes user's flags, returns error's description on fail,
-							 *  and NULL on success. */
-		const char*			update_user_is_admin(
-								const char*	name,
-								bool			value );
+									/** Changes user's flags, returns error's description on fail,
+									 *  and NULL on success. */
+		const char*					update_user_is_admin(
+										const std::string&	name,
+										bool				value );
 		
-							/** Changes user's password, returns error's description on fail,
-							 *  and NULL on success. */
-		const char*			update_user_password(
-								const char*	name,
-								const char*	password );
+									/** Changes user's password, returns error's description on fail,
+									 *  and NULL on success. */
+		const char*					update_user_password(
+										const std::string&	name,
+										const std::string&	password );
 };

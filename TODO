@@ -1,0 +1,9 @@
+- app_path for Win/OS X
+
+
+- Remove hardcoded buffer sizes, check for overflows
+- set cookies
+- parse POST form parameters
+- YAML, protobuf, form encoding etc. formats for result
+
+http://www.kernel.org/doc/man-pages/online/pages/man2/sendfile.2.html
