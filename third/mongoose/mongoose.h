@@ -75,5 +75,5 @@ bool				mg_fetch(
 /**********************************************************************************************/
 bool				mg_start(
 						const vector<cr_port>&	ports,
-						const std::string&		pem_file,
+						const string&			pem_file,
 						size_t					thread_count );

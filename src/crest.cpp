@@ -47,7 +47,6 @@ static cr_http_auth		g_auth_kind;		// Current auth method
 	   const char*		g_error = "";		// Error string for cr_error_string
 static size_t			g_request_count;	// Statistics - count of processed requests
 static cr_result_format	g_result_format;	// Returns default result format
-static bool				g_shutdown;			// TRUE if we wait to process last active connections to stop server
 static time_t			g_time_start;		// Time when server was start
 
 /**********************************************************************************************/
@@ -453,10 +452,4 @@ bool cr_start( const cr_options& opts )
 	}
 	
 	return !g_error;
-}
-
-/**********************************************************************************************/
-void cr_stop( void )
-{
-	g_shutdown = true;
 }

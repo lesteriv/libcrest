@@ -39,8 +39,6 @@
         <itemPath>src/cr_json.h</itemPath>
         <itemPath>src/cr_result.cpp</itemPath>
         <itemPath>src/cr_string_map.cpp</itemPath>
-        <itemPath>src/cr_thread_pool.cpp</itemPath>
-        <itemPath>src/cr_thread_pool.h</itemPath>
         <itemPath>src/cr_user_manager.cpp</itemPath>
         <itemPath>src/cr_utils.cpp</itemPath>
         <itemPath>src/cr_utils_private.h</itemPath>
@@ -170,10 +168,6 @@
       <item path="src/cr_result.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/cr_thread_pool.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/cr_thread_pool.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -317,10 +311,6 @@
       </item>
       <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="src/cr_thread_pool.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/cr_thread_pool.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/cr_utils.cpp" ex="false" tool="1" flavor2="0">
@@ -459,10 +449,6 @@
       <item path="src/cr_result.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/cr_thread_pool.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/cr_thread_pool.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -603,10 +589,6 @@
       </item>
       <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="src/cr_thread_pool.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/cr_thread_pool.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/cr_utils.cpp" ex="false" tool="1" flavor2="0">
@@ -741,10 +723,6 @@
       <item path="src/cr_result.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/cr_thread_pool.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/cr_thread_pool.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -881,10 +859,6 @@
       </item>
       <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="src/cr_thread_pool.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/cr_thread_pool.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/cr_utils.cpp" ex="false" tool="1" flavor2="0">
@@ -1019,10 +993,6 @@
       <item path="src/cr_result.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/cr_thread_pool.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/cr_thread_pool.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -1165,10 +1135,6 @@
       </item>
       <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="src/cr_thread_pool.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/cr_thread_pool.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/cr_utils.cpp" ex="false" tool="1" flavor2="0">
@@ -1294,10 +1260,6 @@
       <item path="src/cr_result.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/cr_thread_pool.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/cr_thread_pool.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
       </item>

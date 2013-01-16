@@ -48,7 +48,6 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/cr_utils.o \
 	${OBJECTDIR}/src/auth_digest.o \
 	${OBJECTDIR}/third/mongoose/mongoose.o \
-	${OBJECTDIR}/src/cr_thread_pool.o \
 	${OBJECTDIR}/tests/tests.o \
 	${OBJECTDIR}/examples/file_server.o \
 	${OBJECTDIR}/src/cr_json.o \
@@ -143,11 +142,6 @@ ${OBJECTDIR}/third/mongoose/mongoose.o: third/mongoose/mongoose.cpp
 	${MKDIR} -p ${OBJECTDIR}/third/mongoose
 	${RM} $@.d
 	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.cpp
-
-${OBJECTDIR}/src/cr_thread_pool.o: src/cr_thread_pool.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -s -DNO_SSL -fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_thread_pool.o src/cr_thread_pool.cpp
 
 ${OBJECTDIR}/tests/tests.o: tests/tests.cpp 
 	${MKDIR} -p ${OBJECTDIR}/tests
