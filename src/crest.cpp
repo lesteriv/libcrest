@@ -404,6 +404,8 @@ size_t cr_request_count( void )
 /**********************************************************************************************/
 bool cr_start( const cr_options& opts )
 {
+	g_error = "";
+	
 	if( g_time_start )
 	{
 		g_error = "Server already running";

@@ -207,7 +207,7 @@ bool cr_connection::fetch(
 	size_t&			out_len,
 	cr_string_map*	headers )
 {
-	return mg_fetch( buf_headers_, out, out_len, mg_get_context( conn_ ), url, headers );
+	return mg_fetch( buf_headers_, out, out_len, url, headers );
 }
 
 /**********************************************************************************************/

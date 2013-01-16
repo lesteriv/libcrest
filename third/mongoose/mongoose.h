@@ -36,7 +36,6 @@
 
 /**********************************************************************************************/
 struct mg_connection;
-struct mg_context;
 
 
 /**********************************************************************************************/
@@ -55,7 +54,6 @@ struct mg_request_info
 /**********************************************************************************************/
 time_t				mg_get_birth_time( mg_connection* );
 size_t				mg_get_content_len( mg_connection* );
-mg_context*			mg_get_context( mg_connection* );
 mg_request_info*	mg_get_request_info( mg_connection* );
 
 
@@ -69,7 +67,6 @@ bool				mg_fetch(
 						char*					buf,
 						char*&					out,
 						size_t&					out_size,
-						mg_context*				ctx,
 						const char*				url,
 						cr_string_map*			headers,
 						int						redirect_count = 0 /* For internal use */ );
