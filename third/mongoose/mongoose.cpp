@@ -38,7 +38,6 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string>
 #include <string.h>
 #include <time.h>
 
@@ -54,17 +53,18 @@ using namespace std;
 extern const char* g_error;
 
 
-#if defined(_WIN32) // Windows specific
-#    define _CRT_SECURE_NO_WARNINGS // Disable deprecation warning in VS2005
-#    define _WIN32_WINNT 0x0400 // To make it link in VS2005
-#    include <windows.h>
+#ifdef _WIN32
 
+#    define _CRT_SECURE_NO_WARNINGS
+#    define _WIN32_WINNT 0x0400
+
+#    include <windows.h>
 #    include <direct.h>
 #    include <io.h>
 #    include <process.h>
 
-#    define _POSIX_
 #    define NO_SOCKLEN_T
+#    define _POSIX_
 
 #    define ERRNO		GetLastError()
 #    define CRYPTO_LIB  "libeay32.dll"
@@ -81,7 +81,7 @@ extern const char* g_error;
 // Mark required libraries
 #    pragma comment(lib, "Ws2_32.lib")
 
-#else	// UNIX  specific
+#else // _WIN32
 
 #    include <dlfcn.h>
 #    include <netinet/in.h>
@@ -102,7 +102,7 @@ extern const char* g_error;
 
 typedef int SOCKET;
 
-#endif // End of Windows and UNIX specific includes
+#endif // _WIN32
 
 // MONGOOSE
 #include "mongoose.h"
@@ -231,26 +231,129 @@ struct mg_socket
 };
 
 /**********************************************************************************************/
-struct mg_context
+struct cr_context
 {
-	mg_context( size_t thread_count )
+	cr_context( size_t thread_count )
 	:
-		client_ssl_ctx( 0 ),
-		ssl_ctx( 0 ),
-		listening_sockets( 0 ),
-		thread_pool( thread_count )
+		client_ssl_ctx_( 0 ),
+		ssl_ctx_( 0 ),
+		listening_sockets_( 0 ),
+		thread_pool_( thread_count )
 	{
 	}
 	
-	SSL_CTX*		client_ssl_ctx;		// Client SSL context
-	SSL_CTX*		ssl_ctx;			// SSL context
+	~cr_context( void )
+	{
+		for( mutex* mtx : ssl_mutexes_ )
+			delete mtx;
+	}
 	
-	mg_socket*		listening_sockets;
-	cr_thread_pool	thread_pool;
+	void close_all_listening_sockets( void )
+	{
+		mg_socket *sp, *tmp;
+		for( sp = listening_sockets_ ; sp ; sp = tmp )
+		{
+			tmp = sp->next;
+			closesocket( sp->sock );
+			free( sp );
+		}
+	}
+
+	bool set_pem( const string& pem );
+
+	int set_ports(
+		const vector<cr_port>&	ports,
+		const string&			pem_file )
+	{
+		int on = 1, success = 1;
+		SOCKET sock;
+		mg_socket so, *listener;
+
+		if( ports.empty() )
+		{
+			g_error = "Invalid port spec. Expecting list of: [IP_ADDRESS:]PORT[s|p]";
+			success = 0;
+		}
+
+		size_t i = 0;
+		while( success && i < ports.size() )
+		{
+			memset( &so, 0, sizeof( so ) );
+
+			const cr_port& port = ports[ i++ ];
+			if( port.a )
+				so.lsa.sin.sin_addr.s_addr = htonl( ( port.a << 24 ) | ( port.b << 16 ) | ( port.c << 8 ) | port.d );
+
+			so.is_ssl = port.ssl;
+
+	#ifdef USE_IPV6
+
+			so.lsa.sin6.sin6_family = AF_INET6;
+			so.lsa.sin6.sin6_port	= htons( (uint16_t) port );
+
+	#else // USE_IPV6
+
+			so.lsa.sin.sin_family	= AF_INET;
+			so.lsa.sin.sin_port		= htons( (uint16_t) port.port );
+
+	#endif // USE_IPV6
+
+			if ( so.is_ssl && ( !ssl_ctx_ || pem_file.empty() ) )
+			{
+				g_error = "Cannot add SSL socket, is ssl certificate option set?";
+				success = 0;
+			}
+			else if( ( sock = socket( so.lsa.sa.sa_family, SOCK_STREAM, 6 ) ) == INVALID_SOCKET ||
+
+				// On Windows, SO_REUSEADDR is recommended only for
+				// broadcast UDP sockets
+				setsockopt( sock, SOL_SOCKET, SO_REUSEADDR, (const char *) &on, sizeof( on ) ) != 0 ||
+
+				// Set TCP keep-alive. This is needed because if HTTP-level
+				// keep-alive is enabled, and client resets the connection,
+				// server won't get TCP FIN or RST and will keep the connection
+				// open forever. With TCP keep-alive, next keep-alive
+				// handshake will figure out that the client is down and
+				// will close the server end.
+				// Thanks to Igor Klopov who suggested the patch.
+				setsockopt( sock, SOL_SOCKET, SO_KEEPALIVE, (char *) &on, sizeof(on ) ) != 0 ||
+				bind( sock, &so.lsa.sa, sizeof(so.lsa ) ) != 0 || listen( sock, SOMAXCONN ) != 0 )
+			{
+				closesocket( sock );
+				g_error = "Cannot bind socket, another socket is already listening on the same port or you must have more privileges";
+				success = 0;
+			}
+			else
+			{
+				listener = (mg_socket*) calloc( 1, sizeof(*listener) );
+				*listener = so;
+				listener->sock = sock;
+				
+#ifndef _WIN32				
+				fcntl( listener->sock, F_SETFD, FD_CLOEXEC );
+#endif // _WIN32
+				
+				listener->next = listening_sockets_;
+				listening_sockets_ = listener;
+			}
+		}
+
+		if( !success )
+			close_all_listening_sockets();
+
+		return success;
+	}
+
+	SSL_CTX*		client_ssl_ctx_;		// Client SSL context
+	SSL_CTX*		ssl_ctx_;				// SSL context
+	
+	mg_socket*		listening_sockets_;
+	vector<mutex*>	ssl_mutexes_;
+	cr_thread_pool	thread_pool_;
 };
 
 /**********************************************************************************************/
-static mg_context* g_context;
+static cr_context* g_context;
 
 /**********************************************************************************************/
 struct mg_connection
@@ -339,8 +442,6 @@ typedef void * ( *mg_thread_func_t )(void *) ;
 
 #if defined(_WIN32)
 
-#define set_close_on_exec(fd) // No FD_CLOEXEC on Windows
-
 /**********************************************************************************************/
 static HANDLE dlopen( const char* dll_name, int )
 {
@@ -357,12 +458,6 @@ static int set_non_blocking_mode( SOCKET sock )
 #else
 
 /**********************************************************************************************/
-static void set_close_on_exec( int fd )
-{
-	fcntl( fd, F_SETFD, FD_CLOEXEC );
-}
-
-/**********************************************************************************************/
 static int set_non_blocking_mode( SOCKET sock )
 {
 	int flags;
@@ -374,17 +469,6 @@ static int set_non_blocking_mode( SOCKET sock )
 }
 
 #endif // _WIN32
-
-/**********************************************************************************************/
-static int mg_start_thread( mg_thread_func_t func, void* param )
-{
-	pthread_t thread_id;
-	pthread_attr_t attr;
-
-	pthread_attr_init( &attr );
-	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
-	return pthread_create( &thread_id, &attr, func, param );
-}
 
 /**********************************************************************************************/
 // This function is needed to prevent Mongoose to be stuck in a blocking
@@ -411,9 +495,9 @@ static int wait_until_socket_is_readable( mg_connection* conn )
 		if( !result && conn->ssl )
 			result = SSL_pending( (SSL*) conn->ssl );
 	}
-	while( ( !result || ( result < 0 && ERRNO == EINTR ) ) && !g_context->thread_pool.stop_ );
+	while( ( !result || ( result < 0 && ERRNO == EINTR ) ) && !g_context->thread_pool_.stop_ );
 
-	return g_context->thread_pool.stop_ || result < 0 ? 0 : 1;
+	return g_context->thread_pool_.stop_ || result < 0 ? 0 : 1;
 }
 
 /**********************************************************************************************/
@@ -437,7 +521,7 @@ static int pull( mg_connection* conn, char* buf, int len )
 		nread = recv( conn->client.sock, buf, (size_t) len, 0 );
 	}
 
-	return g_context->thread_pool.stop_ ? -1 : nread;
+	return g_context->thread_pool_.stop_ ? -1 : nread;
 }
 
 /**********************************************************************************************/
@@ -704,98 +788,6 @@ static void handle_request( mg_connection *conn )
 }
 
 /**********************************************************************************************/
-static void close_all_listening_sockets( void )
-{
-	mg_socket *sp, *tmp;
-	for( sp = g_context->listening_sockets ; sp ; sp = tmp )
-	{
-		tmp = sp->next;
-		closesocket( sp->sock );
-		free( sp );
-	}
-}
-
-/**********************************************************************************************/
-static int set_ports_option(
-	const vector<cr_port>&	ports,
-	const string&			pem_file )
-{
-	int on = 1, success = 1;
-	SOCKET sock;
-	mg_socket so, *listener;
-
-	if( ports.empty() )
-	{
-		g_error = "Invalid port spec. Expecting list of: [IP_ADDRESS:]PORT[s|p]";
-		success = 0;
-	}
-	
-	size_t i = 0;
-	while( success && i < ports.size() )
-	{
-		memset( &so, 0, sizeof( so ) );
-
-		const cr_port& port = ports[ i++ ];
-		if( port.a )
-			so.lsa.sin.sin_addr.s_addr = htonl( ( port.a << 24 ) | ( port.b << 16 ) | ( port.c << 8 ) | port.d );
-		
-		so.is_ssl = port.ssl;
-		
-#ifdef USE_IPV6
-
-		so.lsa.sin6.sin6_family = AF_INET6;
-		so.lsa.sin6.sin6_port	= htons( (uint16_t) port );
-
-#else // USE_IPV6
-
-		so.lsa.sin.sin_family	= AF_INET;
-		so.lsa.sin.sin_port		= htons( (uint16_t) port.port );
-
-#endif // USE_IPV6
-	
-		if ( so.is_ssl && ( !g_context->ssl_ctx || pem_file.empty() ) )
-		{
-			g_error = "Cannot add SSL socket, is ssl certificate option set?";
-			success = 0;
-		}
-		else if( ( sock = socket( so.lsa.sa.sa_family, SOCK_STREAM, 6 ) ) == INVALID_SOCKET ||
-			 
-			// On Windows, SO_REUSEADDR is recommended only for
-			// broadcast UDP sockets
-			setsockopt( sock, SOL_SOCKET, SO_REUSEADDR, (const char *) &on, sizeof( on ) ) != 0 ||
-
-			// Set TCP keep-alive. This is needed because if HTTP-level
-			// keep-alive is enabled, and client resets the connection,
-			// server won't get TCP FIN or RST and will keep the connection
-			// open forever. With TCP keep-alive, next keep-alive
-			// handshake will figure out that the client is down and
-			// will close the server end.
-			// Thanks to Igor Klopov who suggested the patch.
-			setsockopt( sock, SOL_SOCKET, SO_KEEPALIVE, (char *) &on, sizeof(on ) ) != 0 ||
-			bind( sock, &so.lsa.sa, sizeof(so.lsa ) ) != 0 || listen( sock, SOMAXCONN ) != 0 )
-		{
-			closesocket( sock );
-			g_error = "Cannot bind socket, another socket is already listening on the same port or you must have more privileges";
-			success = 0;
-		}
-		else
-		{
-			listener = (mg_socket*) calloc( 1, sizeof(*listener) );
-			*listener = so;
-			listener->sock = sock;
-			set_close_on_exec( listener->sock );
-			listener->next = g_context->listening_sockets;
-			g_context->listening_sockets = listener;
-		}
-	}
-
-	if( !success )
-		close_all_listening_sockets();
-
-	return success;
-}
-
-/**********************************************************************************************/
 static void add_to_set( SOCKET fd, fd_set* set, int* max_fd )
 {
 	FD_SET( fd, set );
@@ -804,15 +796,12 @@ static void add_to_set( SOCKET fd, fd_set* set, int* max_fd )
 }
 
 /**********************************************************************************************/
-static mutex* ssl_mutexes;
-
-/**********************************************************************************************/
 static void ssl_locking_callback( int mode, int mutex_num, const char*, int )
 {
 	if( mode & CRYPTO_LOCK )
-		ssl_mutexes[ mutex_num ].lock();
+		g_context->ssl_mutexes_[ mutex_num ]->lock();
 	else
-		ssl_mutexes[ mutex_num ].unlock();
+		g_context->ssl_mutexes_[ mutex_num ]->unlock();
 }
 
 /**********************************************************************************************/
@@ -866,65 +855,6 @@ static int load_dll( const char* dll_name, ssl_func* sw )
 	}
 
 	return 1;
-}
-
-/**********************************************************************************************/
-// Dynamically load SSL library. Set up ctx->ssl_ctx pointer.
-//
-static int set_ssl_option( const char* pem )
-{
-	// If PEM file is not specified, skip SSL initialization.
-	if( !pem || !*pem )
-		return 1;
-
-	if( !load_dll( SSL_LIB, ssl_sw ) || !load_dll( CRYPTO_LIB, crypto_sw ) )
-		return 0;
-
-	// Initialize SSL crap
-	SSL_library_init();
-
-	if( !( g_context->client_ssl_ctx = SSL_CTX_new( SSLv23_client_method( ) ) ) )
-		g_error = "SSL_CTX_new (client) error";
-
-	if( !( g_context->ssl_ctx = SSL_CTX_new( SSLv23_server_method( ) ) ) )
-	{
-		g_error = "SSL_CTX_new (server) error";
-		return 0;
-	}
-
-	// If user callback returned non-NULL, that means that user callback has
-	// set up certificate itself. In this case, skip sertificate setting.
-	if( !SSL_CTX_use_certificate_file( g_context->ssl_ctx, pem, SSL_FILETYPE_PEM ) ||
-		!SSL_CTX_use_PrivateKey_file( g_context->ssl_ctx, pem, SSL_FILETYPE_PEM ) )
-	{
-		g_error = "cannot open pem";
-		return 0;
-	}
-
-	if( pem )
-		SSL_CTX_use_certificate_chain_file( g_context->ssl_ctx, pem );
-
-	// Initialize locking callbacks, needed for thread safety.
-	// http://www.openssl.org/support/faq.html#PROG1
-	ssl_mutexes = new mutex[ CRYPTO_num_locks() ];
-
-	CRYPTO_set_locking_callback( &ssl_locking_callback );
-	CRYPTO_set_id_callback( &ssl_id_callback );
-
-	return 1;
-}
-
-/**********************************************************************************************/
-static void uninitialize_ssl( void )
-{
-	if( g_context->ssl_ctx )
-	{
-		CRYPTO_set_locking_callback( NULL );
-		CRYPTO_set_locking_callback( NULL );
-		CRYPTO_set_id_callback( NULL );
-		
-		delete[] ssl_mutexes;
-	}
 }
 
 /**********************************************************************************************/
@@ -1028,7 +958,7 @@ static void process_new_connection( mg_connection* conn )
 		memmove( conn->buf, conn->buf + discard_len, conn->data_len - discard_len );
 		conn->data_len -= discard_len;
 	}
-	while( !g_context->thread_pool.stop_ && conn->content_len >= 0 && should_keep_alive( conn ) );
+	while( !g_context->thread_pool_.stop_ && conn->content_len >= 0 && should_keep_alive( conn ) );
 }
 
 /**********************************************************************************************/
@@ -1052,14 +982,62 @@ static void worker_thread( mg_socket socket )
 	conn.request_info.is_ssl_ = conn.client.is_ssl;
 
 	if ( !conn.client.is_ssl ||
-		 ( conn.client.is_ssl && sslize( &conn, g_context->ssl_ctx, SSL_accept ) ) )
+		 ( conn.client.is_ssl && sslize( &conn, g_context->ssl_ctx_, SSL_accept ) ) )
 		process_new_connection( &conn );
 
 	close_connection( &conn );
 }
 
 /**********************************************************************************************/
-static void accept_new_connection( const mg_socket* listener )
+bool cr_context::set_pem( const string& pem )
+{
+	// If PEM file is not specified, skip SSL initialization.
+	if( pem.empty() )
+		return true;
+
+	if( !load_dll( SSL_LIB, ssl_sw ) || !load_dll( CRYPTO_LIB, crypto_sw ) )
+		return false;
+
+	// Initialize SSL crap
+	SSL_library_init();
+
+	if( !( client_ssl_ctx_ = SSL_CTX_new( SSLv23_client_method( ) ) ) )
+	{
+		g_error = "SSL_CTX_new (client) error";
+		return false;
+	}
+
+	if( !( ssl_ctx_ = SSL_CTX_new( SSLv23_server_method( ) ) ) )
+	{
+		g_error = "SSL_CTX_new (server) error";
+		return false;
+	}
+
+	// If user callback returned non-NULL, that means that user callback has
+	// set up certificate itself. In this case, skip sertificate setting.
+	if( !SSL_CTX_use_certificate_file( ssl_ctx_, pem.c_str(), SSL_FILETYPE_PEM ) ||
+		!SSL_CTX_use_PrivateKey_file( ssl_ctx_, pem.c_str(), SSL_FILETYPE_PEM ) )
+	{
+		g_error = "cannot open pem";
+		return false;
+	}
+
+	SSL_CTX_use_certificate_chain_file( ssl_ctx_, pem.c_str() );
+
+	// Initialize locking callbacks, needed for thread safety.
+	// http://www.openssl.org/support/faq.html#PROG1
+	size_t n = CRYPTO_num_locks();
+	for( size_t i = 0 ; i < n ; ++i )
+		ssl_mutexes_.push_back( new mutex );
+
+	CRYPTO_set_locking_callback( &ssl_locking_callback );
+	CRYPTO_set_id_callback( &ssl_id_callback );
+
+	return true;
+}
+	
+/**********************************************************************************************/
+static void accept_new_connection( mg_socket* listener )
 {
 	mg_socket accepted;
 	socklen_t len = sizeof( accepted.rsa );
@@ -1071,7 +1049,7 @@ static void accept_new_connection( const mg_socket* listener )
 	{
 		// Put accepted socket structure into the queue
 		accepted.is_ssl = listener->is_ssl;
-		g_context->thread_pool.enqueue( bind( worker_thread, accepted ) );
+		g_context->thread_pool_.enqueue( bind( worker_thread, accepted ) );
 	}
 }
 
@@ -1088,13 +1066,13 @@ static void master_thread( void )
 	SetThreadPriority( GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL );
 #endif // _WIN32
 
-	while( !g_context->thread_pool.stop_ )
+	while( !g_context->thread_pool_.stop_ )
 	{
 		FD_ZERO( &read_set );
 		max_fd = -1;
 
 		// Add listening sockets to the read set
-		for( sp = g_context->listening_sockets ; sp ; sp = sp->next )
+		for( sp = g_context->listening_sockets_ ; sp ; sp = sp->next )
 			add_to_set( sp->sock, &read_set, &max_fd );
 
 		tv.tv_sec = 0;
@@ -1111,23 +1089,21 @@ static void master_thread( void )
 		}
 		else
 		{
-			for( sp = g_context->listening_sockets ; sp ; sp = sp->next )
+			for( sp = g_context->listening_sockets_ ; sp ; sp = sp->next )
 			{
-				if( !g_context->thread_pool.stop_ && FD_ISSET( sp->sock, &read_set ) )
+				if( !g_context->thread_pool_.stop_ && FD_ISSET( sp->sock, &read_set ) )
 					accept_new_connection( sp );
 			}
 		}
 	}
 
 	// Stop signal received: somebody called mg_stop. Quit.
-	close_all_listening_sockets();
-
-	uninitialize_ssl();
+	g_context->close_all_listening_sockets();
 
 	// Signal mg_stop() that we're done.
 	// WARNING: This must be the very last thing this
 	// thread does, as ctx becomes invalid after this line.
-	g_context->thread_pool.stop_ = 2;
+	g_context->thread_pool_.stop_ = 2;
 }
 
 /**********************************************************************************************/
@@ -1143,55 +1119,47 @@ bool mg_start(
 	WSADATA data;
 	WSAStartup( MAKEWORD( 2, 2 ), &data );
 	
+#else // _WIN32	
+
+	signal( SIGCHLD, SIG_IGN );
+	signal( SIGPIPE, SIG_IGN );
+	
 #endif // _WIN32
 
-	// Allocate context and initialize reasonable general case defaults.
-	g_context = new mg_context( thread_count );
+	g_context = new cr_context( thread_count );
 
 	// NOTE(lsm): order is important here. SSL certificates must
 	// be initialized before listening ports. UID must be set last.
-	if( !set_ssl_option( pem_file.c_str() ) || !set_ports_option( ports, pem_file ) )
+	if( !g_context->set_pem( pem_file ) || !g_context->set_ports( ports, pem_file ) )
 		goto finish;
-
-#ifndef _WIN32
-	
-	// Ignore SIGPIPE signal, so if browser cancels the request, it
-	// won't kill the whole process.
-	signal( SIGPIPE, SIG_IGN );
-	// Also ignoring SIGCHLD to let the OS to reap zombies properly.
-	signal( SIGCHLD, SIG_IGN );
-	
-#endif // !_WIN32
 	
 	res = true;
 	
 	// Start master (listening) thread
 	master_thread();
 	
-	g_context->thread_pool.stop_ = 1;
+	g_context->thread_pool_.stop_ = 1;
 
 	// Wait until mg_fini() stops
-	while( g_context->thread_pool.stop_ != 2 )
+	while( g_context->thread_pool_.stop_ != 2 )
 		cr_sleep( 10 );
 
 finish:	
 	
 	// Deallocate SSL context
-	if( g_context->ssl_ctx )
-		SSL_CTX_free( g_context->ssl_ctx );
+	if( g_context->ssl_ctx_ )
+		SSL_CTX_free( g_context->ssl_ctx_ );
 
-	if( g_context->client_ssl_ctx )
-		SSL_CTX_free( g_context->client_ssl_ctx );
+	if( g_context->client_ssl_ctx_ )
+		SSL_CTX_free( g_context->client_ssl_ctx_ );
 
-	free( ssl_mutexes );
-	ssl_mutexes = NULL;
-	
-	delete g_context;
-	
 #if defined(_WIN32)
 	WSACleanup();
 #endif // _WIN32	
 
+	delete g_context;
+	g_context = NULL;
+	
 	return res;
 }
 
@@ -1206,7 +1174,7 @@ static mg_connection* mg_connect(
 	hostent* he;
 	int sock;
 
-	if( use_ssl && !g_context->client_ssl_ctx )
+	if( use_ssl && !g_context->client_ssl_ctx_ )
 	{
 	}
 	else if( !( he = gethostbyname( host ) ) )
@@ -1233,7 +1201,7 @@ static mg_connection* mg_connect(
 			
 			newconn->client.is_ssl = use_ssl;
 			if( use_ssl )
-				sslize( newconn, g_context->client_ssl_ctx, SSL_connect );
+				sslize( newconn, g_context->client_ssl_ctx_, SSL_connect );
 		}
 	}
 
