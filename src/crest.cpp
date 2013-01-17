@@ -11,7 +11,7 @@
 #include <thread>
 
 // MONGOOSE
-#include "../third/mongoose/mongoose.h"
+#include "cr_event_loop.h"
 
 // CREST
 #include "../include/crest.h"
@@ -440,7 +440,7 @@ bool cr_start( const cr_options& opts )
 	g_time_start = time( 0 );
 	
 	// Start server
-	mg_start( parse_ports( opts.ports ), opts.pem_file, opts.thread_count );
+	cr_event_loop( parse_ports( opts.ports ), opts.pem_file, opts.thread_count );
 
 	g_time_start = 0;
 	

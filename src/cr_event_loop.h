@@ -31,8 +31,8 @@
 #include <time.h>
 
 // CREST
-#include "../../include/cr_string_map.h"
-#include "../../src/cr_utils_private.h"
+#include "../include/cr_string_map.h"
+#include "cr_utils_private.h"
 
 /**********************************************************************************************/
 struct mg_connection;
@@ -52,7 +52,6 @@ struct mg_request_info
 
 
 /**********************************************************************************************/
-time_t				mg_get_birth_time( mg_connection* );
 size_t				mg_get_content_len( mg_connection* );
 mg_request_info*	mg_get_request_info( mg_connection* );
 
@@ -73,7 +72,7 @@ bool				mg_fetch(
 
 
 /**********************************************************************************************/
-bool				mg_start(
+bool				cr_event_loop(
 						const vector<cr_port>&	ports,
 						const string&			pem_file,
 						size_t					thread_count );

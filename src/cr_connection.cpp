@@ -11,7 +11,7 @@
 #include <string.h>
 
 // MONGOOSE
-#include "../third/mongoose/mongoose.h"
+#include "cr_event_loop.h"
 
 // ZLIB
 #include "../third/zlib/zlib.h"

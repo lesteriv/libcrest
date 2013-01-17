@@ -52,8 +52,8 @@
       <logicalFolder name="third" displayName="third" projectFiles="true">
         <logicalFolder name="mongoose" displayName="mongoose" projectFiles="true">
           <itemPath>third/mongoose/LICENSE</itemPath>
-          <itemPath>third/mongoose/mongoose.cpp</itemPath>
-          <itemPath>third/mongoose/mongoose.h</itemPath>
+          <itemPath>third/mongoose/cr_event_loop.cpp</itemPath>
+          <itemPath>third/mongoose/cr_event_loop.h</itemPath>
         </logicalFolder>
         <logicalFolder name="zlib" displayName="zlib" projectFiles="true">
           <itemPath>third/zlib/README</itemPath>
@@ -185,9 +185,9 @@
       </item>
       <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="third/mongoose/mongoose.cpp" ex="false" tool="1" flavor2="0">
+      <item path="third/mongoose/cr_event_loop.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="third/mongoose/mongoose.h" ex="false" tool="3" flavor2="0">
+      <item path="third/mongoose/cr_event_loop.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>
@@ -327,9 +327,9 @@
       </item>
       <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="third/mongoose/mongoose.cpp" ex="false" tool="1" flavor2="0">
+      <item path="third/mongoose/cr_event_loop.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="third/mongoose/mongoose.h" ex="false" tool="3" flavor2="0">
+      <item path="third/mongoose/cr_event_loop.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>
@@ -352,20 +352,18 @@
       <compileType>
         <ccTool>
           <commandlineTool>g++</commandlineTool>
-          <commandLine>-fno-exceptions -fno-rtti -flto -Os -fdata-sections -ffunction-sections -std=c++11</commandLine>
-          <preprocessorList>
-            <Elem>NO_SSL</Elem>
-          </preprocessorList>
+          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -fdata-sections -ffunction-sections -std=c++11 -g3</commandLine>
           <useLinkerLibraries>false</useLinkerLibraries>
         </ccTool>
         <linkerTool>
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/server</output>
+          <stripSymbols>true</stripSymbols>
           <commandlineTool>g++</commandlineTool>
           <linkerLibItems>
             <linkerLibStdlibItem>PosixThreads</linkerLibStdlibItem>
             <linkerLibStdlibItem>DynamicLinking</linkerLibStdlibItem>
           </linkerLibItems>
-          <commandLine>-fno-exceptions -fno-rtti -static-libstdc++</commandLine>
+          <commandLine>-fno-exceptions -fno-rtti -static-libstdc++ -Ofast</commandLine>
         </linkerTool>
       </compileType>
       <item path="TODO" ex="false" tool="3" flavor2="0">
@@ -464,9 +462,9 @@
       </item>
       <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="third/mongoose/mongoose.cpp" ex="false" tool="1" flavor2="0">
+      <item path="third/mongoose/cr_event_loop.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="third/mongoose/mongoose.h" ex="false" tool="3" flavor2="0">
+      <item path="third/mongoose/cr_event_loop.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>
@@ -605,9 +603,9 @@
       </item>
       <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="third/mongoose/mongoose.cpp" ex="false" tool="1" flavor2="0">
+      <item path="third/mongoose/cr_event_loop.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="third/mongoose/mongoose.h" ex="false" tool="3" flavor2="0">
+      <item path="third/mongoose/cr_event_loop.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>
@@ -740,9 +738,9 @@
       </item>
       <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="third/mongoose/mongoose.cpp" ex="false" tool="1" flavor2="0">
+      <item path="third/mongoose/cr_event_loop.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="third/mongoose/mongoose.h" ex="false" tool="3" flavor2="0">
+      <item path="third/mongoose/cr_event_loop.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>
@@ -875,9 +873,9 @@
       </item>
       <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="third/mongoose/mongoose.cpp" ex="false" tool="1" flavor2="0">
+      <item path="third/mongoose/cr_event_loop.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="third/mongoose/mongoose.h" ex="false" tool="3" flavor2="0">
+      <item path="third/mongoose/cr_event_loop.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>
@@ -1010,9 +1008,9 @@
       </item>
       <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="third/mongoose/mongoose.cpp" ex="false" tool="1" flavor2="0">
+      <item path="third/mongoose/cr_event_loop.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="third/mongoose/mongoose.h" ex="false" tool="3" flavor2="0">
+      <item path="third/mongoose/cr_event_loop.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>
@@ -1151,9 +1149,9 @@
       </item>
       <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="third/mongoose/mongoose.cpp" ex="false" tool="1" flavor2="0">
+      <item path="third/mongoose/cr_event_loop.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="third/mongoose/mongoose.h" ex="false" tool="3" flavor2="0">
+      <item path="third/mongoose/cr_event_loop.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>
@@ -1280,9 +1278,9 @@
       </item>
       <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="third/mongoose/mongoose.cpp" ex="false" tool="1" flavor2="0">
+      <item path="third/mongoose/cr_event_loop.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="third/mongoose/mongoose.h" ex="false" tool="3" flavor2="0">
+      <item path="third/mongoose/cr_event_loop.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>

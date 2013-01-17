@@ -48,10 +48,10 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/cr_utils.o \
 	${OBJECTDIR}/examples/storage.o \
 	${OBJECTDIR}/src/auth_digest.o \
-	${OBJECTDIR}/third/mongoose/mongoose.o \
 	${OBJECTDIR}/tests/tests.o \
 	${OBJECTDIR}/examples/file_server.o \
 	${OBJECTDIR}/src/cr_json.o \
+	${OBJECTDIR}/third/mongoose/cr_event_loop.o \
 	${OBJECTDIR}/src/auth_basic.o
 
 
@@ -146,11 +146,6 @@ ${OBJECTDIR}/src/auth_digest.o: src/auth_digest.cpp
 	${RM} $@.d
 	$(COMPILE.cc) -s -fno-exceptions -fno-rtti -flto -Ofast -fvisibility=hidden -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/auth_digest.o src/auth_digest.cpp
 
-${OBJECTDIR}/third/mongoose/mongoose.o: third/mongoose/mongoose.cpp 
-	${MKDIR} -p ${OBJECTDIR}/third/mongoose
-	${RM} $@.d
-	$(COMPILE.cc) -s -fno-exceptions -fno-rtti -flto -Ofast -fvisibility=hidden -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/mongoose.o third/mongoose/mongoose.cpp
-
 ${OBJECTDIR}/tests/tests.o: tests/tests.cpp 
 	${MKDIR} -p ${OBJECTDIR}/tests
 	${RM} $@.d
@@ -165,6 +160,11 @@ ${OBJECTDIR}/src/cr_json.o: src/cr_json.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -s -fno-exceptions -fno-rtti -flto -Ofast -fvisibility=hidden -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/cr_json.o src/cr_json.cpp
+
+${OBJECTDIR}/third/mongoose/cr_event_loop.o: third/mongoose/cr_event_loop.cpp 
+	${MKDIR} -p ${OBJECTDIR}/third/mongoose
+	${RM} $@.d
+	$(COMPILE.cc) -s -fno-exceptions -fno-rtti -flto -Ofast -fvisibility=hidden -MMD -MP -MF $@.d -o ${OBJECTDIR}/third/mongoose/cr_event_loop.o third/mongoose/cr_event_loop.cpp
 
 ${OBJECTDIR}/src/auth_basic.o: src/auth_basic.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
