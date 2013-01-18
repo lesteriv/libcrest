@@ -754,7 +754,7 @@ static bool parse_http_message( char* buf, int len, cr_connection_data& ri )
 }
 
 /**********************************************************************************************/
-static int read_http_request( 
+static void read_http_request( 
 	cr_connection_data&	conn,
 	char*				out_buf,
 	int*				readed )
@@ -772,7 +772,7 @@ static int read_http_request(
 		}
 	}
 
-	return n < 0 ? -1 :	request_len;
+	conn.request_len = n < 0 ? -1 : request_len;
 }
 
 /**********************************************************************************************/
@@ -1025,8 +1025,9 @@ bool mg_fetch(
 		cr_write( *conn, buf, str - buf );
 		
 		int data_length = 0;
-		int req_length = read_http_request( *conn, buf, &data_length );
-		if( req_length > 0 && parse_http_message( buf, req_length, *conn ) && !strncmp( conn->method_, "HTTP/", 5 ) )
+		
+		read_http_request( *conn, buf, &data_length );
+		if( conn->request_len > 0 && parse_http_message( buf, conn->request_len, *conn ) && !strncmp( conn->method_, "HTTP/", 5 ) )
 		{
 			if( headers )
 				*headers = conn->headers_;
@@ -1041,9 +1042,9 @@ bool mg_fetch(
 			}
 		
 			// Write chunk of data that may be in the user's buffer
-			data_length -= req_length;
+			data_length -= conn->request_len;
 			
-			size_t msize = req_length + data_length;
+			size_t msize = conn->request_len + data_length;
 			const char* cl = conn->headers_[ "content-length" ];
 			msize += cl ? strtol( cl, NULL, 10 ) : 32768;
 			
@@ -1051,7 +1052,7 @@ bool mg_fetch(
 			str = out;
 			
 			if( data_length > 0 )
-				add_string( str, buf + req_length, data_length );
+				add_string( str, buf + conn->request_len, data_length );
 			
 			// Read the rest of the response and write it to the file. Do not use
 			// mg_read() cause we didn't set newconn->content_len properly.
@@ -1131,7 +1132,7 @@ static void process_connection( cr_in_socket& socket )
 
 	if( !socket.is_ssl || sslize( conn, g_ssl, SSL_accept ) )
 	{
-		conn.request_len = read_http_request( conn, conn.request_buffer, &conn.data_len );
+		read_http_request( conn, conn.request_buffer, &conn.data_len );
 		if( conn.request_len &&
 			parse_http_message( conn.request_buffer, MAX_REQUEST_SIZE, conn ) && *conn.uri_ == '/' )
 		{
