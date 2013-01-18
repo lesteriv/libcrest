@@ -756,7 +756,6 @@ static bool parse_http_message( char* buf, int len, cr_connection_data& ri )
 /**********************************************************************************************/
 static void read_http_request( 
 	cr_connection_data&	conn,
-	char*				out_buf,
 	int*				readed )
 {
 	int n = 1;
@@ -764,11 +763,11 @@ static void read_http_request(
 	
 	while( *readed < MAX_REQUEST_SIZE && !request_len && n > 0 )
 	{
-		n = pull( conn, out_buf + *readed, MAX_REQUEST_SIZE - *readed );
+		n = pull( conn, conn.request_buffer + *readed, MAX_REQUEST_SIZE - *readed );
 		if( n > 0 )
 		{
 			*readed += n;
-			request_len = get_request_len( out_buf, *readed );
+			request_len = get_request_len( conn.request_buffer, *readed );
 		}
 	}
 
@@ -1025,9 +1024,9 @@ bool mg_fetch(
 		cr_write( *conn, buf, str - buf );
 		
 		int data_length = 0;
-		read_http_request( *conn, buf, &data_length );
+		read_http_request( *conn, &data_length );
 		 
-		if( conn->request_len > 0 && parse_http_message( buf, conn->request_len, *conn ) && !strncmp( conn->method_, "HTTP/", 5 ) )
+		if( conn->request_len > 0 && parse_http_message( conn->request_buffer, conn->request_len, *conn ) && !strncmp( conn->method_, "HTTP/", 5 ) )
 		{
 			if( headers )
 				*headers = conn->headers_;
@@ -1132,7 +1131,7 @@ static void process_connection( cr_in_socket& socket )
 
 	if( !socket.is_ssl || sslize( conn, g_ssl, SSL_accept ) )
 	{
-		read_http_request( conn, conn.request_buffer, &conn.data_len );
+		read_http_request( conn, &conn.data_len );
 
 		if( conn.request_len > 0 &&
 			parse_http_message( conn.request_buffer, MAX_REQUEST_SIZE, conn ) && *conn.uri_ == '/' )
