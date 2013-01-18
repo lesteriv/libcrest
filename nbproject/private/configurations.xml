@@ -125,8 +125,11 @@
         <runcommandpicklist>
           <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}"  http://www.ubuntu.com 8080 </runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" https://www.linux.org.ru 8080</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" www.ubuntu.com 8080</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" http://www.ubuntu.com 8080</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}"  http://www.ubuntu.com 8080</runcommand>
+        <runcommand>"${OUTPUT_PATH}" http://www.ubuntu.com 8080</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>0</terminal-type>
@@ -159,6 +162,7 @@
         <runcommandpicklist>
           <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}"  http://www.ubuntu.com 8080 </runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"  http://www.ubuntu.com 8080</runcommandpicklistitem>
         </runcommandpicklist>
         <runcommand>"${OUTPUT_PATH}"  http://www.ubuntu.com 8080</runcommand>
         <rundir></rundir>

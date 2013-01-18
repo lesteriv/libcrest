@@ -56,7 +56,6 @@ struct cr_connection_data
 	void*			ssl					= 0;			// SSL descriptor
 	char*			uri_;								// URL-decoded URI
 
-	char			headers_buffer[ MAX_REQUEST_SIZE ];	// Buffer for headers
 	char			request_buffer[ MAX_REQUEST_SIZE ];	// Buffer for received data
 };
 
@@ -68,7 +67,6 @@ int					cr_write( cr_connection_data&, const char* buf, size_t len );
 
 /**********************************************************************************************/
 bool				cr_fetch(
-						char*					buf,
 						char*&					out,
 						size_t&					out_size,
 						const char*				url,

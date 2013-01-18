@@ -968,7 +968,6 @@ static bool cr_connect(
 
 /**********************************************************************************************/
 bool cr_fetch(
-	char*			buf,
 	char*&			out,
 	size_t&			out_size,
 	const char*		url,
@@ -997,6 +996,7 @@ bool cr_fetch(
 
 	if( cr_connect( conn, sock, host, port, !strcmp( proto, "https" ) ) )
 	{
+		char buf[ MAX_REQUEST_SIZE ];
 		char* str = buf;
 		add_string( str, "GET /", 5 );
 		add_string( str, url + n, strlen( url + n ) );
@@ -1019,7 +1019,7 @@ bool cr_fetch(
 				{
 					close_connection( conn );
 
-					return cr_fetch( buf, out, out_size, location, headers, redirect_count + 1 );
+					return cr_fetch( out, out_size, location, headers, redirect_count + 1 );
 				}
 
 				// Write chunk of data that may be in the user's buffer

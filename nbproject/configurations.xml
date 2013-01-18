@@ -475,6 +475,8 @@
       </item>
       <item path="src/crest.cpp" ex="false" tool="1" flavor2="0">
       </item>
+      <item path="tests/tests.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/deflate.cpp" ex="false" tool="1" flavor2="0">
@@ -659,6 +661,8 @@
       </item>
       <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="examples/http_mirror.cpp" ex="false" tool="1" flavor2="0">
         <ccTool>
           <commandLine>-std=c++11</commandLine>
@@ -748,6 +752,8 @@
       <item path="src/cr_xml.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/crest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="tests/tests.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>

@@ -46,6 +46,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/cr_cache.o \
 	${OBJECTDIR}/src/cr_utils.o \
 	${OBJECTDIR}/src/auth_digest.o \
+	${OBJECTDIR}/tests/tests.o \
 	${OBJECTDIR}/_ext/1642614647/cr_event_loop.o \
 	${OBJECTDIR}/examples/file_server.o \
 	${OBJECTDIR}/src/cr_json.o \
@@ -130,6 +131,11 @@ ${OBJECTDIR}/src/auth_digest.o: src/auth_digest.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -g -fno-exceptions -fno-rtti -flto -Ofast -fdata-sections -ffunction-sections -std=c++11 -g3 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/auth_digest.o src/auth_digest.cpp
+
+${OBJECTDIR}/tests/tests.o: tests/tests.cpp 
+	${MKDIR} -p ${OBJECTDIR}/tests
+	${RM} $@.d
+	$(COMPILE.cc) -g -fno-exceptions -fno-rtti -flto -Ofast -fdata-sections -ffunction-sections -std=c++11 -g3 -MMD -MP -MF $@.d -o ${OBJECTDIR}/tests/tests.o tests/tests.cpp
 
 ${OBJECTDIR}/_ext/1642614647/cr_event_loop.o: ../slite/src/third/libcrest/src/cr_event_loop.cpp 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1642614647
