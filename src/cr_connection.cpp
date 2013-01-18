@@ -248,11 +248,7 @@ bool cr_connection::fetch(
 /**********************************************************************************************/
 size_t cr_connection::read( char* buf, size_t len )
 {
-<<<<<<< HEAD
 	return cr_read( *conn_, buf, len );
-=======
-	return mg_read( *conn_, buf, len );
->>>>>>> origin/master
 }
 
 /**********************************************************************************************/

@@ -443,15 +443,6 @@ static int set_ports(
 }
 
 /**********************************************************************************************/
-<<<<<<< HEAD
-=======
-size_t mg_get_content_len( cr_connection_data* conn )
-{
-	return conn->content_len >= 0 ? conn->content_len : 0;
-}
-
-/**********************************************************************************************/
->>>>>>> origin/master
 static char* skip_quoted(
 	char**		buf,
 	const char* delimiters,
@@ -571,11 +562,7 @@ static int pull( cr_connection_data& conn, char* buf, int len )
 }
 
 /**********************************************************************************************/
-<<<<<<< HEAD
 int cr_read( cr_connection_data& conn, void* buf, size_t len )
-=======
-int mg_read( cr_connection_data& conn, void* buf, size_t len )
->>>>>>> origin/master
 {
 	int n, buffered_len, nread;
 	const char *body;
@@ -656,40 +643,37 @@ int cr_write( cr_connection_data& conn, const char* buf, size_t len )
 }
 
 /**********************************************************************************************/
-// URL-decode input buffer into destination buffer.
-// 0-terminate the destination buffer. Return the length of decoded data.
-// form-url-encoded data differs from URI encoding in a way that it
-// uses '+' as character for space, see RFC 1866 section 8.2.1
-// http://ftp.ics.uci.edu/pub/ietf/html/rfc1866.txt
-//
-static size_t url_decode( char* buf, size_t len )
+inline char hex_to_int( char ch )
 {
-	size_t i, j;
-	int a, b;
-	
-#define HEXTOI( x ) ( isdigit( x ) ? x - '0' : x - 'W' )
+	return ( ch >= '0' && ch <= '9' ) ? ch - '0' : ch - 'W';
+}
 
-	for( i = j = 0 ; i < len ; i++, j++ )
+/**********************************************************************************************/
+static size_t decode_url( char* str )
+{
+	char* end = str;
+	char* value = str;
+
+	for( ; *str ; ++str, ++end )
 	{
-		if( buf[ i ] == '%' &&
-			isxdigit( *(unsigned char*) ( buf + i + 1 ) ) &&
-			isxdigit( *(unsigned char*) ( buf + i + 2 ) ) )
+		if( *str == '+' )
 		{
-			a = cr_tolower( *(unsigned char*) ( buf + i + 1 ) );
-			b = cr_tolower( *(unsigned char*) ( buf + i + 2 ) );
-			
-			buf[ j ] = (char) ( ( HEXTOI( a ) << 4 ) | HEXTOI( b ) );
-			i += 2;
+			*end = ' ';
+		}
+		else if( *str == '%' && isxdigit( str[ 1 ] ) && isxdigit( str[ 2 ] ) )
+		{
+			*end = ( hex_to_int( cr_tolower( str[ 1 ] ) ) << 4 ) | hex_to_int( cr_tolower( str[ 2 ] ) );
+			str += 2;
 		}
 		else
 		{
-			if( j != i )
-				buf[ j ] = buf[ i ];
+			if( end != str )
+				*end = *str;
 		}
 	}
 
-	buf[ j ] = 0; // Null-terminate the destination
-	return j;
+	*end = 0;
+	return end - value;
 }
 
 /**********************************************************************************************/
@@ -1142,63 +1126,28 @@ static void loop_init( void )
 static void process_connection( cr_in_socket& socket )
 {
 	cr_connection_data conn;
-<<<<<<< HEAD
 	conn.client		= &socket;
 	conn.remote_ip_	= ntohl( conn.client->rsa.sin.sin_addr.s_addr );
 
 	if( !socket.is_ssl || sslize( conn, g_ssl, SSL_accept ) )
 	{
 		conn.request_len = read_http_request( conn, conn.request_buffer, &conn.data_len );
+
 		if( conn.request_len &&
 			parse_http_message( conn.request_buffer, MAX_REQUEST_SIZE, conn ) && *conn.uri_ == '/' )
 		{
 			conn.content_len = atoi( conn.headers_[ "content-length" ] );
-=======
-	conn.client				= &socket;
-	conn.consumed_content	= 0;
-	conn.data_len			= 0;
-	conn.is_ssl_			= socket.is_ssl;
-	conn.remote_ip_			= ntohl( conn.client->rsa.sin.sin_addr.s_addr );
-
-	if( !socket.is_ssl || sslize( conn, g_ssl, SSL_accept ) )
-	{
-		conn.request_len = read_http_request( conn, conn.request_buffer, &conn.data_len );
-		if( !conn.request_len )
-		{
-			cr_write( conn, "HTTP/1.1 413 Request Entity Too Large\r\nContent-Length: 0\r\n\r\n", 60 );
-			close_connection( conn );
-
-			return;
-		}
-
-		if( parse_http_message( conn.request_buffer, MAX_REQUEST_SIZE, conn ) <= 0 || *conn.uri_ != '/' )
-		{
-			cr_write( conn, "HTTP/1.1 400 Bad Request Too Large\r\nContent-Length: 0\r\n\r\n", 57 );
-		}
-		else
-		{
-			const char* cl = conn.headers_[ "content-length" ];
-			if( cl )
-				conn.content_len = atoi( cl );
-			else if ( !strcmp( conn.method_, "POST" ) || !strcmp( conn.method_, "PUT" ) )
-				conn.content_len = -1;
-			else
-				conn.content_len = 0;
->>>>>>> origin/master
 
 			if( ( conn.query_parameters_ = strchr( conn.uri_, '?' ) ) )
 				*conn.query_parameters_++ = 0;
 
-			url_decode( conn.uri_, strlen( conn.uri_ ) );
+			decode_url( conn.uri_ );
 			event_handler( conn );
 		}
-<<<<<<< HEAD
 		else
 		{
 			cr_write( conn, "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n", 47 );
 		}
-=======
->>>>>>> origin/master
 	}
 
 	close_connection( conn );
