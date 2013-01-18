@@ -36,12 +36,6 @@ static cr_string_map g_deflate_headers( "Content-Encoding", "deflate" );
 
 
 /**********************************************************************************************/
-time_t cr_connection::birth_time( void ) const
-{
-	return mg_get_birth_time( conn_ );
-}
-
-/**********************************************************************************************/
 size_t cr_connection::content_length( void ) const
 {
 	return mg_get_content_len( conn_ );
@@ -67,7 +61,7 @@ const cr_string_map& cr_connection::cookies( void ) const
 	if( !cookies_inited_ )
 	{
 		cookies_inited_ = true;
-		cr_string_map& headers = mg_get_request_info( conn_ )->headers_;
+		cr_string_map& headers = conn_->headers_;
 		
 		int index = headers.find( "cookie" );
 		if( index >= 0 )
@@ -87,7 +81,7 @@ const char*	cr_connection::header(
 	const char* name,
 	size_t		name_len ) const
 {
-	return mg_get_request_info( conn_ )->headers_.value( name, name_len );
+	return conn_->headers_.value( name, name_len );
 }
 
 /**********************************************************************************************/
@@ -99,13 +93,13 @@ const char*	cr_connection::header( const std::string& name ) const
 /**********************************************************************************************/
 const cr_string_map& cr_connection::headers( void ) const
 {
-	return mg_get_request_info( conn_ )->headers_;
+	return conn_->headers_;
 }
 
 /**********************************************************************************************/
 const char*	cr_connection::method( void ) const
 {
-	return mg_get_request_info( conn_ )->method_;
+	return conn_->method_;
 }
 
 /**********************************************************************************************/
@@ -175,7 +169,7 @@ const cr_string_map& cr_connection::query_parameters( void ) const
 		
 		parse_query_parameters(
 			query_params_,
-			mg_get_request_info( conn_ )->query_parameters_ );
+			conn_->query_parameters_ );
 	}
 	
 	return query_params_;
@@ -184,14 +178,14 @@ const cr_string_map& cr_connection::query_parameters( void ) const
 /**********************************************************************************************/
 const char* cr_connection::query_string( void ) const
 {
-	const char* res = mg_get_request_info( conn_ )->query_parameters_;
+	const char* res = conn_->query_parameters_;
 	return res ? res : "";
 }
 
 /**********************************************************************************************/
 const char* cr_connection::url( void ) const
 {
-	return mg_get_request_info( conn_ )->uri_;
+	return conn_->uri_;
 }
 
 
@@ -207,7 +201,7 @@ bool cr_connection::fetch(
 	size_t&			out_len,
 	cr_string_map*	headers )
 {
-	return mg_fetch( buf_headers_, out, out_len, url, headers );
+	return mg_fetch( conn_->headers_buffer, out, out_len, url, headers );
 }
 
 /**********************************************************************************************/
@@ -254,7 +248,7 @@ bool cr_connection::fetch(
 /**********************************************************************************************/
 size_t cr_connection::read( char* buf, size_t len )
 {
-	return mg_read( conn_, buf, len );
+	return mg_read( *conn_, buf, len );
 }
 
 /**********************************************************************************************/
@@ -305,8 +299,8 @@ void cr_connection::respond(
 			char header[ 16384 ];
 			size_t header_len;
 			cr_create_responce_header( header, header_len, rc, data_len, headers );
-			mg_write( conn_, header, header_len );
-			mg_write( conn_, out, data_len );
+			cr_write( *conn_, header, header_len );
+			cr_write( *conn_, out, data_len );
 			
 			free( out );
 			return;
@@ -317,8 +311,8 @@ void cr_connection::respond(
 	char header[ 16384 ];
 	size_t header_len;
 	cr_create_responce_header( header, header_len, rc, data_len, headers );
-	mg_write( conn_, header, header_len );
-	mg_write( conn_, data, data_len );
+	cr_write( *conn_, header, header_len );
+	cr_write( *conn_, data, data_len );
 }
 
 /**********************************************************************************************/
@@ -339,7 +333,7 @@ void cr_connection::respond_header(
 	char header[ 16384 ];
 	size_t header_len;
 	cr_create_responce_header( header, header_len, rc, data_len, headers );
-	mg_write( conn_, header, header_len );	
+	cr_write( *conn_, header, header_len );	
 }
 		
 /**********************************************************************************************/
@@ -394,7 +388,7 @@ void cr_connection::send_file(
 	char header[ 256 ];
 	size_t header_len;
 	cr_create_responce_header( header, header_len, CR_HTTP_OK, ftell( f ), &headers );
-	mg_write( conn_, header, header_len );
+	cr_write( *conn_, header, header_len );
 
 	fseek( f, 0, SEEK_SET );
 	
@@ -406,7 +400,7 @@ void cr_connection::send_file(
 		if( r <= 0 )
 			break;
 		
-		int w = mg_write( conn_, data, r );
+		int w = cr_write( *conn_, data, r );
 		if( w != r )
 			break;
 	}
@@ -417,7 +411,7 @@ void cr_connection::send_file(
 /**********************************************************************************************/
 int cr_connection::write( const char* buf, size_t len )
 {
-	return mg_write( conn_, buf, len );
+	return cr_write( *conn_, buf, len );
 }
 
 /**********************************************************************************************/
@@ -436,6 +430,5 @@ int cr_connection::write( const std::string& data )
 cr_connection_internal::~cr_connection_internal( void )
 {
 	// Free cached data
-	free( path_params_.items );
 	free( post_params_buffer_ );
 }

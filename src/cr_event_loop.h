@@ -35,30 +35,40 @@
 #include "cr_utils_private.h"
 
 /**********************************************************************************************/
-struct mg_connection;
+#define MAX_REQUEST_SIZE 16384
+
+/**********************************************************************************************/
+struct cr_in_socket;
 
 
 /**********************************************************************************************/
-struct mg_request_info
+struct cr_connection_data
 {
-	cr_string_map	headers_;			// Headers
-	bool			is_ssl_;            // TRUE if SSL-ed
-	const char*		method_;			// "GET", "POST", etc
-	char*			query_parameters_;	// URL part after '?', not including '?', or NULL
-	long			remote_ip_;         // Client's IP address
-	int				remote_port_;       // Client's port
-	char*			uri_;			    // URL-decoded URI
+	cr_in_socket*	client;								// Connected client
+	int				consumed_content;					// How many bytes of content have been read
+	int				content_len;						// Content-Length header value
+	int				data_len;							// Total size of data in a buffer
+	cr_string_map	headers_;							// Headers
+	bool			is_ssl_;							// TRUE if SSL-ed
+	const char*		method_;							// "GET", "POST", etc
+	char*			query_parameters_;					// URL part after '?', not including '?', or NULL
+	long			remote_ip_;							// Client's IP address
+	int				request_len;						// Size of the request + headers in a buffer
+	void*			ssl					= 0;			// SSL descriptor
+	char*			uri_;								// URL-decoded URI
+
+	char			headers_buffer[ MAX_REQUEST_SIZE ];	// Buffer for headers
+	char			request_buffer[ MAX_REQUEST_SIZE ];	// Buffer for received data
 };
 
 
 /**********************************************************************************************/
-size_t				mg_get_content_len( mg_connection* );
-mg_request_info*	mg_get_request_info( mg_connection* );
+size_t				mg_get_content_len( cr_connection_data* );
 
 
 /**********************************************************************************************/
-int					mg_read( mg_connection*, void* buf, size_t len );
-int					mg_write( mg_connection*, const char* buf, size_t len );
+int					mg_read( cr_connection_data&, void* buf, size_t len );
+int					cr_write( cr_connection_data&, const char* buf, size_t len );
 
 
 /**********************************************************************************************/

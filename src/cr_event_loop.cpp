@@ -115,7 +115,6 @@ typedef int SOCKET;
 // MONGOOSE
 #include "cr_event_loop.h"
 
-#define MAX_REQUEST_SIZE	16384
 #define ARRAY_SIZE(array)	(sizeof(array) / sizeof(array[0]))
 
 // Darwin prior to 7.0 and Win32 do not have socklen_t
@@ -444,29 +443,9 @@ static int set_ports(
 }
 
 /**********************************************************************************************/
-struct mg_connection
-{
-	void*			ssl;					// SSL descriptor
-	
-	cr_in_socket*	client;					// Connected client
-	mg_request_info	request_info;
-	int				content_len;			// Content-Length header value
-	int				consumed_content;		// How many bytes of content have been read
-	char			buf[ MAX_REQUEST_SIZE ];// Buffer for received data
-	int				request_len;			// Size of the request + headers in a buffer
-	int				data_len;				// Total size of data in a buffer
-};
-
-/**********************************************************************************************/
-size_t mg_get_content_len( mg_connection* conn )
+size_t mg_get_content_len( cr_connection_data* conn )
 {
 	return conn->content_len >= 0 ? conn->content_len : 0;
-}
-
-/**********************************************************************************************/
-mg_request_info* mg_get_request_info( mg_connection* conn )
-{
-	return &conn->request_info;
 }
 
 /**********************************************************************************************/
@@ -498,23 +477,6 @@ static char* skip_quoted(
 static char* skip( char** buf, const char* delimiters )
 {
 	return skip_quoted( buf, delimiters, delimiters );
-}
-
-// HTTP 1.1 assumes keep alive if "Connection:" header is not set
-// This function must tolerate situations when connection info is not
-// set up, for example if request parsing failed.
-
-/**********************************************************************************************/
-static int should_keep_alive( mg_connection *conn )
-{
-	if( 1 /*|| conn->must_close*/ )
-		return 0;
-
-	const char* header = conn->request_info.headers_[ "connection" ];
-	if( !header || ( *header != 'k' && *header != 'K' ) )
-		return 0;
-
-	return 1;
 }
 
 /**********************************************************************************************/
@@ -558,7 +520,7 @@ static int set_non_blocking_mode( SOCKET sock )
 // If it is set, we return 0, and this means that we must not continue
 // reading, must give up and close the connection and exit serving thread.
 //
-static int wait_until_socket_is_readable( mg_connection* conn )
+static int wait_until_socket_is_readable( cr_connection_data& conn )
 {
 	int result;
 	struct timeval tv;
@@ -569,12 +531,12 @@ static int wait_until_socket_is_readable( mg_connection* conn )
 		tv.tv_sec = 0;
 		tv.tv_usec = 300 * 1000;
 		FD_ZERO( &set );
-		FD_SET( conn->client->sock, &set );
+		FD_SET( conn.client->sock, &set );
 
-		result = select( conn->client->sock + 1, &set, NULL, NULL, &tv );
+		result = select( conn.client->sock + 1, &set, NULL, NULL, &tv );
 		
-		if( !result && conn->ssl )
-			result = SSL_pending( (SSL*) conn->ssl );
+		if( !result && conn.ssl )
+			result = SSL_pending( (SSL*) conn.ssl );
 	}
 	while( ( !result || ( result < 0 && ERRNO == EINTR ) ) && !g_stop );
 
@@ -585,7 +547,7 @@ static int wait_until_socket_is_readable( mg_connection* conn )
 // Read from IO channel - opened file descriptor, socket, or SSL descriptor.
 // Return negative value on error, or number of bytes read on success.
 //
-static int pull( mg_connection* conn, char* buf, int len )
+static int pull( cr_connection_data& conn, char* buf, int len )
 {
 	int nread;
 
@@ -593,35 +555,35 @@ static int pull( mg_connection* conn, char* buf, int len )
 	{
 		nread = -1;
 	}
-	else if ( conn->ssl != NULL )
+	else if( conn.ssl )
 	{
-		nread = SSL_read( (SSL*) conn->ssl, buf, len );
+		nread = SSL_read( (SSL*) conn.ssl, buf, len );
 	}
 	else
 	{
-		nread = recv( conn->client->sock, buf, (size_t) len, 0 );
+		nread = recv( conn.client->sock, buf, (size_t) len, 0 );
 	}
 
 	return g_stop ? -1 : nread;
 }
 
 /**********************************************************************************************/
-int mg_read( mg_connection *conn, void* buf, size_t len )
+int mg_read( cr_connection_data& conn, void* buf, size_t len )
 {
 	int n, buffered_len, nread;
 	const char *body;
 
 	nread = 0;
-	if( conn->consumed_content < conn->content_len )
+	if( conn.consumed_content < conn.content_len )
 	{
 		// Adjust number of bytes to read.
-		int to_read = conn->content_len - conn->consumed_content;
+		int to_read = conn.content_len - conn.consumed_content;
 		if( to_read < (int) len )
 			len = (size_t) to_read;
 
 		// Return buffered data
-		body = conn->buf + conn->request_len + conn->consumed_content;
-		buffered_len = &conn->buf[ conn->data_len ] - body;
+		body = conn.request_buffer + conn.request_len + conn.consumed_content;
+		buffered_len = &conn.request_buffer[ conn.data_len ] - body;
 		
 		if( buffered_len > 0 )
 		{
@@ -630,7 +592,7 @@ int mg_read( mg_connection *conn, void* buf, size_t len )
 
 			memmove( buf, body, (size_t) buffered_len );
 			len -= buffered_len;
-			conn->consumed_content += buffered_len;
+			conn.consumed_content += buffered_len;
 			nread += buffered_len;
 			buf = (char*) buf + buffered_len;
 		}
@@ -651,7 +613,7 @@ int mg_read( mg_connection *conn, void* buf, size_t len )
 			else
 			{
 				buf = (char*) buf + n;
-				conn->consumed_content += n;
+				conn.consumed_content += n;
 				nread += n;
 				len -= n;
 			}
@@ -662,7 +624,7 @@ int mg_read( mg_connection *conn, void* buf, size_t len )
 }
 
 /**********************************************************************************************/
-int mg_write( mg_connection* conn, const char* buf, size_t len )
+int cr_write( cr_connection_data& conn, const char* buf, size_t len )
 {
 	int n, k;
 
@@ -672,10 +634,10 @@ int mg_write( mg_connection* conn, const char* buf, size_t len )
 		// How many bytes we send in this iteration
 		k = (int) ( len - sent );
 
-		if( conn->ssl )
-			n = SSL_write( (SSL*) conn->ssl, buf + sent, k );
+		if( conn.ssl )
+			n = SSL_write( (SSL*) conn.ssl, buf + sent, k );
 		else
-			n = send( conn->client->sock, buf + sent, (size_t) k, MSG_NOSIGNAL );
+			n = send( conn.client->sock, buf + sent, (size_t) k, MSG_NOSIGNAL );
 
 		if( n < 0 )
 			break;
@@ -724,50 +686,31 @@ static size_t url_decode( char* buf, size_t len )
 }
 
 /**********************************************************************************************/
-static int sslize( mg_connection* conn, SSL_CTX* s, int (*func )( SSL * ) )
+static int sslize( cr_connection_data& conn, SSL_CTX* s, int (*func )( SSL * ) )
 {
-	return ( conn->ssl = SSL_new( s ) ) &&
-		SSL_set_fd( (SSL*) conn->ssl, conn->client->sock ) == 1 &&
-		func( (SSL*) conn->ssl ) == 1;
+	return ( conn.ssl = SSL_new( s ) ) &&
+		SSL_set_fd( (SSL*) conn.ssl, conn.client->sock ) == 1 &&
+		func( (SSL*) conn.ssl ) == 1;
 }
 
 /**********************************************************************************************/
-// Check whether full request is buffered. Return:
-//   -1 if request is malformed
-//	  0 if request is not yet fully buffered
-//  > 0 actual request length, including last \r\n\r\n
-//
-static int get_request_len( const char* buf, int buflen )
+static int get_request_len( const char* buf, int len )
 {
-	const char *s, *e;
-	int len = 0;
-
-	for( s = buf, e = s + buflen - 1 ; len <= 0 && s < e ; s++ )
+	auto* e = buf + len - 1;
+	for( auto s = buf ; s < e ; ++s )
 	{
-		// Control characters are not allowed but >=128 is.
-		if( !isprint( *(const unsigned char*) s ) && *s != '\r' && *s != '\n' && *(const unsigned char*) s < 128 )
-		{
-			len = -1;
-			break; // [i_a] abort scan as soon as one malformed character is found; don't let subsequent \r\n\r\n win us over anyhow
-		}
-		else if( s[ 0 ] == '\n' && s[ 1 ] == '\n' )
-		{
-			len = (int) ( s - buf ) + 2;
-		}
-		else if( s[ 0 ] == '\n' && &s[ 1 ] < e && s[ 1 ] == '\r' && s[ 2 ] == '\n' )
-		{
-			len = (int) ( s - buf ) + 3;
-		}
+		if( s[ 0 ] == '\n' && s[ 1 ] == '\r' && s[ 2 ] == '\n' )
+			return s - buf + 2;
 	}
 
-	return len;
+	return 0;
 }
 
 /**********************************************************************************************/
 // Parse HTTP headers from the given buffer, advance buffer to the point
 // where parsing stopped.
 //
-static void parse_http_headers( char** buf, mg_request_info& ri )
+static void parse_http_headers( char** buf, cr_string_map& headers )
 {
 	for( int i = 0 ; i < 64 ; ++i )
 	{
@@ -776,7 +719,7 @@ static void parse_http_headers( char** buf, mg_request_info& ri )
 		
 		if( name && *name )
 		{
-			ri.headers_.add( name, value );
+			headers.add( name, value );
 			while( *name )
 			{
 				*name = cr_tolower( *name );
@@ -795,7 +738,7 @@ static void parse_http_headers( char** buf, mg_request_info& ri )
 // This function modifies the buffer by NUL-terminating
 // HTTP request components, header names and header values.
 //
-static int parse_http_message( char* buf, int len, mg_request_info& ri )
+static bool parse_http_message( char* buf, int len, cr_connection_data& ri )
 {
 	int request_length = get_request_len( buf, len );
 	if( request_length > 0 )
@@ -813,60 +756,36 @@ static int parse_http_message( char* buf, int len, mg_request_info& ri )
 		ri.method_ = skip( &buf, " " );
 		ri.uri_ = skip( &buf, " " );
 		skip( &buf, "\r\n" );
-		parse_http_headers( &buf, ri );
+		parse_http_headers( &buf, ri.headers_ );
 	}
 	
-	return request_length;
+	return request_length > 0;
 }
 
 /**********************************************************************************************/
-// Keep reading the input (either opened file descriptor fd, or socket sock,
-// or SSL descriptor ssl) into buffer buf, until \r\n\r\n appears in the
-// buffer (which marks the end of HTTP request). Buffer buf may already
-// have some data. The length of the data is stored in nread.
-// Upon every read operation, increase nread by the number of bytes read.
-//
-static int read_request( 
-	mg_connection*	conn,
-	char*			buf,
-	int				bufsiz,
-	int*			nread )
+static int read_http_request( 
+	cr_connection_data&	conn,
+	char*				out_buf,
+	int*				readed )
 {
-	int request_len, n = 1;
-
-	request_len = get_request_len( buf, *nread );
-	while( *nread < bufsiz && !request_len && n > 0 )
+	int n = 1;
+	int request_len = 0;
+	
+	while( *readed < MAX_REQUEST_SIZE && !request_len && n > 0 )
 	{
-		n = pull( conn, buf + *nread, bufsiz - *nread );
+		n = pull( conn, out_buf + *readed, MAX_REQUEST_SIZE - *readed );
 		if( n > 0 )
 		{
-			*nread += n;
-			request_len = get_request_len( buf, *nread );
+			*readed += n;
+			request_len = get_request_len( out_buf, *readed );
 		}
 	}
 
-	if( n < 0 )
-	{
-		// recv() error -> propagate error; do not process a b0rked-with-very-high-probability request
-		return -1;
-	}
-	
-	return request_len;
+	return n < 0 ? -1 :	request_len;
 }
 
 /**********************************************************************************************/
-void event_handler( mg_connection* conn );
-
-/**********************************************************************************************/
-static void handle_request( mg_connection *conn )
-{
-	mg_request_info& ri = conn->request_info;
-	if( ( ri.query_parameters_ = strchr( ri.uri_, '?' ) ) )
-		*ri.query_parameters_++ = '\0';
-
-	url_decode( ri.uri_, strlen( ri.uri_ ) );
-	event_handler( conn );
-}
+void event_handler( cr_connection_data& conn );
 
 /**********************************************************************************************/
 static void ssl_locking_callback( int mode, int mutex_num, const char*, int )
@@ -931,18 +850,11 @@ static int load_dll( const char* dll_name, ssl_func* sw )
 }
 
 /**********************************************************************************************/
-static void reset_per_request_attributes( mg_connection* conn )
-{
-	conn->consumed_content	= 0;
-	conn->request_len		= 0;
-}
-
-/**********************************************************************************************/
-static void close_socket_gracefully( mg_connection* conn )
+static void close_socket_gracefully( cr_connection_data& conn )
 {
 	char buf[ 8192 ];
 	struct linger linger;
-	int n, sock = conn->client->sock;
+	int n, sock = conn.client->sock;
 
 	// Set linger option to avoid socket hanging out after close. This prevent
 	// ephemeral port exhaust problem under high QPS.
@@ -970,67 +882,13 @@ static void close_socket_gracefully( mg_connection* conn )
 }
 
 /**********************************************************************************************/
-static void close_connection( mg_connection* conn )
+static void close_connection( cr_connection_data& conn )
 {
-	if( conn->ssl )
-	{
-		SSL_free( (SSL*) conn->ssl );
-		conn->ssl = NULL;
-	}
+	if( conn.ssl )
+		SSL_free( (SSL*) conn.ssl );
 
-	if( conn->client->sock != INVALID_SOCKET )
+	if( conn.client->sock != INVALID_SOCKET )
 		close_socket_gracefully( conn );
-}
-
-/**********************************************************************************************/
-static void process_new_connection( mg_connection* conn )
-{
-	mg_request_info& ri = conn->request_info;
-	int discard_len;
-	const char* cl;
-	
-	conn->data_len = 0;
-	
-	do
-	{
-		reset_per_request_attributes( conn );
-		conn->request_len = read_request( conn, conn->buf, MAX_REQUEST_SIZE, &conn->data_len );
-
-		if( !conn->request_len && conn->data_len == MAX_REQUEST_SIZE )
-		{
-			mg_write( conn, "HTTP/1.1 413 Request Entity Too Large\r\nContent-Length: 0\r\n\r\n", 60 );
-			return;
-		}
-		
-		if( conn->request_len <= 0 )
-			return;  // Remote end closed the connection
-		
-		if( parse_http_message( conn->buf, MAX_REQUEST_SIZE, ri ) <= 0 || *ri.uri_ != '/' )
-		{
-			mg_write( conn, "HTTP/1.1 400 Bad Request Too Large\r\nContent-Length: 0\r\n\r\n", 57 );
-		}
-		else
-		{
-			// Request is valid, handle it
-			if( ( cl = ri.headers_[ "content-length" ] ) )
-				conn->content_len = strtol( cl, NULL, 10 );
-			else if ( !strcmp( ri.method_, "POST" ) || !strcmp( ri.method_, "PUT" ) )
-				conn->content_len = -1;
-			else
-				conn->content_len = 0;
-			
-			handle_request( conn );
-		}
-
-		// Discard all buffered data for this request
-		discard_len = conn->content_len >= 0 &&
-			conn->request_len + conn->content_len < (int) conn->data_len ?
-			(int) ( conn->request_len + conn->content_len ) : conn->data_len;
-
-		memmove( conn->buf, conn->buf + discard_len, conn->data_len - discard_len );
-		conn->data_len -= discard_len;
-	}
-	while( !g_stop && conn->content_len >= 0 && should_keep_alive( conn ) );
 }
 
 /**********************************************************************************************/
@@ -1082,12 +940,13 @@ static bool set_pem( const string& pem )
 }
 
 /**********************************************************************************************/
-static mg_connection* mg_connect(
-	const char*	host,
-	int			port,
-	int			use_ssl )
+static cr_connection_data* mg_connect(
+	cr_in_socket&	csock,
+	const char*		host,
+	int				port,
+	int				use_ssl )
 {
-	mg_connection* newconn = NULL;
+	cr_connection_data* newconn = NULL;
 	sockaddr_in sin;
 	hostent* he;
 	int sock;
@@ -1113,13 +972,14 @@ static mg_connection* mg_connect(
 		}
 		else
 		{
-			newconn = (mg_connection*) calloc( 1, sizeof(*newconn) );
+			newconn = new cr_connection_data;
+			newconn->client = &csock;
 			newconn->client->sock = sock;
 			newconn->client->rsa.sin = sin;
 			
 			newconn->client->is_ssl = use_ssl;
 			if( use_ssl )
-				sslize( newconn, g_ssl_client, SSL_connect );
+				sslize( *newconn, g_ssl_client, SSL_connect );
 		}
 	}
 
@@ -1127,10 +987,9 @@ static mg_connection* mg_connect(
 }
 
 /**********************************************************************************************/
-inline int parse_http_response( char* buf, int len, mg_request_info& ri )
+inline int parse_http_response( char* buf, int len, cr_connection_data& ri )
 {
-	int result = parse_http_message( buf, len, ri );
-	return result > 0 && !strncmp( ri.method_, "HTTP/", 5 ) ? result : -1;
+	return parse_http_message( buf, len, ri ) && !strncmp( ri.method_, "HTTP/", 5 );
 }
 
 /**********************************************************************************************/
@@ -1146,8 +1005,8 @@ bool mg_fetch(
 	
 	out = NULL;
 	
-	mg_connection* conn;
-	mg_request_info ri;
+	cr_connection_data* conn;
+	cr_in_socket sock;
 	
 	int n, port;
 	char host[ 1025 ], proto[ 10 ];
@@ -1164,10 +1023,7 @@ bool mg_fetch(
 		return false;
 	}
 
-	if( !( conn = mg_connect( host, port, !strcmp( proto, "https" ) ) ) )
-	{
-	}
-	else
+	if( ( conn = mg_connect( sock, host, port, !strcmp( proto, "https" ) ) ) )
 	{
 		char* str = buf;
 		add_string( str, "GET /", 5 );
@@ -1175,25 +1031,19 @@ bool mg_fetch(
 		add_string( str, " HTTP/1.0\r\nHost: ", 17 );
 		add_string( str, host, strlen( host ) );
 		add_string( str, "\r\nUser-Agent: Mozilla/5.0 Gecko Firefox/18\r\n\r\n", 46 );
-		mg_write( conn, buf, str - buf );
+		cr_write( *conn, buf, str - buf );
 		
 		int data_length = 0;
-		int req_length = read_request( conn, buf, 8192, &data_length );
-		if( req_length <= 0 )
-		{
-		}
-		else if( parse_http_response( buf, req_length, ri ) <= 0 )
-		{
-		}
-		else
+		int req_length = read_http_request( *conn, buf, &data_length );
+		if( req_length > 0 && parse_http_message( buf, req_length, *conn ) && !strncmp( conn->method_, "HTTP/", 5 ) )
 		{
 			if( headers )
-				*headers = ri.headers_;
+				*headers = conn->headers_;
 			
-			const char* location = ri.headers_[ "location" ];
+			const char* location = conn->headers_[ "location" ];
 			if( location && *location && redirect_count < 5 )
 			{
-				close_connection( conn );
+				close_connection( *conn );
 				free( conn );
 
 				return mg_fetch( buf, out, out_size, location, headers, redirect_count + 1 );
@@ -1203,7 +1053,7 @@ bool mg_fetch(
 			data_length -= req_length;
 			
 			size_t msize = req_length + data_length;
-			const char* cl = ri.headers_[ "content-length" ];
+			const char* cl = conn->headers_[ "content-length" ];
 			msize += cl ? strtol( cl, NULL, 10 ) : 32768;
 			
 			out = (char*) malloc( msize );
@@ -1215,7 +1065,7 @@ bool mg_fetch(
 			// Read the rest of the response and write it to the file. Do not use
 			// mg_read() cause we didn't set newconn->content_len properly.
 			char buf2[ 65536 ];
-			while( ( data_length = pull( conn, buf2, sizeof( buf2 ) ) ) > 0 )
+			while( ( data_length = pull( *conn, buf2, sizeof( buf2 ) ) ) > 0 )
 			{
 				if( str - out + data_length + 1 > (int) msize )
 				{
@@ -1232,8 +1082,8 @@ bool mg_fetch(
 			out_size = str - out;
 		}
 		
-		close_connection( conn );
-		free( conn );
+		close_connection( *conn );
+		delete conn;
 	}
 	
 	return out != NULL;
@@ -1284,30 +1134,47 @@ static void loop_init( void )
 /**********************************************************************************************/
 static void process_connection( cr_in_socket& socket )
 {
-	mg_connection conn;
-	
-	// TODO: reset only some bytes
-//	memset( &conn, 0, sizeof conn );
+	cr_connection_data conn;
+	conn.client				= &socket;
+	conn.consumed_content	= 0;
+	conn.data_len			= 0;
+	conn.is_ssl_			= socket.is_ssl;
+	conn.remote_ip_			= ntohl( conn.client->rsa.sin.sin_addr.s_addr );
 
-	conn.client = &socket;
-
-	// Fill in IP, port info early so even if SSL setup below fails,
-	// error handler would have the corresponding info.
-	// Thanks to Johannes Winkelmann for the patch.
-	// TODO(lsm): Fix IPv6 case
-	conn.request_info.remote_port_ = ntohs( conn.client->rsa.sin.sin_port );
-	memmove( &conn.request_info.remote_ip_, &conn.client->rsa.sin.sin_addr.s_addr, 4 );
-	conn.request_info.remote_ip_ = ntohl( conn.request_info.remote_ip_ );
-
-	conn.request_info.is_ssl_ = conn.client->is_ssl;
-
-	if ( !conn.client->is_ssl ||
-		 ( conn.client->is_ssl && sslize( &conn, g_ssl, SSL_accept ) ) )
+	if( !socket.is_ssl || sslize( conn, g_ssl, SSL_accept ) )
 	{
-		process_new_connection( &conn );
+		conn.request_len = read_http_request( conn, conn.request_buffer, &conn.data_len );
+		if( !conn.request_len )
+		{
+			cr_write( conn, "HTTP/1.1 413 Request Entity Too Large\r\nContent-Length: 0\r\n\r\n", 60 );
+			close_connection( conn );
+
+			return;
+		}
+
+		if( parse_http_message( conn.request_buffer, MAX_REQUEST_SIZE, conn ) <= 0 || *conn.uri_ != '/' )
+		{
+			cr_write( conn, "HTTP/1.1 400 Bad Request Too Large\r\nContent-Length: 0\r\n\r\n", 57 );
+		}
+		else
+		{
+			const char* cl = conn.headers_[ "content-length" ];
+			if( cl )
+				conn.content_len = atoi( cl );
+			else if ( !strcmp( conn.method_, "POST" ) || !strcmp( conn.method_, "PUT" ) )
+				conn.content_len = -1;
+			else
+				conn.content_len = 0;
+
+			if( ( conn.query_parameters_ = strchr( conn.uri_, '?' ) ) )
+				*conn.query_parameters_++ = 0;
+
+			url_decode( conn.uri_, strlen( conn.uri_ ) );
+			event_handler( conn );
+		}
 	}
 
-	close_connection( &conn );
+	close_connection( conn );
 }
 
 /**********************************************************************************************/
@@ -1348,53 +1215,26 @@ bool cr_event_loop(
 
 	// PROCESS REQUESTS
 	
-	// One socket version
-	if( g_listening_sockets.size() == 1 )
+	while( !g_stop )
 	{
-		SOCKET sock = g_listening_sockets.back().sock;
-		accepted.is_ssl = g_listening_sockets.back().is_ssl;
-		
-		while( !g_stop )
-		{
-			tv.tv_usec = 200 * 1000;
-			read_set = stat_set;
+		tv.tv_usec = 200 * 1000;
+		read_set = stat_set;
 
-			if( select( max_fd, &read_set, NULL, NULL, &tv ) >= 0 )
-			{
-				accepted.sock = accept( sock, &accepted.rsa.sa, &sock_len );
-				if( accepted.sock != INVALID_SOCKET )
-				{
-					thread_count < 2 ?
-						process_connection( accepted ) :
-						tpool.enqueue( accepted );
-				}			
-			}
-		}		
-	}
-	// Some sockets
-	else
-	{
-		while( !g_stop )
+		if( select( max_fd, &read_set, NULL, NULL, &tv ) >= 0 )
 		{
-			tv.tv_usec = 200 * 1000;
-			read_set = stat_set;
-
-			if( select( max_fd, &read_set, NULL, NULL, &tv ) >= 0 )
+			for( auto& skt : g_listening_sockets )
 			{
-				for( auto& skt : g_listening_sockets )
+				if( FD_ISSET( skt.sock, &read_set ) )
 				{
-					if( FD_ISSET( skt.sock, &read_set ) )
+					accepted.sock = accept( skt.sock, &accepted.rsa.sa, &sock_len );
+					if( accepted.sock != INVALID_SOCKET )
 					{
-						accepted.sock = accept( skt.sock, &accepted.rsa.sa, &sock_len );
-						if( accepted.sock != INVALID_SOCKET )
-						{
-							accepted.is_ssl = skt.is_ssl;
+						accepted.is_ssl = skt.is_ssl;
 
-							thread_count < 2 ?
-								process_connection( accepted ) :
-								tpool.enqueue( accepted );
-						}			
-					}
+						thread_count < 2 ?
+							process_connection( accepted ) :
+							tpool.enqueue( accepted );
+					}			
 				}
 			}
 		}
