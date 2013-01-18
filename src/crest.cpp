@@ -101,12 +101,12 @@ struct compare_keys
 struct sl_connection : public cr_connection
 {
 	sl_connection( 
-		mg_connection*			conn,
+		cr_connection_data&		conn,
 		const cr_string_array&	params )
 	{
 		// Properties
 		
-		conn_					= conn;
+		conn_					= &conn;
 		path_params_			= params;
 		
 		// Flags
@@ -121,35 +121,32 @@ struct sl_connection : public cr_connection
 	
 	void log( void )
 	{
-		mg_request_info* request = mg_get_request_info( conn_ );
-		time_t t = birth_time();
+		time_t t = time( 0 );
 		
 		char stime[ 32 ];
 		tm* lt = localtime( &t );
 		strftime( stime, 32, "%y-%m-%d %H:%M:%S ", lt );
 
-		size_t mlen = strlen( request->method_ );
+		size_t mlen = strlen( conn_->method_ );
 		if( mlen > 10 ) mlen = 10;
 
-		size_t ulen = strlen( request->uri_ );
+		size_t ulen = strlen( conn_->uri_ );
 		if( ulen > 128 ) mlen = 128;
 		
 		char buf[ 256 ];
 		char* str = buf;
 		add_string	( str, stime, strlen( stime ) );
-		add_string	( str, request->method_, mlen );
+		add_string	( str, conn_->method_, mlen );
 		add_char	( str, ' ' );
-		add_string	( str, request->uri_, ulen );
+		add_string	( str, conn_->uri_, ulen );
 		add_string	( str, " from ", 6 );
-		add_number	( str, request->remote_ip_ >> 24 );
+		add_number	( str, conn_->remote_ip_ >> 24 );
 		add_char	( str, '.' );
-		add_number	( str, ( request->remote_ip_ >> 16 ) & 0xFF );
+		add_number	( str, ( conn_->remote_ip_ >> 16 ) & 0xFF );
 		add_char	( str, '.' );
-		add_number	( str, ( request->remote_ip_ >> 8  ) & 0xFF );
+		add_number	( str, ( conn_->remote_ip_ >> 8  ) & 0xFF );
 		add_char	( str, '.' );
-		add_number	( str, request->remote_ip_ & 0xFF );
-		add_char	( str, ':' );
-		add_number	( str, request->remote_port_ );
+		add_number	( str, conn_->remote_ip_ & 0xFF );
 		add_char	( str, '\n' );
 		*str = 0;
 		int blen = str - buf;
@@ -260,13 +257,12 @@ cr_auto_handler_register::cr_auto_handler_register(
 }
 
 /**********************************************************************************************/
-void event_handler( mg_connection* conn ); // To avoid warning from GCC
-void event_handler( mg_connection* conn )
+void event_handler( cr_connection_data& conn ); // To avoid warning from GCC
+void event_handler( cr_connection_data& conn )
 {
 	++g_request_count;
 
-	mg_request_info* request	 = mg_get_request_info( conn );
-	const char*		 method_name = request->method_;
+	const char*		 method_name = conn.method_;
 	cr_http_method	 method;
 
 	// Get method
@@ -277,14 +273,14 @@ void event_handler( mg_connection* conn )
 	else if( !strcmp( method_name, "PUT"	) ) method = CR_METHOD_PUT;
 	else
 	{
-		mg_write( conn, "HTTP/1.1 501 Not Implemented\r\nContent-Length: 24\r\n\r\nNon-supported method", 72 );
+		cr_write( conn, "HTTP/1.1 501 Not Implemented\r\nContent-Length: 24\r\n\r\nNon-supported method", 72 );
 		return;
 	}
 
 	// Resource
 
 	auto& rset = resources( method );
-	cr_string_array key = parse_resource_name( request->uri_ + 1, strlen( request->uri_ + 1 ) );
+	cr_string_array key = parse_resource_name( conn.uri_ + 1, strlen( conn.uri_ + 1 ) );
 
 	auto it = rset.find( key );
 	resource* rs = ( it != rset.end() ) ?
@@ -318,14 +314,16 @@ void event_handler( mg_connection* conn )
 				auto& crset = resources( i );
 				if( crset.find( key ) != crset.end() )
 				{
-					mg_write( conn, "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\n\r\n", 54 );
+					cr_write( conn, "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\n\r\n", 54 );
 					return;
 				}
 			}
 		}
 
-		mg_write( conn, "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n", 45 );
+		cr_write( conn, "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n", 45 );
 	}
+
+	free( key.items );
 }
 
 

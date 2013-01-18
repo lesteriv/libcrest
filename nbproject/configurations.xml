@@ -35,6 +35,8 @@
         <itemPath>src/auth_digest.h</itemPath>
         <itemPath>src/cr_cache.cpp</itemPath>
         <itemPath>src/cr_connection.cpp</itemPath>
+        <itemPath>../slite/src/third/libcrest/src/cr_event_loop.cpp</itemPath>
+        <itemPath>../slite/src/third/libcrest/src/cr_event_loop.h</itemPath>
         <itemPath>src/cr_json.cpp</itemPath>
         <itemPath>src/cr_json.h</itemPath>
         <itemPath>src/cr_result.cpp</itemPath>
@@ -50,11 +52,6 @@
         <itemPath>tests/tests.cpp</itemPath>
       </logicalFolder>
       <logicalFolder name="third" displayName="third" projectFiles="true">
-        <logicalFolder name="mongoose" displayName="mongoose" projectFiles="true">
-          <itemPath>third/mongoose/LICENSE</itemPath>
-          <itemPath>third/mongoose/cr_event_loop.cpp</itemPath>
-          <itemPath>third/mongoose/cr_event_loop.h</itemPath>
-        </logicalFolder>
         <logicalFolder name="zlib" displayName="zlib" projectFiles="true">
           <itemPath>third/zlib/README</itemPath>
           <itemPath>third/zlib/deflate.cpp</itemPath>
@@ -93,6 +90,16 @@
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libcrestd.a</output>
         </archiverTool>
       </compileType>
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
       <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
@@ -182,12 +189,6 @@
       <item path="src/crest.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="tests/tests.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="third/mongoose/cr_event_loop.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="third/mongoose/cr_event_loop.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>
@@ -229,6 +230,16 @@
           <commandLine>-fno-exceptions -fno-rtti</commandLine>
         </linkerTool>
       </compileType>
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
       <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
@@ -325,12 +336,6 @@
       </item>
       <item path="tests/tests.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="third/mongoose/cr_event_loop.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="third/mongoose/cr_event_loop.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/deflate.cpp" ex="false" tool="1" flavor2="0">
@@ -366,6 +371,16 @@
           <commandLine>-fno-exceptions -fno-rtti -static-libstdc++ -Ofast</commandLine>
         </linkerTool>
       </compileType>
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
       <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
@@ -460,12 +475,6 @@
       </item>
       <item path="src/crest.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="third/mongoose/cr_event_loop.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="third/mongoose/cr_event_loop.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/deflate.cpp" ex="false" tool="1" flavor2="0">
@@ -486,28 +495,32 @@
       </toolsSet>
       <compileType>
         <ccTool>
-          <developmentMode>0</developmentMode>
           <stripSymbols>true</stripSymbols>
           <commandlineTool>g++</commandlineTool>
-          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -m32 -std=c++11</commandLine>
-          <preprocessorList>
-            <Elem>NO_SSL</Elem>
-          </preprocessorList>
+          <commandLine>-fno-exceptions -fno-rtti -m32 -std=c++11</commandLine>
           <useLinkerLibraries>false</useLinkerLibraries>
         </ccTool>
         <linkerTool>
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/http_mirror</output>
-          <stripSymbols>true</stripSymbols>
           <commandlineTool>g++</commandlineTool>
           <linkerLibItems>
             <linkerLibStdlibItem>PosixThreads</linkerLibStdlibItem>
+            <linkerLibStdlibItem>DynamicLinking</linkerLibStdlibItem>
           </linkerLibItems>
-          <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -m32 -Wl,--hash-style=sysv -static-libstdc++</commandLine>
+          <commandLine>-fno-exceptions -fno-rtti -m32 -Wl,--hash-style=sysv -static-libstdc++</commandLine>
         </linkerTool>
       </compileType>
-      <item path="TODO" ex="false" tool="3" flavor2="0">
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
       </item>
-      <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
       <item path="examples/http_mirror.cpp" ex="false" tool="1" flavor2="0">
         <ccTool>
@@ -598,14 +611,6 @@
       <item path="src/cr_xml.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/crest.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="tests/tests.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="third/mongoose/cr_event_loop.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="third/mongoose/cr_event_loop.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>
@@ -646,6 +651,16 @@
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/librestpp.a</output>
         </archiverTool>
       </compileType>
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
       <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
@@ -735,12 +750,6 @@
       <item path="src/crest.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="tests/tests.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="third/mongoose/cr_event_loop.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="third/mongoose/cr_event_loop.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>
@@ -781,6 +790,16 @@
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/librestpp.a</output>
         </archiverTool>
       </compileType>
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
       <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
@@ -870,12 +889,6 @@
       <item path="src/crest.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="tests/tests.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="third/mongoose/cr_event_loop.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="third/mongoose/cr_event_loop.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>
@@ -916,6 +929,16 @@
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/librestpp.a</output>
         </archiverTool>
       </compileType>
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
       <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
@@ -1006,12 +1029,6 @@
       </item>
       <item path="tests/tests.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="third/mongoose/cr_event_loop.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="third/mongoose/cr_event_loop.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/deflate.cpp" ex="false" tool="1" flavor2="0">
@@ -1051,6 +1068,16 @@
           <commandLine>-fno-exceptions -fno-rtti -flto -Ofast -m32 -Wl,--hash-style=sysv -static-libstdc++</commandLine>
         </linkerTool>
       </compileType>
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
       <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
@@ -1147,12 +1174,6 @@
       </item>
       <item path="tests/tests.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="third/mongoose/cr_event_loop.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="third/mongoose/cr_event_loop.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/deflate.cpp" ex="false" tool="1" flavor2="0">
@@ -1183,6 +1204,16 @@
           </linkerLibItems>
         </linkerTool>
       </compileType>
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="TODO" ex="false" tool="3" flavor2="0">
       </item>
       <item path="examples/file_server.cpp" ex="false" tool="1" flavor2="0">
@@ -1275,12 +1306,6 @@
         <ccTool>
           <commandLine>-std=c++11</commandLine>
         </ccTool>
-      </item>
-      <item path="third/mongoose/LICENSE" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="third/mongoose/cr_event_loop.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="third/mongoose/cr_event_loop.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
       </item>

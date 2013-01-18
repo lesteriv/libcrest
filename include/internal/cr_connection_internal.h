@@ -17,7 +17,7 @@
 #include "../cr_types.h"
 
 /**********************************************************************************************/
-struct mg_connection;
+struct cr_connection_data;
 
 /**********************************************************************************************/
 struct cr_string_array
@@ -40,12 +40,11 @@ class cr_connection_internal
 		
 // References
 		
-		mg_connection*			conn_;
+		cr_connection_data*		conn_;
 
 
 // Properties
 
-		char					buf_headers_[ 16384 ];
 mutable	cr_string_map			cookies_;
 		cr_string_array			path_params_;
 mutable	cr_string_map			post_params_;

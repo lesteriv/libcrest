@@ -23,9 +23,6 @@ class cr_connection : protected cr_connection_internal
 	// ---------------------
 	// Properties
 
-								/** Returns connection's birth time. */
-		time_t					birth_time( void ) const;
-
 								/** Returns count of bytes in content for POST/PUT requests. */
 		size_t					content_length( void ) const;
 		
