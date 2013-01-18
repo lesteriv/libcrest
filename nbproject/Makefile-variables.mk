@@ -38,6 +38,14 @@ CND_ARTIFACT_PATH_http_mirror=dist/http_mirror/GNU-Linux-x86/http_mirror
 CND_PACKAGE_DIR_http_mirror=dist/http_mirror/GNU-Linux-x86/package
 CND_PACKAGE_NAME_http_mirror=libcrest.tar
 CND_PACKAGE_PATH_http_mirror=dist/http_mirror/GNU-Linux-x86/package/libcrest.tar
+# http_mirror_release configuration
+CND_PLATFORM_http_mirror_release=GNU-Linux-x86
+CND_ARTIFACT_DIR_http_mirror_release=dist/http_mirror_release/GNU-Linux-x86
+CND_ARTIFACT_NAME_http_mirror_release=http_mirror
+CND_ARTIFACT_PATH_http_mirror_release=dist/http_mirror_release/GNU-Linux-x86/http_mirror
+CND_PACKAGE_DIR_http_mirror_release=dist/http_mirror_release/GNU-Linux-x86/package
+CND_PACKAGE_NAME_http_mirror_release=libcrest.tar
+CND_PACKAGE_PATH_http_mirror_release=dist/http_mirror_release/GNU-Linux-x86/package/libcrest.tar
 # release_native configuration
 CND_PLATFORM_release_native=GNU-Linux-x86
 CND_ARTIFACT_DIR_release_native=dist/release_native/GNU-Linux-x86

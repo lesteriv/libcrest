@@ -923,54 +923,51 @@ static bool set_pem( const string& pem )
 }
 
 /**********************************************************************************************/
-static cr_connection_data* mg_connect(
-	cr_in_socket&	csock,
-	const char*		host,
-	int				port,
-	int				use_ssl )
+static bool cr_connect(
+	cr_connection_data&	conn,
+	cr_in_socket&		csock,
+	const char*			host,
+	int					port,
+	int					use_ssl )
 {
-	cr_connection_data* newconn = NULL;
-	sockaddr_in sin;
-	hostent* he;
-	int sock;
-
 	if( use_ssl && !g_ssl_client )
+		return false;
+		
+	hostent* he = gethostbyname( host );
+	if( !he )
+		return false;
+	
+	int sock = socket( PF_INET, SOCK_STREAM, 0 );
+	if( sock == INVALID_SOCKET )
+		return false;
+
+	sockaddr_in sin;
+	sin.sin_family	= AF_INET;
+	sin.sin_port	= htons( (uint16_t) port );
+	sin.sin_addr	= *(in_addr*) he->h_addr_list[ 0 ];
+
+	if( connect( sock, (sockaddr*) &sin, sizeof( sin ) ) )
 	{
-	}
-	else if( !( he = gethostbyname( host ) ) )
-	{
-	}
-	else if( ( sock = socket( PF_INET, SOCK_STREAM, 0 ) ) == INVALID_SOCKET )
-	{
+		closesocket( sock );
 	}
 	else
 	{
-		sin.sin_family	= AF_INET;
-		sin.sin_port	= htons( (uint16_t) port );
-		sin.sin_addr	= *(in_addr*) he->h_addr_list[ 0 ];
+		conn.client	  = &csock;
+		csock.is_ssl  = use_ssl;
+		csock.rsa.sin = sin;
+		csock.sock    = sock;
 		
-		if( connect( sock, (sockaddr*) &sin, sizeof( sin ) ) )
-		{
-			closesocket( sock );
-		}
-		else
-		{
-			newconn = new cr_connection_data;
-			newconn->client = &csock;
-			newconn->client->sock = sock;
-			newconn->client->rsa.sin = sin;
-			
-			newconn->client->is_ssl = use_ssl;
-			if( use_ssl )
-				sslize( *newconn, g_ssl_client, SSL_connect );
-		}
+		if( use_ssl )
+			sslize( conn, g_ssl_client, SSL_connect );
+
+		return true;
 	}
 
-	return newconn;
+	return false;
 }
 
 /**********************************************************************************************/
-bool mg_fetch(
+bool cr_fetch(
 	char*			buf,
 	char*&			out,
 	size_t&			out_size,
@@ -978,11 +975,9 @@ bool mg_fetch(
 	cr_string_map*	headers,
 	int				redirect_count )
 {
-	// TODO:
-	
 	out = NULL;
 	
-	cr_connection_data* conn;
+	cr_connection_data conn;
 	cr_in_socket sock;
 	
 	int n, port;
@@ -1000,7 +995,7 @@ bool mg_fetch(
 		return false;
 	}
 
-	if( ( conn = mg_connect( sock, host, port, !strcmp( proto, "https" ) ) ) )
+	if( cr_connect( conn, sock, host, port, !strcmp( proto, "https" ) ) )
 	{
 		char* str = buf;
 		add_string( str, "GET /", 5 );
@@ -1008,62 +1003,60 @@ bool mg_fetch(
 		add_string( str, " HTTP/1.0\r\nHost: ", 17 );
 		add_string( str, host, strlen( host ) );
 		add_string( str, "\r\nUser-Agent: Mozilla/5.0 Gecko Firefox/18\r\n\r\n", 46 );
-		cr_write( *conn, buf, str - buf );
+		cr_write( conn, buf, str - buf );
 		
-		read_http_request( *conn );
-		if( conn->request_len > 0 )
+		read_http_request( conn );
+		if( conn.request_len > 0 )
 		{
-			parse_http_request( *conn );
-			if( !strncmp( conn->method_, "HTTP/", 5 ) )
+			parse_http_request( conn );
+			if( !strncmp( conn.method_, "HTTP/", 5 ) )
 			{
 				if( headers )
-					*headers = conn->headers_;
+					*headers = conn.headers_;
 
-				const char* location = conn->headers_[ "location" ];
+				const char* location = conn.headers_[ "location" ];
 				if( location && *location && redirect_count < 5 )
 				{
-					close_connection( *conn );
-					free( conn );
+					close_connection( conn );
 
-					return mg_fetch( buf, out, out_size, location, headers, redirect_count + 1 );
+					return cr_fetch( buf, out, out_size, location, headers, redirect_count + 1 );
 				}
 
 				// Write chunk of data that may be in the user's buffer
-				conn->data_len -= conn->request_len + 4;
+				conn.data_len -= conn.request_len + 4;
 
-				size_t msize = conn->request_len + conn->data_len;
-				const char* cl = conn->headers_[ "content-length" ];
+				size_t msize = conn.request_len + conn.data_len;
+				const char* cl = conn.headers_[ "content-length" ];
 				msize += cl ? strtol( cl, NULL, 10 ) : 32768;
 
 				out = (char*) malloc( msize );
 				str = out;
 
-				if( conn->data_len > 0 )
-					add_string( str, conn->request_buffer + conn->request_len, conn->data_len );
+				if( conn.data_len > 0 )
+					add_string( str, conn.request_buffer + conn.request_len, conn.data_len );
 
 				// Read the rest of the response and write it to the file. Do not use
 				// mg_read() cause we didn't set newconn->content_len properly.
 				char buf2[ 65536 ];
-				while( ( conn->data_len = pull( *conn, buf2, sizeof( buf2 ) ) ) > 0 )
+				while( ( conn.data_len = pull( conn, buf2, sizeof( buf2 ) ) ) > 0 )
 				{
-					if( str - out + conn->data_len + 1 > (int) msize )
+					if( str - out + conn.data_len + 1 > (int) msize )
 					{
-						msize += conn->data_len + 16384;
+						msize += conn.data_len + 16384;
 
 						size_t diff = str - out;
 						out = (char*) realloc( out, msize );
 						str = out + diff;
 					}
 
-					add_string( str, buf2, conn->data_len );
+					add_string( str, buf2, conn.data_len );
 				}
 
 				out_size = str - out;
 			}
 		}
 		
-		close_connection( *conn );
-		delete conn;
+		close_connection( conn );
 	}
 	
 	return out != NULL;
@@ -1084,7 +1077,7 @@ static void loop_finish( void )
 		delete mtx;
 
 	g_ssl_client = 0;
-	g_ssl = 0;
+	g_ssl		 = 0;
 	g_ssl_mutexes.clear();
 
 #if defined(_WIN32)

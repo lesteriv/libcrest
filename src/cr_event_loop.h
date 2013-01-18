@@ -67,7 +67,7 @@ int					cr_write( cr_connection_data&, const char* buf, size_t len );
 
 
 /**********************************************************************************************/
-bool				mg_fetch(
+bool				cr_fetch(
 						char*					buf,
 						char*&					out,
 						size_t&					out_size,

@@ -28,6 +28,10 @@
                     <type>1</type>
                 </confElem>
                 <confElem>
+                    <name>http_mirror_release</name>
+                    <type>1</type>
+                </confElem>
+                <confElem>
                     <name>release_native</name>
                     <type>3</type>
                 </confElem>

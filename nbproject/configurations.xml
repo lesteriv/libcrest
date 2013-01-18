@@ -625,6 +625,143 @@
       <item path="third/zlib/zlib.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
+    <conf name="http_mirror_release" type="1">
+      <toolsSet>
+        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
+        <compilerSet>default</compilerSet>
+      </toolsSet>
+      <compileType>
+        <ccTool>
+          <stripSymbols>true</stripSymbols>
+          <commandlineTool>g++</commandlineTool>
+          <commandLine>-fno-exceptions -fno-rtti -m32 -std=c++11 -Ofast -flto</commandLine>
+          <useLinkerLibraries>false</useLinkerLibraries>
+        </ccTool>
+        <linkerTool>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/http_mirror</output>
+          <commandlineTool>g++</commandlineTool>
+          <linkerLibItems>
+            <linkerLibStdlibItem>PosixThreads</linkerLibStdlibItem>
+            <linkerLibStdlibItem>DynamicLinking</linkerLibStdlibItem>
+          </linkerLibItems>
+          <commandLine>-fno-exceptions -fno-rtti -m32 -Wl,--hash-style=sysv -static-libstdc++ -Ofast -Oflto</commandLine>
+        </linkerTool>
+      </compileType>
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../slite/src/third/libcrest/src/cr_event_loop.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="TODO" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="examples/http_mirror.cpp" ex="false" tool="1" flavor2="0">
+        <ccTool>
+          <commandLine>-std=c++11</commandLine>
+        </ccTool>
+      </item>
+      <item path="examples/storage.cpp" ex="true" tool="1" flavor2="0">
+        <ccTool>
+          <commandLine>-std=c++11</commandLine>
+        </ccTool>
+      </item>
+      <item path="include/cr_cache.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_connection.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_options.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_result.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_string_map.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_types.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_user_manager.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/cr_utils.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/crest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/internal/cr_cache_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_connection_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_handler_register.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_result_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_string_map_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="include/internal/cr_user_manager_internal.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="src/auth_basic.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_basic.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/auth_digest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/auth_digest.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_cache.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_connection.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_json.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_result.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_string_map.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_user_manager.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_utils_private.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/cr_xml.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/cr_xml.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/crest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/README" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/deflate.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="third/zlib/trees.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="third/zlib/zlib.h" ex="false" tool="3" flavor2="0">
+      </item>
+    </conf>
     <conf name="release_native" type="3">
       <toolsSet>
         <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
