@@ -691,7 +691,7 @@ static int get_request_len( const char* buf, int len )
 	for( auto s = buf ; s < e ; ++s )
 	{
 		if( s[ 0 ] == '\n' && s[ 1 ] == '\r' && s[ 2 ] == '\n' )
-			return s - buf + 2;
+			return s - buf;
 	}
 
 	return 0;
@@ -729,46 +729,38 @@ static void parse_http_headers( char** buf, cr_string_map& headers )
 // This function modifies the buffer by NUL-terminating
 // HTTP request components, header names and header values.
 //
-static bool parse_http_message( char* buf, int len, cr_connection_data& ri )
+static void parse_http_request( cr_connection_data& conn )
 {
-	int request_length = get_request_len( buf, len );
-	if( request_length > 0 )
-	{
-		// Reset attributes. DO NOT TOUCH is_ssl, remote_ip, remote_port
-		ri.method_ = ri.uri_ = NULL;
-		ri.headers_.clear();
+	// Reset attributes. DO NOT TOUCH is_ssl, remote_ip, remote_port
+	conn.method_ = conn.uri_ = NULL;
+	conn.headers_.clear();
 
-		buf[ request_length - 1 ] = '\0';
+	char* buf = conn.request_buffer;
+	buf[ conn.request_len - 1 ] = 0;
 
-		// RFC says that all initial whitespaces should be ingored
-		while( *buf && isspace( *(unsigned char*) buf ) )
-			buf++;
+	// RFC says that all initial whitespaces should be ingored
+	while( *buf && isspace( *(unsigned char*) buf ) )
+		buf++;
 
-		ri.method_ = skip( &buf, " " );
-		ri.uri_ = skip( &buf, " " );
-		skip( &buf, "\r\n" );
-		parse_http_headers( &buf, ri.headers_ );
-	}
-	
-	return request_length > 0;
+	conn.method_ = skip( &buf, " " );
+	conn.uri_ = skip( &buf, " " );
+	skip( &buf, "\r\n" );
+	parse_http_headers( &buf, conn.headers_ );
 }
 
 /**********************************************************************************************/
-static void read_http_request( 
-	cr_connection_data&	conn,
-	char*				out_buf,
-	int*				readed )
+static void read_http_request( cr_connection_data& conn )
 {
 	int n = 1;
 	int request_len = 0;
 	
-	while( *readed < MAX_REQUEST_SIZE && !request_len && n > 0 )
+	while( conn.data_len < MAX_REQUEST_SIZE && !request_len && n > 0 )
 	{
-		n = pull( conn, out_buf + *readed, MAX_REQUEST_SIZE - *readed );
+		n = pull( conn, conn.request_buffer + conn.data_len, MAX_REQUEST_SIZE - conn.data_len );
 		if( n > 0 )
 		{
-			*readed += n;
-			request_len = get_request_len( out_buf, *readed );
+			conn.data_len += n;
+			request_len = get_request_len( conn.request_buffer, conn.data_len );
 		}
 	}
 
@@ -978,12 +970,6 @@ static cr_connection_data* mg_connect(
 }
 
 /**********************************************************************************************/
-inline int parse_http_response( char* buf, int len, cr_connection_data& ri )
-{
-	return parse_http_message( buf, len, ri ) && !strncmp( ri.method_, "HTTP/", 5 );
-}
-
-/**********************************************************************************************/
 bool mg_fetch(
 	char*			buf,
 	char*&			out,
@@ -1024,54 +1010,56 @@ bool mg_fetch(
 		add_string( str, "\r\nUser-Agent: Mozilla/5.0 Gecko Firefox/18\r\n\r\n", 46 );
 		cr_write( *conn, buf, str - buf );
 		
-		int data_length = 0;
-		
-		read_http_request( *conn, buf, &data_length );
-		if( conn->request_len > 0 && parse_http_message( buf, conn->request_len, *conn ) && !strncmp( conn->method_, "HTTP/", 5 ) )
+		read_http_request( *conn );
+		if( conn->request_len > 0 )
 		{
-			if( headers )
-				*headers = conn->headers_;
-			
-			const char* location = conn->headers_[ "location" ];
-			if( location && *location && redirect_count < 5 )
+			parse_http_request( *conn );
+			if( !strncmp( conn->method_, "HTTP/", 5 ) )
 			{
-				close_connection( *conn );
-				free( conn );
+				if( headers )
+					*headers = conn->headers_;
 
-				return mg_fetch( buf, out, out_size, location, headers, redirect_count + 1 );
-			}
-		
-			// Write chunk of data that may be in the user's buffer
-			data_length -= conn->request_len;
-			
-			size_t msize = conn->request_len + data_length;
-			const char* cl = conn->headers_[ "content-length" ];
-			msize += cl ? strtol( cl, NULL, 10 ) : 32768;
-			
-			out = (char*) malloc( msize );
-			str = out;
-			
-			if( data_length > 0 )
-				add_string( str, buf + conn->request_len, data_length );
-			
-			// Read the rest of the response and write it to the file. Do not use
-			// mg_read() cause we didn't set newconn->content_len properly.
-			char buf2[ 65536 ];
-			while( ( data_length = pull( *conn, buf2, sizeof( buf2 ) ) ) > 0 )
-			{
-				if( str - out + data_length + 1 > (int) msize )
+				const char* location = conn->headers_[ "location" ];
+				if( location && *location && redirect_count < 5 )
 				{
-					msize += data_length + 16384;
-					
-					size_t diff = str - out;
-					out = (char*) realloc( out, msize );
-					str = out + diff;
+					close_connection( *conn );
+					free( conn );
+
+					return mg_fetch( buf, out, out_size, location, headers, redirect_count + 1 );
 				}
-				
-				add_string( str, buf2, data_length );
+
+				// Write chunk of data that may be in the user's buffer
+				conn->data_len -= conn->request_len + 4;
+
+				size_t msize = conn->request_len + conn->data_len;
+				const char* cl = conn->headers_[ "content-length" ];
+				msize += cl ? strtol( cl, NULL, 10 ) : 32768;
+
+				out = (char*) malloc( msize );
+				str = out;
+
+				if( conn->data_len > 0 )
+					add_string( str, conn->request_buffer + conn->request_len, conn->data_len );
+
+				// Read the rest of the response and write it to the file. Do not use
+				// mg_read() cause we didn't set newconn->content_len properly.
+				char buf2[ 65536 ];
+				while( ( conn->data_len = pull( *conn, buf2, sizeof( buf2 ) ) ) > 0 )
+				{
+					if( str - out + conn->data_len + 1 > (int) msize )
+					{
+						msize += conn->data_len + 16384;
+
+						size_t diff = str - out;
+						out = (char*) realloc( out, msize );
+						str = out + diff;
+					}
+
+					add_string( str, buf2, conn->data_len );
+				}
+
+				out_size = str - out;
 			}
-			
-			out_size = str - out;
 		}
 		
 		close_connection( *conn );
@@ -1132,17 +1120,20 @@ static void process_connection( cr_in_socket& socket )
 
 	if( !socket.is_ssl || sslize( conn, g_ssl, SSL_accept ) )
 	{
-		read_http_request( conn, conn.request_buffer, &conn.data_len );
-		if( conn.request_len &&
-			parse_http_message( conn.request_buffer, MAX_REQUEST_SIZE, conn ) && *conn.uri_ == '/' )
+		read_http_request( conn );
+		if( conn.request_len > 0 )
 		{
-			conn.content_len = atoi( conn.headers_[ "content-length" ] );
+			parse_http_request( conn );
+			if( *conn.uri_ == '/' )
+			{
+				conn.content_len = atoi( conn.headers_[ "content-length" ] );
 
-			if( ( conn.query_parameters_ = strchr( conn.uri_, '?' ) ) )
-				*conn.query_parameters_++ = 0;
+				if( ( conn.query_parameters_ = strchr( conn.uri_, '?' ) ) )
+					*conn.query_parameters_++ = 0;
 
-			decode_url( conn.uri_ );
-			event_handler( conn );
+				decode_url( conn.uri_ );
+				event_handler( conn );
+			}
 		}
 		else
 		{
