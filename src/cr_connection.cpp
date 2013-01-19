@@ -201,7 +201,7 @@ bool cr_connection::fetch(
 	size_t&			out_len,
 	cr_string_map*	headers )
 {
-	return cr_fetch( out, out_len, url, headers );
+	return cr_fetch( fetch_headers_data_, out, out_len, url, headers );
 }
 
 /**********************************************************************************************/

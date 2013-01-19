@@ -691,7 +691,7 @@ static int get_request_len( const char* buf, int len )
 	for( auto s = buf ; s < e ; ++s )
 	{
 		if( s[ 0 ] == '\n' && s[ 1 ] == '\r' && s[ 2 ] == '\n' )
-			return s - buf;
+			return s - buf - 1;
 	}
 
 	return 0;
@@ -736,7 +736,7 @@ static void parse_http_request( cr_connection_data& conn )
 	conn.headers_.clear();
 
 	char* buf = conn.request_buffer;
-	buf[ conn.request_len - 1 ] = 0;
+	buf[ conn.request_len ] = 0;
 
 	// RFC says that all initial whitespaces should be ingored
 	while( *buf && isspace( *(unsigned char*) buf ) )
@@ -968,6 +968,7 @@ static bool cr_connect(
 
 /**********************************************************************************************/
 bool cr_fetch(
+	char*			hbuf,
 	char*&			out,
 	size_t&			out_size,
 	const char*		url,
@@ -975,9 +976,6 @@ bool cr_fetch(
 	int				redirect_count )
 {
 	out = NULL;
-	
-	cr_connection_data conn;
-	cr_in_socket sock;
 	
 	int n, port;
 	char host[ 1025 ], proto[ 10 ];
@@ -994,16 +992,18 @@ bool cr_fetch(
 		return false;
 	}
 
+	cr_connection_data conn;
+	cr_in_socket sock;
+	
 	if( cr_connect( conn, sock, host, port, !strcmp( proto, "https" ) ) )
 	{
-		char buf[ MAX_REQUEST_SIZE ];
-		char* str = buf;
+		char* str = hbuf;
 		add_string( str, "GET /", 5 );
 		add_string( str, url + n, strlen( url + n ) );
 		add_string( str, " HTTP/1.0\r\nHost: ", 17 );
 		add_string( str, host, strlen( host ) );
 		add_string( str, "\r\nUser-Agent: Mozilla/5.0 Gecko Firefox/18\r\n\r\n", 46 );
-		cr_write( conn, buf, str - buf );
+		cr_write( conn, hbuf, str - hbuf );
 		
 		read_http_request( conn );
 		if( conn.request_len > 0 )
@@ -1014,12 +1014,12 @@ bool cr_fetch(
 				if( headers )
 					*headers = conn.headers_;
 
+				// Redirect
 				const char* location = conn.headers_[ "location" ];
 				if( location && *location && redirect_count < 5 )
 				{
 					close_connection( conn );
-
-					return cr_fetch( out, out_size, location, headers, redirect_count + 1 );
+					return cr_fetch( hbuf, out, out_size, location, headers, redirect_count + 1 );
 				}
 
 				// Write chunk of data that may be in the user's buffer
@@ -1027,18 +1027,18 @@ bool cr_fetch(
 
 				size_t msize = conn.request_len + conn.data_len;
 				const char* cl = conn.headers_[ "content-length" ];
-				msize += cl ? strtol( cl, NULL, 10 ) : 32768;
+				msize += cl ? atoi( cl ) : 32768;
 
 				out = (char*) malloc( msize );
 				str = out;
 
 				if( conn.data_len > 0 )
-					add_string( str, conn.request_buffer + conn.request_len, conn.data_len );
+					add_string( str, conn.request_buffer + conn.request_len + 4, conn.data_len );
 
 				// Read the rest of the response and write it to the file. Do not use
 				// mg_read() cause we didn't set newconn->content_len properly.
-				char buf2[ 65536 ];
-				while( ( conn.data_len = pull( conn, buf2, sizeof( buf2 ) ) ) > 0 )
+				char buf[ 65536 ];
+				while( ( conn.data_len = pull( conn, buf, sizeof( buf ) ) ) > 0 )
 				{
 					if( str - out + conn.data_len + 1 > (int) msize )
 					{
@@ -1049,7 +1049,7 @@ bool cr_fetch(
 						str = out + diff;
 					}
 
-					add_string( str, buf2, conn.data_len );
+					add_string( str, buf, conn.data_len );
 				}
 
 				out_size = str - out;

@@ -52,7 +52,7 @@ struct cr_connection_data
 	const char*		method_;							// "GET", "POST", etc
 	char*			query_parameters_;					// URL part after '?', not including '?', or NULL
 	long			remote_ip_;							// Client's IP address
-	int				request_len;						// Size of the request + headers in a buffer
+	int				request_len			= 0;			// Size of the request + headers in a buffer
 	void*			ssl					= 0;			// SSL descriptor
 	char*			uri_;								// URL-decoded URI
 
@@ -67,6 +67,7 @@ int					cr_write( cr_connection_data&, const char* buf, size_t len );
 
 /**********************************************************************************************/
 bool				cr_fetch(
+						char*					hbuf,
 						char*&					out,
 						size_t&					out_size,
 						const char*				url,

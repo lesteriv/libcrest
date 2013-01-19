@@ -59,5 +59,6 @@ mutable	bool					query_params_inited_	: 1;
 
 // Cached data
 
+		char					fetch_headers_data_[ 16384 ];
 mutable	char*					post_params_buffer_;
 };
