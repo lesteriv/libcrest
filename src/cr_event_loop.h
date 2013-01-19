@@ -1,7 +1,8 @@
 /**********************************************************************************************/
-/* mongoose.h		  		                                                   				  */
+/* cr_event_loop.h  		                                                   				  */
 /*                                                                       					  */
 /* (c) 2004-2012 Sergey Lyubka																  */
+/* (c) 2013      Igor Nikitin																  */
 /* MIT license   																		  	  */
 /**********************************************************************************************/
 
@@ -44,25 +45,34 @@ struct cr_in_socket;
 /**********************************************************************************************/
 struct cr_connection_data
 {
-	cr_in_socket*	client;								// Connected client
-	int				consumed_content	= 0;			// How many bytes of content have been read
-	int				content_len;						// Content-Length header value
-	int				data_len			= 0;			// Total size of data in a buffer
-	cr_string_map	headers_;							// Headers
-	const char*		method_;							// "GET", "POST", etc
-	char*			query_parameters_;					// URL part after '?', not including '?', or NULL
-	long			remote_ip_;							// Client's IP address
-	int				request_len			= 0;			// Size of the request + headers in a buffer
+	size_t			consumed_content	= 0;			// How many bytes of content have been read
+	size_t			content_len			= 0;			// Content-Length header value
+	size_t			data_len			= 0;			// Total size of data in a buffer
+	const char*		method_				= 0;			// "GET", "POST", etc
+	char*			query_parameters_	= 0;			// URL part after '?', not including '?', or NULL
+	long			remote_ip_			= 0;			// Client's IP address
+	size_t			request_len			= 0;			// Size of the request + headers in a buffer
 	void*			ssl					= 0;			// SSL descriptor
-	char*			uri_;								// URL-decoded URI
+	char*			uri_				= 0;			// URL-decoded URI
 
+	cr_in_socket*	client;								// Connected client
+	cr_string_map	headers_;							// Headers
 	char			request_buffer[ MAX_REQUEST_SIZE ];	// Buffer for received data
 };
 
 
 /**********************************************************************************************/
-int					cr_read( cr_connection_data&, void* buf, size_t len );
-int					cr_write( cr_connection_data&, const char* buf, size_t len );
+int					cr_read( 
+						cr_connection_data&		conn,
+						void*					buf,
+						size_t					len );
+
+
+/**********************************************************************************************/
+int					cr_write( 
+						cr_connection_data&		conn,
+						const char*				buf,
+						size_t					len );
 
 
 /**********************************************************************************************/

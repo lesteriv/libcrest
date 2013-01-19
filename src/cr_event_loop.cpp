@@ -1,7 +1,8 @@
 /**********************************************************************************************/
-/* mongoose.cpp		  		                                                   				  */
+/* cr_event_loop.cpp 		                                                   				  */
 /*                                                                       					  */
 /* (c) 2004-2012 Sergey Lyubka																  */
+/* (c) 2013      Igor Nikitin																  */
 /* MIT license   																		  	  */
 /**********************************************************************************************/
 
@@ -42,11 +43,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <thread>
-#include <time.h>
 #include <vector>
 
 // LIBCREST
 #include "../include/cr_utils.h"
+#include "cr_event_loop.h"
 #include "cr_utils_private.h"
 
 /**********************************************************************************************/
@@ -101,21 +102,13 @@ static bool g_stop;
 #        define CRYPTO_LIB "libcrypto.so"
 #    endif // __MACH__
 
-#    define closesocket(a) close(a)
-#    define ERRNO errno
-#    define INVALID_SOCKET (-1)
+#    define closesocket(a)	close(a)
+#    define ERRNO			errno
+#    define INVALID_SOCKET	(-1)
 
 typedef int SOCKET;
 
 #endif // _WIN32
-
-// LINUX SPECIFIC
-#include <sys/epoll.h>
-
-// MONGOOSE
-#include "cr_event_loop.h"
-
-#define ARRAY_SIZE(array)	(sizeof(array) / sizeof(array[0]))
 
 // Darwin prior to 7.0 and Win32 do not have socklen_t
 #ifdef NO_SOCKLEN_T
@@ -132,48 +125,44 @@ typedef int socklen_t;
 #    define SOMAXCONN 100
 #endif
 
-// Snatched from OpenSSL includes. I put the prototypes here to be independent
-// from the OpenSSL source installation. Having this, mongoose + SSL can be
-// built on any system with binary SSL libraries installed.
-typedef struct ssl_st SSL;
-typedef struct ssl_method_st SSL_METHOD;
-typedef struct ssl_ctx_st SSL_CTX;
+/**********************************************************************************************/
+typedef struct ssl_st			SSL;
+typedef struct ssl_method_st	SSL_METHOD;
+typedef struct ssl_ctx_st		SSL_CTX;
 
-#    define SSL_ERROR_WANT_READ		2
-#    define SSL_ERROR_WANT_WRITE	3
-#    define SSL_FILETYPE_PEM		1
-#    define CRYPTO_LOCK				1
+/**********************************************************************************************/
+#define SSL_FILETYPE_PEM		1
+#define CRYPTO_LOCK				1
 
-// Dynamically loaded SSL functionality
 
+/**********************************************************************************************/
 struct ssl_func
 {
 	const char* name;		// SSL function name
 	void  (*ptr)( void );	// Function pointer
 };
 
-#    define SSL_free							(* (void (*)(SSL *)) ssl_sw[0].ptr)
-#    define SSL_accept							(* (int (*)(SSL *)) ssl_sw[1].ptr)
-#    define SSL_connect							(* (int (*)(SSL *)) ssl_sw[2].ptr)
-#    define SSL_read							(* (int (*)(SSL *, void *, int)) ssl_sw[3].ptr)
-#    define SSL_write							(* (int (*)(SSL *, const void *,int)) ssl_sw[4].ptr)
-#    define SSL_get_error						(* (int (*)(SSL *, int)) ssl_sw[5].ptr)
-#    define SSL_set_fd							(* (int (*)(SSL *, SOCKET)) ssl_sw[6].ptr)
-#    define SSL_new								(* (SSL * (*)(SSL_CTX *)) ssl_sw[7].ptr)
-#    define SSL_CTX_new							(* (SSL_CTX * (*)(SSL_METHOD *)) ssl_sw[8].ptr)
-#    define SSLv23_server_method				(* (SSL_METHOD * (*)(void)) ssl_sw[9].ptr)
-#    define SSL_library_init					(* (int (*)(void)) ssl_sw[10].ptr)
-#    define SSL_CTX_use_PrivateKey_file			(* (int (*)(SSL_CTX *, const char*, int)) ssl_sw[11].ptr)
-#    define SSL_CTX_use_certificate_file		(* (int (*)(SSL_CTX *, const char *, int)) ssl_sw[12].ptr)
-#    define SSL_CTX_set_default_passwd_cb		(* (void (*)(SSL_CTX *, mg_callback_t)) ssl_sw[13].ptr)
-#    define SSL_CTX_free						(* (void (*)(SSL_CTX *)) ssl_sw[14].ptr)
-#    define SSL_CTX_use_certificate_chain_file	(* (int (*)(SSL_CTX *, const char *)) ssl_sw[15].ptr)
-#    define SSLv23_client_method				(* (SSL_METHOD * (*)(void)) ssl_sw[16].ptr)
-#	 define SSL_pending							(* (int (*)(SSL *)) ssl_sw[17].ptr)
+#define SSL_free							(* (void (*)(SSL *)) ssl_sw[0].ptr)
+#define SSL_accept							(* (int (*)(SSL *)) ssl_sw[1].ptr)
+#define SSL_connect							(* (int (*)(SSL *)) ssl_sw[2].ptr)
+#define SSL_read							(* (int (*)(SSL *, void *, int)) ssl_sw[3].ptr)
+#define SSL_write							(* (int (*)(SSL *, const void *,int)) ssl_sw[4].ptr)
+#define SSL_get_error						(* (int (*)(SSL *, int)) ssl_sw[5].ptr)
+#define SSL_set_fd							(* (int (*)(SSL *, SOCKET)) ssl_sw[6].ptr)
+#define SSL_new								(* (SSL * (*)(SSL_CTX *)) ssl_sw[7].ptr)
+#define SSL_CTX_new							(* (SSL_CTX * (*)(SSL_METHOD *)) ssl_sw[8].ptr)
+#define SSLv23_server_method				(* (SSL_METHOD * (*)(void)) ssl_sw[9].ptr)
+#define SSL_library_init					(* (int (*)(void)) ssl_sw[10].ptr)
+#define SSL_CTX_use_PrivateKey_file			(* (int (*)(SSL_CTX *, const char*, int)) ssl_sw[11].ptr)
+#define SSL_CTX_use_certificate_file		(* (int (*)(SSL_CTX *, const char *, int)) ssl_sw[12].ptr)
 
-#    define CRYPTO_num_locks					(* (int (*)(void)) crypto_sw[0].ptr)
-#    define CRYPTO_set_locking_callback			(* (void (*)(void (*)(int, int, const char *, int))) crypto_sw[1].ptr)
-#    define CRYPTO_set_id_callback				(* (void (*)(unsigned long (*)(void))) crypto_sw[2].ptr)
+#define SSL_CTX_free						(* (void (*)(SSL_CTX *)) ssl_sw[13].ptr)
+#define SSL_CTX_use_certificate_chain_file	(* (int (*)(SSL_CTX *, const char *)) ssl_sw[14].ptr)
+#define SSLv23_client_method				(* (SSL_METHOD * (*)(void)) ssl_sw[15].ptr)
+
+#define CRYPTO_num_locks					(* (int (*)(void)) crypto_sw[0].ptr)
+#define CRYPTO_set_locking_callback			(* (void (*)(void (*)(int, int, const char *, int))) crypto_sw[1].ptr)
+#define CRYPTO_set_id_callback				(* (void (*)(unsigned long (*)(void))) crypto_sw[2].ptr)
 
 
 // set_ssl_option() function updates this array.
@@ -194,11 +183,9 @@ static struct ssl_func ssl_sw[] = {
 	{ "SSL_library_init"					, NULL },
 	{ "SSL_CTX_use_PrivateKey_file"			, NULL },
 	{ "SSL_CTX_use_certificate_file"		, NULL },
-	{ "SSL_CTX_set_default_passwd_cb"		, NULL },
 	{ "SSL_CTX_free"						, NULL },
 	{ "SSL_CTX_use_certificate_chain_file"	, NULL },
 	{ "SSLv23_client_method"				, NULL },
-	{ "SSL_pending"							, NULL },
 	{ NULL									, NULL }
 };
 
@@ -251,8 +238,14 @@ class cr_thread_pool
 	public://////////////////////////////////////////////////////////////////////////
 	  
 								cr_thread_pool( size_t count );
-								~cr_thread_pool( void );
+								~cr_thread_pool( void )
+								{
+									condition_.notify_all();
 
+									for( auto& it : workers_ )
+										it.join();
+								}
+								
 	public://////////////////////////////////////////////////////////////////////////								
 						
 // This class API:
@@ -300,32 +293,32 @@ class cr_worker
 {
 	public://////////////////////////////////////////////////////////////////////////
 	  
-							void operator()()
-							{
-								cr_in_socket skt;
-								
-								while( 1 )
-								{
-									{
-										unique_lock<mutex> lock( pool_.queue_mutex_ );
+		void operator()()
+		{
+			cr_in_socket skt;
 
-										while( !g_stop && pool_.tasks_.empty() )
-											pool_.condition_.wait( lock );
+			while( 1 )
+			{
+				{
+					unique_lock<mutex> lock( pool_.queue_mutex_ );
 
-										if( g_stop )
-											return;
+					while( !g_stop && pool_.tasks_.empty() )
+						pool_.condition_.wait( lock );
 
-										skt = pool_.tasks_.front();
-										pool_.tasks_.pop();
-									}
+					if( g_stop )
+						return;
 
-									process_connection( skt );
-								}										
-							}
+					skt = pool_.tasks_.front();
+					pool_.tasks_.pop();
+				}
+
+				process_connection( skt );
+			}										
+		}
 
 	public://////////////////////////////////////////////////////////////////////////
 
-		cr_thread_pool&		pool_;
+		cr_thread_pool& pool_;
 };
 
 
@@ -342,15 +335,6 @@ cr_thread_pool::cr_thread_pool( size_t count )
 }
 
 /**********************************************************************************************/
-cr_thread_pool::~cr_thread_pool( void )
-{
-	condition_.notify_all();
-
-	for( auto& it : workers_ )
-		it.join();
-}
-
-/**********************************************************************************************/
 static void close_all_listening_sockets( void )
 {
 	for( auto& sp : g_listening_sockets )
@@ -360,23 +344,24 @@ static void close_all_listening_sockets( void )
 }
 
 /**********************************************************************************************/
-static int set_ports( 
+static bool set_ports( 
 	const vector<cr_port>&	ports,
 	const string&			pem )
 {
-	int on = 1, success = 1;
-	SOCKET sock;
-	cr_socket so;
-
 	if( ports.empty() )
 	{
 		g_error = "Invalid port spec. Expecting list of: [IP_ADDRESS:]PORT[s|p]";
-		success = 0;
+		return false;
 	}
+	
+	bool res = true;
+	
+	int on = 1;
+	SOCKET sock;
 
-	size_t i = 0;
-	while( success && i < ports.size() )
+	for( size_t i = 0 ; i < ports.size() ; ++i )
 	{
+		cr_socket so;
 		memset( &so, 0, sizeof( so ) );
 
 		const cr_port& port = ports[ i++ ];
@@ -400,27 +385,19 @@ static int set_ports(
 		if ( so.is_ssl && ( !g_ssl || pem.empty() ) )
 		{
 			g_error = "Cannot add SSL socket, is ssl certificate option set?";
-			success = 0;
+			res = false;
+			break;
 		}
-		else if( ( sock = socket( so.lsa.sa.sa_family, SOCK_STREAM, 6 ) ) == INVALID_SOCKET ||
-
-			// On Windows, SO_REUSEADDR is recommended only for
-			// broadcast UDP sockets
+		else if( 
+			( sock = socket( so.lsa.sa.sa_family, SOCK_STREAM, 6 ) ) == INVALID_SOCKET ||
 			setsockopt( sock, SOL_SOCKET, SO_REUSEADDR, (const char *) &on, sizeof( on ) ) != 0 ||
-
-			// Set TCP keep-alive. This is needed because if HTTP-level
-			// keep-alive is enabled, and client resets the connection,
-			// server won't get TCP FIN or RST and will keep the connection
-			// open forever. With TCP keep-alive, next keep-alive
-			// handshake will figure out that the client is down and
-			// will close the server end.
-			// Thanks to Igor Klopov who suggested the patch.
-			setsockopt( sock, SOL_SOCKET, SO_KEEPALIVE, (char *) &on, sizeof( on ) ) != 0 ||
 			bind( sock, &so.lsa.sa, sizeof(so.lsa ) ) != 0 || listen( sock, SOMAXCONN ) != 0 )
 		{
 			closesocket( sock );
 			g_error = "Cannot bind socket, another socket is already listening on the same port or you must have more privileges";
-			success = 0;
+			res = false;
+			
+			break;
 		}
 		else
 		{
@@ -428,53 +405,16 @@ static int set_ports(
 			fcntl( sock, F_SETFD, FD_CLOEXEC );
 #endif // _WIN32
 
-			cr_socket sk;
-			sk.sock = sock;
-			sk.is_ssl = so.is_ssl;
-
-			g_listening_sockets.push_back( sk );
+			so.sock = sock;
+			g_listening_sockets.push_back( so );
 		}
 	}
 
-	if( !success )
+	if( !res )
 		close_all_listening_sockets();
 
-	return success;
+	return res;
 }
-
-/**********************************************************************************************/
-static char* skip_quoted(
-	char**		buf,
-	const char* delimiters,
-	const char* whitespace )
-{
-	char* begin_word = *buf;
-	char* end_word = begin_word + strcspn( begin_word, delimiters );
-
-	if( *end_word == '\0' )
-	{
-		*buf = end_word;
-	}
-	else
-	{
-		char* end_whitespace = end_word + 1 + strspn( end_word + 1, whitespace );
-		for( char* p = end_word ; p < end_whitespace ; p++ )
-			*p = '\0';
-
-		*buf = end_whitespace;
-	}
-
-	return begin_word;
-}
-
-/**********************************************************************************************/
-static char* skip( char** buf, const char* delimiters )
-{
-	return skip_quoted( buf, delimiters, delimiters );
-}
-
-/**********************************************************************************************/
-typedef void * ( *mg_thread_func_t )(void *) ;
 
 
 #if defined(_WIN32)
@@ -497,9 +437,7 @@ static int set_non_blocking_mode( SOCKET sock )
 /**********************************************************************************************/
 static int set_non_blocking_mode( SOCKET sock )
 {
-	int flags;
-
-	flags = fcntl( sock, F_GETFL, 0 );
+	int flags = fcntl( sock, F_GETFL, 0 );
 	fcntl( sock, F_SETFL, flags | O_NONBLOCK );
 
 	return 0;
@@ -508,109 +446,61 @@ static int set_non_blocking_mode( SOCKET sock )
 #endif // _WIN32
 
 /**********************************************************************************************/
-// This function is needed to prevent Mongoose to be stuck in a blocking
-// socket read when user requested exit. To do that, we sleep in select
-// with a timeout, and when returned, check the context for the stop flag.
-// If it is set, we return 0, and this means that we must not continue
-// reading, must give up and close the connection and exit serving thread.
-//
-static int wait_until_socket_is_readable( cr_connection_data& conn )
-{
-	int result;
-	struct timeval tv;
-	fd_set set;
-
-	do
-	{
-		tv.tv_sec = 0;
-		tv.tv_usec = 300 * 1000;
-		FD_ZERO( &set );
-		FD_SET( conn.client->sock, &set );
-
-		result = select( conn.client->sock + 1, &set, NULL, NULL, &tv );
-		
-		if( !result && conn.ssl )
-			result = SSL_pending( (SSL*) conn.ssl );
-	}
-	while( ( !result || ( result < 0 && ERRNO == EINTR ) ) && !g_stop );
-
-	return g_stop || result < 0 ? 0 : 1;
-}
-
-/**********************************************************************************************/
 // Read from IO channel - opened file descriptor, socket, or SSL descriptor.
 // Return negative value on error, or number of bytes read on success.
 //
-static int pull( cr_connection_data& conn, char* buf, int len )
+static int pull( cr_connection_data& conn, char* buf, size_t len )
 {
-	int nread;
-
-	if( !wait_until_socket_is_readable( conn ) )
-	{
-		nread = -1;
-	}
-	else if( conn.ssl )
-	{
-		nread = SSL_read( (SSL*) conn.ssl, buf, len );
-	}
-	else
-	{
-		nread = recv( conn.client->sock, buf, (size_t) len, 0 );
-	}
-
-	return g_stop ? -1 : nread;
+	return conn.ssl ?
+		SSL_read( (SSL*) conn.ssl, buf, len ) :
+		recv( conn.client->sock, buf, len, 0 );
 }
 
 /**********************************************************************************************/
 int cr_read( cr_connection_data& conn, void* buf, size_t len )
 {
-	int n, buffered_len, nread;
-	const char *body;
-
-	nread = 0;
-	if( conn.consumed_content < conn.content_len )
-	{
-		// Adjust number of bytes to read.
-		int to_read = conn.content_len - conn.consumed_content;
-		if( to_read < (int) len )
-			len = (size_t) to_read;
-
-		// Return buffered data
-		body = conn.request_buffer + conn.request_len + conn.consumed_content;
-		buffered_len = &conn.request_buffer[ conn.data_len ] - body;
+	if( conn.consumed_content >= conn.content_len )
+		return 0;
 		
-		if( buffered_len > 0 )
-		{
-			if( len < (size_t) buffered_len )
-				buffered_len = (int) len;
+	int nread = 0;
 
-			memmove( buf, body, (size_t) buffered_len );
-			len -= buffered_len;
-			conn.consumed_content += buffered_len;
-			nread += buffered_len;
-			buf = (char*) buf + buffered_len;
+	len = min( len, conn.content_len - conn.consumed_content );
+
+	// Add buffered data
+	const char* buffered = conn.request_buffer + conn.request_len + conn.consumed_content;
+
+	int buffered_len = conn.request_buffer + conn.data_len - buffered;
+	if( buffered_len > 0 )
+	{
+		if( len < (size_t) buffered_len )
+			buffered_len = (int) len;
+
+		memmove( buf, buffered, buffered_len );
+		len -= buffered_len;
+
+		conn.consumed_content += buffered_len;
+		nread += buffered_len;
+		buf = (char*) buf + buffered_len;
+	}
+
+	// We have returned all buffered data. Read new data from the remote socket.
+	while( len > 0 )
+	{
+		int n = pull( conn, (char*) buf, len );
+		if( n < 0 )
+			return -1;
+		
+		if( n )
+		{
+			buf = (char*) buf + n;
+
+			conn.consumed_content += n;
+			nread += n;
+			len -= n;
 		}
-
-		// We have returned all buffered data. Read new data from the remote socket.
-		while( len > 0 )
+		else
 		{
-			n = pull( conn, (char*) buf, (int) len );
-			if( n < 0 )
-			{
-				nread = n;  // Propagate the error
-				break;
-			}
-			else if( n == 0 )
-			{
-				break;  // No more data to read
-			}
-			else
-			{
-				buf = (char*) buf + n;
-				conn.consumed_content += n;
-				nread += n;
-				len -= n;
-			}
+			break;
 		}
 	}
 	
@@ -620,18 +510,13 @@ int cr_read( cr_connection_data& conn, void* buf, size_t len )
 /**********************************************************************************************/
 int cr_write( cr_connection_data& conn, const char* buf, size_t len )
 {
-	int n, k;
+	size_t sent = 0;
 
-	int sent = 0;
-	while( sent < (int) len )
+	while( sent < len )
 	{
-		// How many bytes we send in this iteration
-		k = (int) ( len - sent );
-
-		if( conn.ssl )
-			n = SSL_write( (SSL*) conn.ssl, buf + sent, k );
-		else
-			n = send( conn.client->sock, buf + sent, (size_t) k, MSG_NOSIGNAL );
+		int n = conn.ssl ?
+			SSL_write( (SSL*) conn.ssl, buf + sent, len - sent ) :
+			send( conn.client->sock, buf + sent, len - sent, MSG_NOSIGNAL );
 
 		if( n < 0 )
 			break;
@@ -698,54 +583,58 @@ static int get_request_len( const char* buf, int len )
 }
 
 /**********************************************************************************************/
-// Parse HTTP headers from the given buffer, advance buffer to the point
-// where parsing stopped.
-//
-static void parse_http_headers( char** buf, cr_string_map& headers )
+inline void skip_whitespace( char*& buf )
 {
+	while( isspace( *buf ) )
+		++buf;	
+}
+
+/**********************************************************************************************/
+static char* substr_to( char*& buf, char ch )
+{
+	char* r = buf;
+	
+	while( *buf && *buf != ch )
+		++buf;
+		
+	if( *buf )
+		*buf++ = 0;
+	
+	return r;
+}
+
+/**********************************************************************************************/
+static void parse_http_request( cr_connection_data& conn )
+{
+	char* buf = conn.request_buffer;
+	buf[ conn.request_len ] = 0;
+
+	skip_whitespace( buf );
+
+	conn.method_	= substr_to( buf, ' ' );
+	conn.uri_		= substr_to( buf, ' ' );
+
+	substr_to( buf, '\n' );
+	
 	for( int i = 0 ; i < 64 ; ++i )
 	{
-		char* name = skip_quoted( buf, ":", " " );
-		char* value = skip( buf, "\r\n" );
+		char* name  = substr_to( buf, ':' );
+		skip_whitespace( buf );
+		
+		char* value = substr_to( buf, '\r' );
+		if( *buf == '\n' )
+			++buf;
 		
 		if( name && *name )
 		{
-			headers.add( name, value );
-			while( *name )
-			{
-				*name = cr_tolower( *name );
-				++name;
-			}
+			conn.headers_.add( name, value );
+			for( ; *name ; *name = cr_tolower( *name ), ++name );
 		}
 		else
 		{
 			break;
 		}
 	}
-}
-
-/**********************************************************************************************/
-// Parse HTTP request, fill in mg_request_info structure.
-// This function modifies the buffer by NUL-terminating
-// HTTP request components, header names and header values.
-//
-static void parse_http_request( cr_connection_data& conn )
-{
-	// Reset attributes. DO NOT TOUCH is_ssl, remote_ip, remote_port
-	conn.method_ = conn.uri_ = NULL;
-	conn.headers_.clear();
-
-	char* buf = conn.request_buffer;
-	buf[ conn.request_len ] = 0;
-
-	// RFC says that all initial whitespaces should be ingored
-	while( *buf && isspace( *(unsigned char*) buf ) )
-		buf++;
-
-	conn.method_ = skip( &buf, " " );
-	conn.uri_ = skip( &buf, " " );
-	skip( &buf, "\r\n" );
-	parse_http_headers( &buf, conn.headers_ );
 }
 
 /**********************************************************************************************/
@@ -768,20 +657,17 @@ static void read_http_request( cr_connection_data& conn )
 }
 
 /**********************************************************************************************/
-void event_handler( cr_connection_data& conn );
-
-/**********************************************************************************************/
 static void ssl_locking_callback( int mode, int mutex_num, const char*, int )
 {
-	if( mode & CRYPTO_LOCK )
-		g_ssl_mutexes[ mutex_num ]->lock();
-	else
+	( mode & CRYPTO_LOCK ) ?
+		g_ssl_mutexes[ mutex_num ]->lock() :
 		g_ssl_mutexes[ mutex_num ]->unlock();
 }
 
 /**********************************************************************************************/
 static unsigned long ssl_id_callback( void )
 {
+	// TODO:
 	thread::id id = this_thread::get_id();
 	unsigned long* p = (unsigned long*) &id;
 	
@@ -791,77 +677,29 @@ static unsigned long ssl_id_callback( void )
 /**********************************************************************************************/
 static int load_dll( const char* dll_name, ssl_func* sw )
 {
-	union
-	{
-		void *p;
-		void (*fp )(void);
-	}
-	u;
-	
-	void* dll_handle;
-	ssl_func* fp;
-
-	if( !( dll_handle = dlopen( dll_name, RTLD_LAZY ) ) )
+	void* dll_handle = dlopen( dll_name, RTLD_LAZY );
+	if( !dll_handle )
 	{
 		g_error = "cannot load ssl dll";
 		return 0;
 	}
 
-	for( fp = sw ; fp->name ; fp++ )
+	for( ssl_func* fp = sw ; fp->name ; ++fp )
 	{
-#    ifdef _WIN32
-		// GetProcAddress() returns pointer to function
-		u.fp = (void (*)(void)) dlsym( dll_handle, fp->name );
-#    else
-		// dlsym() on UNIX returns void *. ISO C forbids casts of data pointers to
-		// function pointers. We need to use a union to make a cast.
-		u.p = dlsym( dll_handle, fp->name );
-#    endif // _WIN32
+#ifdef _WIN32
+		fp->ptr = (void (*)(void)) dlsym( dll_handle, fp->name );
+#else // _WIN32
+		fp->ptr = (void (*)(void)) dlsym( dll_handle, fp->name );
+#endif // _WIN32
 		
-		if( !u.fp )
+		if( !fp->ptr )
 		{
 			g_error = "cannot find ssl symbol";
 			return 0;
 		}
-		else
-		{
-			fp->ptr = u.fp;
-		}
 	}
 
 	return 1;
-}
-
-/**********************************************************************************************/
-static void close_socket_gracefully( cr_connection_data& conn )
-{
-	char buf[ 8192 ];
-	struct linger linger;
-	int n, sock = conn.client->sock;
-
-	// Set linger option to avoid socket hanging out after close. This prevent
-	// ephemeral port exhaust problem under high QPS.
-	linger.l_onoff = 1;
-	linger.l_linger = 1;
-	setsockopt( sock, SOL_SOCKET, SO_LINGER, (char*) &linger, sizeof(linger) );
-
-	// Send FIN to the client
-	shutdown( sock, SHUT_WR );
-	set_non_blocking_mode( sock );
-
-	// Read and discard pending incoming data. If we do not do that and close the
-	// socket, the data in the send buffer may be discarded. This
-	// behaviour is seen on Windows, when client keeps sending data
-	// when server decides to close the connection; then when client
-	// does recv() it gets no data back.
-	do
-	{
-		n = pull( conn, buf, sizeof(buf) );
-	}
-	while( n > 0 );
-
-	// Now we know that our FIN is ACK-ed, safe to close
-	closesocket( sock );
 }
 
 /**********************************************************************************************/
@@ -871,20 +709,28 @@ static void close_connection( cr_connection_data& conn )
 		SSL_free( (SSL*) conn.ssl );
 
 	if( conn.client->sock != INVALID_SOCKET )
-		close_socket_gracefully( conn );
+	{
+		int sock = conn.client->sock;
+
+		set_non_blocking_mode( sock );
+		
+		linger lngr;
+		lngr.l_onoff = 0;
+		setsockopt( sock, SOL_SOCKET, SO_LINGER, (char*) &lngr, sizeof( lngr ) );
+
+		closesocket( sock );		
+	}
 }
 
 /**********************************************************************************************/
 static bool set_pem( const string& pem )
 {
-	// If PEM file is not specified, skip SSL initialization.
 	if( pem.empty() )
 		return true;
 
 	if( !load_dll( SSL_LIB, ssl_sw ) || !load_dll( CRYPTO_LIB, crypto_sw ) )
 		return false;
 
-	// Initialize SSL crap
 	SSL_library_init();
 
 	if( !( g_ssl_client = SSL_CTX_new( SSLv23_client_method( ) ) ) )
@@ -908,16 +754,13 @@ static bool set_pem( const string& pem )
 		return false;
 	}
 
-	SSL_CTX_use_certificate_chain_file( g_ssl, pem.c_str() );
-
-	// Initialize locking callbacks, needed for thread safety.
-	// http://www.openssl.org/support/faq.html#PROG1
-	size_t n = CRYPTO_num_locks();
-	for( size_t i = 0 ; i < n ; ++i )
+	size_t count = CRYPTO_num_locks();
+	for( size_t i = 0 ; i < count ; ++i )
 		g_ssl_mutexes.push_back( new mutex );
 
-	CRYPTO_set_locking_callback( &ssl_locking_callback );
 	CRYPTO_set_id_callback( &ssl_id_callback );
+	CRYPTO_set_locking_callback( &ssl_locking_callback );
+	SSL_CTX_use_certificate_chain_file( g_ssl, pem.c_str() );
 
 	return true;
 }
@@ -957,10 +800,7 @@ static bool cr_connect(
 		csock.rsa.sin = sin;
 		csock.sock    = sock;
 		
-		if( use_ssl )
-			sslize( conn, g_ssl_client, SSL_connect );
-
-		return true;
+		return !use_ssl || sslize( conn, g_ssl_client, SSL_connect );
 	}
 
 	return false;
@@ -977,25 +817,25 @@ bool cr_fetch(
 {
 	out = NULL;
 	
-	int n, port;
-	char host[ 1025 ], proto[ 10 ];
+	char	host[ 1025 ];
+	int		n;
+	int		port = 0;
+	char	proto[ 10 ];
 
-	if( sscanf( url, "%9[htps]://%1024[^:]:%d/%n", proto, host, &port, &n ) == 3 )
-	{
-	}
-	else if( sscanf( url, "%9[htps]://%1024[^/]/%n", proto, host, &n ) == 2 )
-	{
-		port = !strcmp( proto, "https" ) ? 443 : 80;
-	}
-	else
+	if( sscanf( url, "%9[htps]://%1024[^:]:%d/%n", proto, host, &port, &n ) != 3 &&
+		sscanf( url, "%9[htps]://%1024[^/]/%n", proto, host, &n ) != 2 )
 	{
 		return false;
 	}
 
+	bool ssl = !strcmp( proto, "https" );
+	if( !port )
+		port = ssl ? 443 : 80;
+	
 	cr_connection_data conn;
 	cr_in_socket sock;
 	
-	if( cr_connect( conn, sock, host, port, !strcmp( proto, "https" ) ) )
+	if( cr_connect( conn, sock, host, port, ssl ) )
 	{
 		char* str = hbuf;
 		add_string( str, "GET /", 5 );
@@ -1022,16 +862,14 @@ bool cr_fetch(
 					return cr_fetch( hbuf, out, out_size, location, headers, redirect_count + 1 );
 				}
 
-				// Write chunk of data that may be in the user's buffer
+				size_t msize = conn.request_len + conn.data_len + 4;
+
+				const char* content_length = conn.headers_[ "content-length" ];
+				msize += content_length ? atoi( content_length ) : 32768;
+
+				str = out = (char*) malloc( msize );
+				
 				conn.data_len -= conn.request_len + 4;
-
-				size_t msize = conn.request_len + conn.data_len;
-				const char* cl = conn.headers_[ "content-length" ];
-				msize += cl ? atoi( cl ) : 32768;
-
-				out = (char*) malloc( msize );
-				str = out;
-
 				if( conn.data_len > 0 )
 					add_string( str, conn.request_buffer + conn.request_len + 4, conn.data_len );
 
@@ -1042,7 +880,7 @@ bool cr_fetch(
 				{
 					if( str - out + conn.data_len + 1 > (int) msize )
 					{
-						msize += conn.data_len + 16384;
+						msize += conn.data_len + 65536;
 
 						size_t diff = str - out;
 						out = (char*) realloc( out, msize );
@@ -1103,6 +941,9 @@ static void loop_init( void )
 
 	g_stop = false;
 }
+
+/**********************************************************************************************/
+void event_handler( cr_connection_data& conn );
 
 /**********************************************************************************************/
 static void process_connection( cr_in_socket& socket )
@@ -1201,6 +1042,8 @@ bool cr_event_loop(
 	}
 
 	loop_finish();
+	g_stop = true;
+	
 	return true;
 }
 

@@ -93,8 +93,8 @@ void cr_cache::push(
 	size_t				data_len,
 	cr_string_map		headers )
 {
-	time_t			t	= time( NULL );
-	string			url = string( conn.url() ) + '?' + conn.query_string();
+	time_t	t	= time( NULL );
+	string	url = string( conn.url() ) + '?' + conn.query_string();
 
 	// Add 'ETag' so client can use cached version of resource
 	auto etag = make_shared<string>( to_string( t ) );
@@ -105,7 +105,7 @@ void cr_cache::push(
 	size_t rlen;	
 	cr_create_responce( rdata, rlen, rc, data, data_len, &headers );
 
-	auto responce = make_shared<string>( string( rdata, rlen ) );
+	auto responce = make_shared<string>( rdata, rlen );
 	
 	// Save responce into cache
 	LOCK_CACHE
