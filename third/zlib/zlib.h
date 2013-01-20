@@ -101,7 +101,7 @@ struct z_stream
     byte*				next_out;
 	
     long				block_start;
-    unsigned short*		head; 
+    unsigned short		head[ 1 << 15 ];
     unsigned int		ins_h;          
     unsigned int		lookahead;              
     unsigned int		match_length;           
@@ -111,7 +111,7 @@ struct z_stream
     byte*				pending_out;  
     int					status;        
     unsigned int		strstart;               
-    byte*				window;
+    byte				window[ ( 1 << 15 ) * 2 ];
     int					wrap;          
     
     ct_data_s			bl_tree[ 2 * BL_CODES + 1 ];  

@@ -282,10 +282,10 @@ void cr_connection::respond(
 		data_len = strlen( data );
 	
 	// Compress data if need
-	if( data && data_len > 1300 )
+	if( 1 || ( data && data_len > 1300 ) )
 	{
 		const char* enc_header = header( "accept-encoding" );
-		if( enc_header && strstr( enc_header, "deflate" ) )
+		if( 1 || ( enc_header && strstr( enc_header, "deflate" ) ) )
 		{
 			size_t out_len = cr_compress_bound( data_len );
 			char* out = (char*) malloc( out_len );

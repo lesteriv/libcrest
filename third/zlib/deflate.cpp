@@ -174,47 +174,28 @@ static block_state deflate_fast( z_stream& s, int flush );
 
 
 /**********************************************************************************************/
-static void deflateResetKeep( z_stream& s )
-{
-    s.pending = 0;
-    s.pending_out = s.pending_buf;
-
-    if( s.wrap < 0 )
-        s.wrap = -s.wrap; 
-
-    s.status = s.wrap ? INIT_STATE : BUSY_STATE;
-    s.adler = 1;
-
-    _tr_init( s );
-}
-
-/**********************************************************************************************/
-static void lm_init( z_stream& s )
+static void deflateReset( z_stream& s )
 {
     CLEAR_HASH( s );
 
-    s.strstart		= 0;
-    s.block_start	= 0L;
-    s.lookahead		= 0;
-    s.insert		= 0;
-    s.match_length	= 2;
+    s.adler			= 1;
+    s.block_start	= 0;
     s.ins_h			= 0;
-}
+    s.insert		= 0;
+    s.lookahead		= 0;
+    s.match_length	= 2;
+    s.pending		= 0;
+    s.pending_out	= s.pending_buf;
+    s.status		= INIT_STATE;
+    s.strstart		= 0;
+    s.wrap			= 1;
 
-/**********************************************************************************************/
-static void deflateReset( z_stream& s )
-{
-    deflateResetKeep( s );
-    lm_init( s );
+    _tr_init( s );	
 }
 	
 /**********************************************************************************************/
 void deflateInit( z_stream& s )
 {
-    s.wrap	  = 1;
-    s.window = (byte*) malloc( ( 1 << 15 ) * 2 * sizeof( byte ) );
-    s.head   = (Posf*) malloc( ( 1 << 15 ) * sizeof( Pos ) );
-
     s.high_water = 0;      
     s.lit_bufsize = 1 << (8 + 6); 
 
@@ -312,8 +293,6 @@ void deflate( z_stream& s )
     
 finish:
     free( s.pending_buf );
-    free( s.head );
-    free( s.window );
 }
 
 /**********************************************************************************************/
@@ -482,7 +461,7 @@ static block_state deflate_fast( z_stream& s, int flush )
     IPos hash_head;
     int bflush;       
 
-    for(;;)
+    while( 1 )
 	{
         if( s.lookahead < MIN_LOOKAHEAD )
 		{
