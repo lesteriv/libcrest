@@ -46,6 +46,7 @@ int main( int argc, char** argv )
 	
 	// Ports to listen on
 	cr_options opts;
+	opts.thread_count = 1;
 	if( argc > 2 )
 		opts.ports = argv[ 2 ];
 		

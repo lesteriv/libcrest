@@ -261,7 +261,7 @@ size_t cr_deflate(
 	zstream.next_in		= (byte*) buf;
 	zstream.avail_out	= out_len;
 	zstream.next_out	= (byte*) out;
-	deflate( &zstream );
+	deflate( zstream );
 
 	return (char*) zstream.next_out - out;
 }

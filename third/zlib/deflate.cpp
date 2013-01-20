@@ -155,85 +155,80 @@ typedef enum
 block_state;
 
 /**********************************************************************************************/
-static block_state deflate_fast( deflate_state* s, int flush );
+static block_state deflate_fast( z_stream& s, int flush );
 
 
 /**********************************************************************************************/
 #define CLEAR_HASH( s ) \
-    s->head[ ( 1 << 15 ) - 1 ] = 0; \
-    memset( s->head, 0, (unsigned) ( ( 1 << 15 ) - 1 ) * sizeof( *s->head ) );
+    s.head[ ( 1 << 15 ) - 1 ] = 0; \
+    memset( s.head, 0, (unsigned) ( ( 1 << 15 ) - 1 ) * sizeof( *s.head ) );
 
 /**********************************************************************************************/
 #define INSERT_STRING( s, str, match_head ) \
-   (UPDATE_HASH( s, s->ins_h, s->window[ (str) + 2 ] ), \
-    match_head = s->head[s->ins_h ], \
-    s->head[ s->ins_h ] = (Pos)( str ))
+   (UPDATE_HASH( s, s.ins_h, s.window[ (str) + 2 ] ), \
+    match_head = s.head[s.ins_h ], \
+    s.head[ s.ins_h ] = (Pos)( str ))
 
 /**********************************************************************************************/
 #define UPDATE_HASH( s, h, c ) ( h = ( ((h)<<( ( 15 + 2 ) / 3 )) ^ (c) ) & ( ( 1 << 15 ) - 1 ) )
 
 
 /**********************************************************************************************/
-static void deflateResetKeep( z_stream* strm )
+static void deflateResetKeep( z_stream& s )
 {
-    deflate_state* s = (deflate_state*) strm->state;
-    s->pending = 0;
-    s->pending_out = s->pending_buf;
+    s.pending = 0;
+    s.pending_out = s.pending_buf;
 
-    if( s->wrap < 0 )
-        s->wrap = -s->wrap; 
+    if( s.wrap < 0 )
+        s.wrap = -s.wrap; 
 
-    s->status = s->wrap ? INIT_STATE : BUSY_STATE;
-    strm->adler = 1;
+    s.status = s.wrap ? INIT_STATE : BUSY_STATE;
+    s.adler = 1;
 
     _tr_init( s );
 }
 
 /**********************************************************************************************/
-static void lm_init( deflate_state* s )
+static void lm_init( z_stream& s )
 {
     CLEAR_HASH( s );
 
-    s->strstart		= 0;
-    s->block_start	= 0L;
-    s->lookahead	= 0;
-    s->insert		= 0;
-    s->match_length = 2;
-    s->ins_h		= 0;
+    s.strstart		= 0;
+    s.block_start	= 0L;
+    s.lookahead		= 0;
+    s.insert		= 0;
+    s.match_length	= 2;
+    s.ins_h			= 0;
 }
 
 /**********************************************************************************************/
-static void deflateReset( z_stream* strm )
+static void deflateReset( z_stream& s )
 {
-    deflateResetKeep( strm );
-    lm_init( strm->state );
+    deflateResetKeep( s );
+    lm_init( s );
 }
 	
 /**********************************************************************************************/
-void deflateInit( z_stream* strm )
+void deflateInit( z_stream& s )
 {
-    deflate_state* s = (deflate_state*) malloc( sizeof( deflate_state ) );
-    strm->state = (internal_state*) s;
-    s->strm = strm;
+    s.wrap	  = 1;
+    s.window = (byte*) malloc( ( 1 << 15 ) * 2 * sizeof( byte ) );
+    s.head   = (Posf*) malloc( ( 1 << 15 ) * sizeof( Pos ) );
 
-    s->wrap	  = 1;
-    s->window = (byte*) malloc( ( 1 << 15 ) * 2 * sizeof( byte ) );
-    s->head   = (Posf*) malloc( ( 1 << 15 ) * sizeof( Pos ) );
+    s.high_water = 0;      
+    s.lit_bufsize = 1 << (8 + 6); 
 
-    s->high_water = 0;      
-    s->lit_bufsize = 1 << (8 + 6); 
+    unsigned short* overlay = (unsigned short*) malloc( s.lit_bufsize * ( sizeof(unsigned short) + 2 ) );
+    s.pending_buf = (unsigned char*) overlay;
+    s.d_buf = overlay + s.lit_bufsize / sizeof(unsigned short);
+    s.l_buf = s.pending_buf + ( 1 + sizeof(unsigned short) ) * s.lit_bufsize;
 
-    unsigned short* overlay = (unsigned short*) malloc( s->lit_bufsize * ( sizeof(unsigned short) + 2 ) );
-    s->pending_buf = (unsigned char*) overlay;
-    s->d_buf = overlay + s->lit_bufsize / sizeof(unsigned short);
-    s->l_buf = s->pending_buf + ( 1 + sizeof(unsigned short) ) * s->lit_bufsize;
-
-    deflateReset( strm );
+    deflateReset( s );
 }
 
 /**********************************************************************************************/
 static void putShortMSB(
-    deflate_state*	s,
+    z_stream&		s,
     unsigned int	b )
 {
     put_byte( s, (byte) ( b >> 8 ) );
@@ -241,68 +236,62 @@ static void putShortMSB(
 }
 
 /**********************************************************************************************/
-static void flush_pending( z_stream* strm )
+static void flush_pending( z_stream& s )
 {
     unsigned len;
-    deflate_state* s = strm->state;
 
     _tr_flush_bits( s );
-    len = s->pending;
-    if( len > strm->avail_out ) len = strm->avail_out;
+    len = s.pending;
+    if( len > s.avail_out ) len = s.avail_out;
     if( !len )
 		return;
 
-    memmove( strm->next_out, s->pending_out, len );
-    strm->next_out  += len;
-    s->pending_out  += len;
-    strm->avail_out -= len;
-    s->pending		-= len;
+    memmove( s.next_out, s.pending_out, len );
+    s.next_out		+= len;
+    s.pending_out	+= len;
+    s.avail_out		-= len;
+    s.pending		-= len;
 	
-    if( !s->pending )
-        s->pending_out = s->pending_buf;
+    if( !s.pending )
+        s.pending_out = s.pending_buf;
 }
 
 /**********************************************************************************************/
-void deflate( z_stream* strm )
+void deflate( z_stream& s )
 {
-	deflateInit( strm );
+	deflateInit( s );
 	
-    deflate_state *s;
-
-    s = strm->state;
-    s->strm = strm; 
-    
-    if( s->status == INIT_STATE )
+    if( s.status == INIT_STATE )
 	{
 		unsigned int header = ( Z_DEFLATED + ( 7 << 4 ) ) << 8;
-		if( s->strstart ) header |= 0x20;
+		if( s.strstart ) header |= 0x20;
 		header += 31 - ( header % 31 );
 
-		s->status = BUSY_STATE;
+		s.status = BUSY_STATE;
 		putShortMSB( s, header );
 
-		if( s->strstart )
+		if( s.strstart )
 		{
-			putShortMSB( s, (unsigned int) ( strm->adler >> 16 ) );
-			putShortMSB( s, (unsigned int) ( strm->adler & 0xffff ) );
+			putShortMSB( s, (unsigned int) ( s.adler >> 16 ) );
+			putShortMSB( s, (unsigned int) ( s.adler & 0xffff ) );
 		}
 		
-		strm->adler = 1;
+		s.adler = 1;
 	}
     
-    if( s->pending )
+    if( s.pending )
 	{
-        flush_pending( strm );
-        if( !strm->avail_out )
+        flush_pending( s );
+        if( !s.avail_out )
             goto finish;
     }
     
-    if( strm->avail_in || s->lookahead || s->status != FINISH_STATE )
+    if( s.avail_in || s.lookahead || s.status != FINISH_STATE )
 	{
         block_state bstate = deflate_fast( s, 4 );
 
         if( bstate == finish_started || bstate == finish_done )
-            s->status = FINISH_STATE;
+            s.status = FINISH_STATE;
 
         if( bstate == need_more || bstate == finish_started )
             goto finish;
@@ -310,54 +299,53 @@ void deflate( z_stream* strm )
         if( bstate == block_done )
 		{
 			_tr_stored_block( s, (char*) 0, 0L, 0 );
-            flush_pending( strm );
+            flush_pending( s );
 			
-            if( !strm->avail_out )
+            if( !s.avail_out )
 				goto finish;
         }
     }
 
-	putShortMSB( s, (unsigned int) ( strm->adler >> 16 ) );
-	putShortMSB( s, (unsigned int) ( strm->adler & 0xffff ) );
-    flush_pending( strm );
+	putShortMSB( s, (unsigned int) ( s.adler >> 16 ) );
+	putShortMSB( s, (unsigned int) ( s.adler & 0xffff ) );
+    flush_pending( s );
     
 finish:
-    free( strm->state->pending_buf );
-    free( strm->state->head );
-    free( strm->state->window );
-    free( strm->state );
+    free( s.pending_buf );
+    free( s.head );
+    free( s.window );
 }
 
 /**********************************************************************************************/
 static int read_buf(
-    z_stream*	strm,
+    z_stream&	s,
     byte*		buf,
     unsigned	size )
 {
-    unsigned len = strm->avail_in;
+    unsigned len = s.avail_in;
 
     if( len > size ) len = size;
     if( !len ) return 0;
 
-    strm->avail_in -= len;
+    s.avail_in -= len;
 
-    memmove( buf, strm->next_in, len );
-    if( strm->state->wrap == 1 )
-        strm->adler = adler32( strm->adler, buf, len );
+    memmove( buf, s.next_in, len );
+    if( s.wrap == 1 )
+        s.adler = adler32( s.adler, buf, len );
 
-    strm->next_in += len;
+    s.next_in += len;
     return (int) len;
 }
 
 /**********************************************************************************************/
-static unsigned int longest_match( deflate_state* s, IPos cur_match )                           
+static unsigned int longest_match( z_stream& s, IPos cur_match )                           
 {
-    register byte* scan = s->window + s->strstart; 
+    register byte* scan = s.window + s.strstart; 
     register byte* match;                       
     register int len;                           
-    register byte* strend = s->window + s->strstart + 258;
+    register byte* strend = s.window + s.strstart + 258;
 
-    match = s->window + cur_match;
+    match = s.window + cur_match;
 
     if( match[ 0 ] != scan[ 0 ] || match[ 1 ] != scan[ 1 ] )
 		return 2;
@@ -377,12 +365,12 @@ static unsigned int longest_match( deflate_state* s, IPos cur_match )
     if( len < 3 )
 		return 2;
 
-    s->match_start = cur_match;
-    return (unsigned int) len <= s->lookahead ? (unsigned int) len : s->lookahead;
+    s.match_start = cur_match;
+    return (unsigned int) len <= s.lookahead ? (unsigned int) len : s.lookahead;
 }
 
 /**********************************************************************************************/
-static void fill_window( deflate_state* s )
+static void fill_window( z_stream& s )
 {
     register unsigned n, m;
     register Posf* p;
@@ -391,17 +379,17 @@ static void fill_window( deflate_state* s )
 
     do
 	{
-        more = (unsigned) ( ( (unsigned long) 2L * ( 1 << 15 ) ) - (unsigned long) s->lookahead - (unsigned long) s->strstart );
+        more = (unsigned) ( ( (unsigned long) 2L * ( 1 << 15 ) ) - (unsigned long) s.lookahead - (unsigned long) s.strstart );
         
-        if( s->strstart >= wsize + MAX_DIST( s ) )
+        if( s.strstart >= wsize + MAX_DIST( s ) )
 		{
-            memmove( s->window, s->window+wsize, (unsigned) wsize );
-            s->match_start -= wsize;
-            s->strstart    -= wsize; 
-            s->block_start -= (long) wsize;
+            memmove( s.window, s.window+wsize, (unsigned) wsize );
+            s.match_start -= wsize;
+            s.strstart    -= wsize; 
+            s.block_start -= (long) wsize;
 
             n = 1 << 15;
-            p = &s->head[ n ];
+            p = &s.head[ n ];
 			
             do
 			{
@@ -414,54 +402,54 @@ static void fill_window( deflate_state* s )
             more += wsize;
         }
 		
-        if( !s->strm->avail_in )
+        if( !s.avail_in )
 			break;
 
-        n = read_buf( s->strm, s->window + s->strstart + s->lookahead, more );
-        s->lookahead += n;
+        n = read_buf( s, s.window + s.strstart + s.lookahead, more );
+        s.lookahead += n;
         
-        if( s->lookahead + s->insert >= 3 )
+        if( s.lookahead + s.insert >= 3 )
 		{
-            unsigned int str = s->strstart - s->insert;
-            s->ins_h = s->window[ str ];
-            UPDATE_HASH( s, s->ins_h, s->window[ str + 1 ] );
+            unsigned int str = s.strstart - s.insert;
+            s.ins_h = s.window[ str ];
+            UPDATE_HASH( s, s.ins_h, s.window[ str + 1 ] );
             
-			while( s->insert )
+			while( s.insert )
 			{
-                UPDATE_HASH( s, s->ins_h, s->window[ str + 2 ] );
-                s->head[ s->ins_h ] = (Pos) str;
+                UPDATE_HASH( s, s.ins_h, s.window[ str + 2 ] );
+                s.head[ s.ins_h ] = (Pos) str;
                 str++;
-                s->insert--;
+                s.insert--;
 				
-                if( s->lookahead + s->insert < 3 )
+                if( s.lookahead + s.insert < 3 )
                     break;
             }
         }
     }
-	while( s->lookahead < MIN_LOOKAHEAD && s->strm->avail_in );
+	while( s.lookahead < MIN_LOOKAHEAD && s.avail_in );
     
-    if( s->high_water < ( (unsigned long) 2L * ( 1 << 15 ) ) )
+    if( s.high_water < ( (unsigned long) 2L * ( 1 << 15 ) ) )
 	{
-        unsigned long curr = s->strstart + (unsigned long) ( s->lookahead );
+        unsigned long curr = s.strstart + (unsigned long) ( s.lookahead );
         unsigned long init;
 
-        if( s->high_water < curr )
+        if( s.high_water < curr )
 		{
             init = ( (unsigned long) 2L * ( 1 << 15 ) ) - curr;
             if( init > WIN_INIT )
                 init = WIN_INIT;
 			
-            memset( s->window + curr, 0, (unsigned) init );
-            s->high_water = curr + init;
+            memset( s.window + curr, 0, (unsigned) init );
+            s.high_water = curr + init;
         }
-        else if( s->high_water < (unsigned long) curr + WIN_INIT )
+        else if( s.high_water < (unsigned long) curr + WIN_INIT )
 		{
-            init = (unsigned long) curr + WIN_INIT - s->high_water;
-            if( init > ( (unsigned long) 2L * ( 1 << 15 ) ) - s->high_water )
-                init = ( (unsigned long) 2L * ( 1 << 15 ) ) - s->high_water;
+            init = (unsigned long) curr + WIN_INIT - s.high_water;
+            if( init > ( (unsigned long) 2L * ( 1 << 15 ) ) - s.high_water )
+                init = ( (unsigned long) 2L * ( 1 << 15 ) ) - s.high_water;
 			
-            memset( s->window + s->high_water, 0, (unsigned) init );
-            s->high_water += init;
+            memset( s.window + s.high_water, 0, (unsigned) init );
+            s.high_water += init;
         }
     }
 }
@@ -471,77 +459,77 @@ static void fill_window( deflate_state* s )
 { \
    _tr_flush_block( \
 		s, \
-		( s->block_start >= 0L ? \
-			(char*) &s->window[ (unsigned)s->block_start ] : \
+		( s.block_start >= 0L ? \
+			(char*) &s.window[ (unsigned)s.block_start ] : \
             (char*) 0 ), \
-		(unsigned long) ( (long) s->strstart - s->block_start ), \
+		(unsigned long) ( (long) s.strstart - s.block_start ), \
 		(last) ); \
-	s->block_start = s->strstart; \
-	flush_pending( s->strm ); \
+	s.block_start = s.strstart; \
+	flush_pending( s ); \
 }
 
 /**********************************************************************************************/
 #define FLUSH_BLOCK( s, last ) \
 { \
    FLUSH_BLOCK_ONLY(s, last); \
-   if( !s->strm->avail_out ) \
+   if( !s.avail_out ) \
    return (last) ? finish_started : need_more; \
 }
 
 /**********************************************************************************************/
-static block_state deflate_fast( deflate_state* s, int flush )
+static block_state deflate_fast( z_stream& s, int flush )
 {
     IPos hash_head;
     int bflush;       
 
     for(;;)
 	{
-        if( s->lookahead < MIN_LOOKAHEAD )
+        if( s.lookahead < MIN_LOOKAHEAD )
 		{
             fill_window( s );
-            if( s->lookahead < MIN_LOOKAHEAD && flush == 0 )
+            if( s.lookahead < MIN_LOOKAHEAD && flush == 0 )
                 return need_more;
 
-			if( s->lookahead == 0 )
+			if( s.lookahead == 0 )
 				break; 
         }
         
         hash_head = 0;
-        if( s->lookahead >= 3 )
-            INSERT_STRING( s, s->strstart, hash_head );
+        if( s.lookahead >= 3 )
+            INSERT_STRING( s, s.strstart, hash_head );
         
-		if( hash_head != 0 && s->strstart - hash_head <= MAX_DIST( s ) )
-            s->match_length = longest_match( s, hash_head );
+		if( hash_head != 0 && s.strstart - hash_head <= MAX_DIST( s ) )
+            s.match_length = longest_match( s, hash_head );
 		
-		if( s->match_length >= 3 )
+		if( s.match_length >= 3 )
 		{
-            _tr_tally_dist( s, s->strstart - s->match_start, s->match_length - 3, bflush );
+            _tr_tally_dist( s, s.strstart - s.match_start, s.match_length - 3, bflush );
 
-            s->lookahead -= s->match_length;
-			s->strstart += s->match_length;
-			s->match_length = 0;
-			s->ins_h = s->window[ s->strstart ];
-			UPDATE_HASH( s, s->ins_h, s->window[ s->strstart + 1 ] );
+            s.lookahead -= s.match_length;
+			s.strstart += s.match_length;
+			s.match_length = 0;
+			s.ins_h = s.window[ s.strstart ];
+			UPDATE_HASH( s, s.ins_h, s.window[ s.strstart + 1 ] );
         }
 		else
 		{
-            _tr_tally_lit( s, s->window[ s->strstart ], bflush );
-            s->lookahead--;
-            s->strstart++;
+            _tr_tally_lit( s, s.window[ s.strstart ], bflush );
+            s.lookahead--;
+            s.strstart++;
         }
 		
         if( bflush )
 			FLUSH_BLOCK( s, 0 );
     }
 	
-    s->insert = s->strstart < 2 ? s->strstart : 2;
+    s.insert = s.strstart < 2 ? s.strstart : 2;
     if( flush == 4 )
 	{
         FLUSH_BLOCK( s, 1 );
         return finish_done;
     }
 	
-    if( s->last_lit )
+    if( s.last_lit )
         FLUSH_BLOCK( s, 0 );
 	
     return block_done;

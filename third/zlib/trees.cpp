@@ -74,47 +74,47 @@ static static_tree_desc static_bl_desc = {
 #define send_bits( s, value, length ) \
 	{  \
 		int len = length;\
-		if( s->bi_valid > (int) ZBUF_SIZE - len ) \
+		if( s.bi_valid > (int) ZBUF_SIZE - len ) \
 		{ \
 			int val = value; \
-			s->bi_buf |= (unsigned short) val << s->bi_valid; \
-			put_short( s, s->bi_buf ); \
-			s->bi_buf = (unsigned short) val >> ( ZBUF_SIZE - s->bi_valid ); \
-			s->bi_valid += len - ZBUF_SIZE; \
+			s.bi_buf |= (unsigned short) val << s.bi_valid; \
+			put_short( s, s.bi_buf ); \
+			s.bi_buf = (unsigned short) val >> ( ZBUF_SIZE - s.bi_valid ); \
+			s.bi_valid += len - ZBUF_SIZE; \
 		} else { \
-			s->bi_buf |= (unsigned short) (value) << s->bi_valid; \
-			s->bi_valid += len; \
+			s.bi_buf |= (unsigned short) (value) << s.bi_valid; \
+			s.bi_valid += len; \
 		} \
 	}
 
 /**********************************************************************************************/
-static void init_block( deflate_state* s)
+static void init_block( z_stream& s)
 {
     int n; 
     
-    for( n = 0 ; n < L_CODES  ; n++ ) s->dyn_ltree[ n ].Freq = 0;
-    for( n = 0 ; n < D_CODES  ; n++ ) s->dyn_dtree[ n ].Freq = 0;
-    for( n = 0 ; n < BL_CODES ; n++ ) s->bl_tree[ n ].Freq = 0;
+    for( n = 0 ; n < L_CODES  ; n++ ) s.dyn_ltree[ n ].Freq = 0;
+    for( n = 0 ; n < D_CODES  ; n++ ) s.dyn_dtree[ n ].Freq = 0;
+    for( n = 0 ; n < BL_CODES ; n++ ) s.bl_tree[ n ].Freq = 0;
 
-    s->dyn_ltree[ END_BLOCK ].Freq = 1;
-    s->opt_len = s->static_len = 0L;
-    s->last_lit = 0;
+    s.dyn_ltree[ END_BLOCK ].Freq = 1;
+    s.opt_len = s.static_len = 0L;
+    s.last_lit = 0;
 }
 
 /**********************************************************************************************/
-void _tr_init( deflate_state* s )
+void _tr_init( z_stream& s )
 {
-    s->l_desc.dyn_tree = s->dyn_ltree;
-    s->l_desc.stat_desc = &static_l_desc;
+    s.l_desc.dyn_tree = s.dyn_ltree;
+    s.l_desc.stat_desc = &static_l_desc;
 
-    s->d_desc.dyn_tree = s->dyn_dtree;
-    s->d_desc.stat_desc = &static_d_desc;
+    s.d_desc.dyn_tree = s.dyn_dtree;
+    s.d_desc.stat_desc = &static_d_desc;
 
-    s->bl_desc.dyn_tree = s->bl_tree;
-    s->bl_desc.stat_desc = &static_bl_desc;
+    s.bl_desc.dyn_tree = s.bl_tree;
+    s.bl_desc.stat_desc = &static_bl_desc;
 
-    s->bi_buf = 0;
-    s->bi_valid = 0;
+    s.bi_buf = 0;
+    s.bi_valid = 0;
     
     init_block(s);
 }
@@ -125,8 +125,8 @@ void _tr_init( deflate_state* s )
 /**********************************************************************************************/
 #define pqremove( s, tree, top ) \
 { \
-    top = s->heap[ SMALLEST ]; \
-    s->heap[ SMALLEST ] = s->heap[ s->heap_len-- ]; \
+    top = s.heap[ SMALLEST ]; \
+    s.heap[ SMALLEST ] = s.heap[ s.heap_len-- ]; \
     pqdownheap( s, tree, SMALLEST ); \
 }
 
@@ -137,32 +137,32 @@ void _tr_init( deflate_state* s )
 
 /**********************************************************************************************/
 static void pqdownheap(
-    deflate_state* s,
+    z_stream& s,
     ct_data* tree,
     int k )       
 {
-    int v = s->heap[ k ];
+    int v = s.heap[ k ];
     int j = k << 1; 
     
-	while( j <= s->heap_len )
+	while( j <= s.heap_len )
 	{
-        if( j < s->heap_len && smaller( tree, s->heap[ j + 1 ], s->heap[ j ], s->depth ) )
+        if( j < s.heap_len && smaller( tree, s.heap[ j + 1 ], s.heap[ j ], s.depth ) )
             j++;
         
-        if( smaller( tree, v, s->heap[ j ], s->depth ) )
+        if( smaller( tree, v, s.heap[ j ], s.depth ) )
 			break;
         
-        s->heap[ k ] = s->heap[ j ];
+        s.heap[ k ] = s.heap[ j ];
 		k = j;
         j <<= 1;
     }
 	
-    s->heap[ k ] = v;
+    s.heap[ k ] = v;
 }
 
 /**********************************************************************************************/
 static void gen_bitlen(
-    deflate_state*	s,
+    z_stream&	s,
     tree_desc*		desc ) 
 {
     ct_data *tree        = desc->dyn_tree;
@@ -179,13 +179,13 @@ static void gen_bitlen(
     int overflow = 0;   
 
     for( bits = 0 ; bits <= MAX_BITS ; bits++ )
-		s->bl_count[ bits ] = 0;
+		s.bl_count[ bits ] = 0;
     
-    tree[ s->heap[ s->heap_max ] ].Len = 0; 
+    tree[ s.heap[ s.heap_max ] ].Len = 0; 
 
-    for( h = s->heap_max + 1 ; h < HEAP_SIZE ; h++ )
+    for( h = s.heap_max + 1 ; h < HEAP_SIZE ; h++ )
 	{
-        n = s->heap[ h ];
+        n = s.heap[ h ];
         bits = tree[ tree[ n ].Dad ].Len + 1;
         if( bits > max_length ) bits = max_length, overflow++;
         tree[ n ].Len = (unsigned short) bits;
@@ -193,12 +193,12 @@ static void gen_bitlen(
         if( n > max_code )
 			continue; 
 
-        s->bl_count[ bits ]++;
+        s.bl_count[ bits ]++;
         xbits = 0;
         if( n >= base ) xbits = extra[ n - base ];
         f = tree[ n ].Freq;
-        s->opt_len += (unsigned long) f * ( bits + xbits );
-        if( stree ) s->static_len += (unsigned long) f * ( stree[ n ].Len + xbits );
+        s.opt_len += (unsigned long) f * ( bits + xbits );
+        if( stree ) s.static_len += (unsigned long) f * ( stree[ n ].Len + xbits );
     }
 	
     if( overflow == 0 )
@@ -207,10 +207,10 @@ static void gen_bitlen(
     do
 	{
         bits = max_length - 1;
-        while( s->bl_count[ bits ] == 0 ) bits--;
-        s->bl_count[ bits ]--;      
-        s->bl_count[ bits + 1 ] += 2; 
-        s->bl_count[ max_length ]--;
+        while( s.bl_count[ bits ] == 0 ) bits--;
+        s.bl_count[ bits ]--;      
+        s.bl_count[ bits + 1 ] += 2; 
+        s.bl_count[ max_length ]--;
         
         overflow -= 2;
     }
@@ -218,16 +218,16 @@ static void gen_bitlen(
     
     for( bits = max_length ; bits != 0 ; bits--)
 	{
-        n = s->bl_count[ bits ];
+        n = s.bl_count[ bits ];
         while( n )
 		{
-            m = s->heap[ --h ];
+            m = s.heap[ --h ];
 			if( m > max_code )
 				continue;
 			
             if( (unsigned) tree[ m ].Len != (unsigned) bits )
 			{
-                s->opt_len += ( (long) bits - (long) tree[ m ].Len ) * (long) tree[ m ].Freq;
+                s.opt_len += ( (long) bits - (long) tree[ m ].Len ) * (long) tree[ m ].Freq;
                 tree[ m ].Len = (unsigned short) bits;
             }
 			
@@ -275,7 +275,7 @@ static void gen_codes(
 
 /**********************************************************************************************/
 static void build_tree(
-    deflate_state*	s,
+    z_stream&	s,
     tree_desc*		desc )
 {
     ct_data* tree         = desc->dyn_tree;
@@ -285,14 +285,14 @@ static void build_tree(
     int n, m;          
     int node;          
     
-    s->heap_len = 0, s->heap_max = HEAP_SIZE;
+    s.heap_len = 0, s.heap_max = HEAP_SIZE;
 
     for( n = 0 ; n < elems ; n++ )
 	{
         if( tree[ n ].Freq )
 		{
-            s->heap[ ++s->heap_len ] = max_code = n;
-            s->depth[ n ] = 0;
+            s.heap[ ++s.heap_len ] = max_code = n;
+            s.depth[ n ] = 0;
         }
 		else
 		{
@@ -300,19 +300,19 @@ static void build_tree(
         }
     }
 
-    while( s->heap_len < 2 )
+    while( s.heap_len < 2 )
 	{
-        node = s->heap[ ++s->heap_len ] = ( max_code < 2 ? ++max_code : 0 );
+        node = s.heap[ ++s.heap_len ] = ( max_code < 2 ? ++max_code : 0 );
         tree[ node ].Freq = 1;
-        s->depth[ node ] = 0;
-        s->opt_len--;
+        s.depth[ node ] = 0;
+        s.opt_len--;
 		if( stree )
-			s->static_len -= stree[ node ].Len;
+			s.static_len -= stree[ node ].Len;
     }
 	
     desc->max_code = max_code;
     
-    for( n = s->heap_len / 2 ; n >= 1 ; n-- )
+    for( n = s.heap_len / 2 ; n >= 1 ; n-- )
 		pqdownheap( s, tree, n );
     
     node = elems;
@@ -320,30 +320,30 @@ static void build_tree(
     do 
 	{
         pqremove( s, tree, n );
-        m = s->heap[ SMALLEST ]; 
+        m = s.heap[ SMALLEST ]; 
 
-        s->heap[ --s->heap_max ] = n; 
-        s->heap[ --s->heap_max ] = m;
+        s.heap[ --s.heap_max ] = n; 
+        s.heap[ --s.heap_max ] = m;
         
         tree[ node ].Freq = tree[ n ].Freq + tree[ m ].Freq;
-        s->depth[ node ] = (unsigned char) ( ( s->depth[ n ] >= s->depth[ m ] ? s->depth[ n ] : s->depth[ m ] ) + 1 );
+        s.depth[ node ] = (unsigned char) ( ( s.depth[ n ] >= s.depth[ m ] ? s.depth[ n ] : s.depth[ m ] ) + 1 );
         tree[ n ].Dad = tree[ m ].Dad = (unsigned short) node;
         
-        s->heap[ SMALLEST ] = node++;
+        s.heap[ SMALLEST ] = node++;
         pqdownheap( s, tree, SMALLEST );
 
     } 
-	while( s->heap_len >= 2 );
+	while( s.heap_len >= 2 );
 
-    s->heap[ --s->heap_max ] = s->heap[ SMALLEST ];
+    s.heap[ --s.heap_max ] = s.heap[ SMALLEST ];
     
     gen_bitlen( s, (tree_desc*) desc );
-    gen_codes( (ct_data*) tree, max_code, s->bl_count );
+    gen_codes( (ct_data*) tree, max_code, s.bl_count );
 }
 
 /**********************************************************************************************/
 static void scan_tree (
-    deflate_state*	s,
+    z_stream&	s,
     ct_data*		tree,
     int				max_code )   
 {
@@ -370,22 +370,22 @@ static void scan_tree (
         }
 		else if( count < min_count )
 		{
-            s->bl_tree[ curlen ].Freq += count;
+            s.bl_tree[ curlen ].Freq += count;
         }
 		else if( curlen )
 		{
             if( curlen != prevlen )
-				s->bl_tree[ curlen ].Freq++;
+				s.bl_tree[ curlen ].Freq++;
 			
-            s->bl_tree[ REP_3_6 ].Freq++;
+            s.bl_tree[ REP_3_6 ].Freq++;
         }
 		else if( count <= 10 )
 		{
-            s->bl_tree[ REPZ_3_10 ].Freq++;
+            s.bl_tree[ REPZ_3_10 ].Freq++;
         }
 		else
 		{
-            s->bl_tree[ REPZ_11_138 ].Freq++;
+            s.bl_tree[ REPZ_11_138 ].Freq++;
         }
 		
         count = 0;
@@ -402,7 +402,7 @@ static void scan_tree (
 
 /**********************************************************************************************/
 static void send_tree (
-    deflate_state*	s,
+    z_stream&	s,
     ct_data*		tree,
     int				max_code )      
 {
@@ -429,7 +429,7 @@ static void send_tree (
 		{
             do
 			{
-				send_code( s, curlen, s->bl_tree );
+				send_code( s, curlen, s.bl_tree );
 			}
 			while( --count );
 
@@ -438,21 +438,21 @@ static void send_tree (
 		{
             if( curlen != prevlen )
 			{
-                send_code( s, curlen, s->bl_tree );
+                send_code( s, curlen, s.bl_tree );
 				count--;
             }
 			
-            send_code( s, REP_3_6, s->bl_tree );
+            send_code( s, REP_3_6, s.bl_tree );
 			send_bits( s, count - 3, 2 );
         }
 		else if( count <= 10 )
 		{
-            send_code( s, REPZ_3_10, s->bl_tree );
+            send_code( s, REPZ_3_10, s.bl_tree );
 			send_bits( s, count - 3, 3 );
         }
 		else
 		{
-            send_code( s, REPZ_11_138, s->bl_tree );
+            send_code( s, REPZ_11_138, s.bl_tree );
 			send_bits( s, count - 11, 7 );
         }
 		
@@ -469,26 +469,26 @@ static void send_tree (
 }
 
 /**********************************************************************************************/
-static int build_bl_tree( deflate_state* s )
+static int build_bl_tree( z_stream& s )
 {
-    scan_tree( s, (ct_data*) s->dyn_ltree, s->l_desc.max_code );
-    scan_tree( s, (ct_data*) s->dyn_dtree, s->d_desc.max_code );
-    build_tree( s, (tree_desc*) &s->bl_desc );
+    scan_tree( s, (ct_data*) s.dyn_ltree, s.l_desc.max_code );
+    scan_tree( s, (ct_data*) s.dyn_dtree, s.d_desc.max_code );
+    build_tree( s, (tree_desc*) &s.bl_desc );
     
 	int max_blindex;
     for( max_blindex = BL_CODES - 1 ; max_blindex >= 3; max_blindex-- )
 	{
-        if( s->bl_tree[ bl_order[ max_blindex ] ].Len )
+        if( s.bl_tree[ bl_order[ max_blindex ] ].Len )
 			break;
     }
     
-    s->opt_len += 3 * ( max_blindex + 1 ) + 14;
+    s.opt_len += 3 * ( max_blindex + 1 ) + 14;
     return max_blindex;
 }
 
 /**********************************************************************************************/
 static void send_all_trees(
-    deflate_state*	s,
+    z_stream&	s,
     int				lcodes,
 	int				dcodes,
 	int				blcodes )
@@ -498,27 +498,27 @@ static void send_all_trees(
     send_bits( s, blcodes - 4, 4 ); 
     
 	for( int rank = 0 ; rank < blcodes ; rank++ )
-        send_bits( s, s->bl_tree[ bl_order[ rank ] ].Len, 3 );
+        send_bits( s, s.bl_tree[ bl_order[ rank ] ].Len, 3 );
 
-    send_tree( s, (ct_data*) s->dyn_ltree, lcodes - 1 ); 
-    send_tree( s, (ct_data*) s->dyn_dtree, dcodes - 1 ); 
+    send_tree( s, (ct_data*) s.dyn_ltree, lcodes - 1 ); 
+    send_tree( s, (ct_data*) s.dyn_dtree, dcodes - 1 ); 
 }
 
 /**********************************************************************************************/
-static void bi_windup( deflate_state* s )
+static void bi_windup( z_stream& s )
 {
-    if( s->bi_valid > 8 )
-        put_short( s, s->bi_buf )
-    else if( s->bi_valid > 0 )
-        put_byte( s, (byte) s->bi_buf );
+    if( s.bi_valid > 8 )
+        put_short( s, s.bi_buf )
+    else if( s.bi_valid > 0 )
+        put_byte( s, (byte) s.bi_buf );
 
-    s->bi_buf = 0;
-    s->bi_valid = 0;
+    s.bi_buf = 0;
+    s.bi_valid = 0;
 }
 
 /**********************************************************************************************/
 static void copy_block(
-    deflate_state*	s,
+    z_stream&	s,
     char*			buf, 
     size_t			len,
     int				header )
@@ -537,7 +537,7 @@ static void copy_block(
 
 /**********************************************************************************************/
 void _tr_stored_block(
-    deflate_state*	s,
+    z_stream&	s,
     char*			buf, 
     size_t			stored_len,
     int				last )
@@ -547,37 +547,37 @@ void _tr_stored_block(
 }
 
 /**********************************************************************************************/
-void _tr_flush_bits( deflate_state* s )
+void _tr_flush_bits( z_stream& s )
 {
-    if( s->bi_valid == 16 )
+    if( s.bi_valid == 16 )
 	{
-        put_short( s, s->bi_buf );
-        s->bi_buf = 0;
-        s->bi_valid = 0;
+        put_short( s, s.bi_buf );
+        s.bi_buf = 0;
+        s.bi_valid = 0;
     }
-	else if( s->bi_valid >= 8 )
+	else if( s.bi_valid >= 8 )
 	{
-        put_byte( s, (byte) s->bi_buf );
-        s->bi_buf >>= 8;
-        s->bi_valid -= 8;
+        put_byte( s, (byte) s.bi_buf );
+        s.bi_buf >>= 8;
+        s.bi_valid -= 8;
     }
 }
 
 /**********************************************************************************************/
 static void compress_block(
-    deflate_state*	s,
-    ct_data*		ltree,
-    ct_data*		dtree ) 
+    z_stream&	s,
+    ct_data*	ltree,
+    ct_data*	dtree ) 
 {
     int			lc;             
     unsigned	lx = 0;    
     unsigned	code;      
     int			extra;          
 
-    if( s->last_lit ) do
+    if( s.last_lit ) do
 	{
-        unsigned dist = s->d_buf[ lx ];
-        lc = s->l_buf[ lx++ ];
+        unsigned dist = s.d_buf[ lx ];
+        lc = s.l_buf[ lx++ ];
         
 		if( !dist )
 		{
@@ -606,14 +606,14 @@ static void compress_block(
             }
         } 
     }
-	while( lx < s->last_lit );
+	while( lx < s.last_lit );
 
     send_code( s, END_BLOCK, ltree );
 }
 
 /**********************************************************************************************/
 void _tr_flush_block(
-    deflate_state*	s,
+    z_stream&	s,
     char*			buf, 
     size_t			stored_len,
     int				last )
@@ -621,12 +621,12 @@ void _tr_flush_block(
     unsigned long opt_lenb, static_lenb; 
     int max_blindex = 0;  
 
-	build_tree( s, (tree_desc*) &s->l_desc );
-	build_tree( s, (tree_desc*) &s->d_desc );
+	build_tree( s, (tree_desc*) &s.l_desc );
+	build_tree( s, (tree_desc*) &s.d_desc );
 
 	max_blindex = build_bl_tree( s );
-	opt_lenb	= ( s->opt_len + 10 ) >> 3;
-	static_lenb = ( s->static_len + 10 ) >> 3;
+	opt_lenb	= ( s.opt_len + 10 ) >> 3;
+	static_lenb = ( s.static_len + 10 ) >> 3;
 
 	if( static_lenb <= opt_lenb )
 		opt_lenb = static_lenb;
@@ -643,8 +643,8 @@ void _tr_flush_block(
 	else
 	{
         send_bits( s, ( DYN_TREES << 1 ) + last, 3 );
-        send_all_trees( s, s->l_desc.max_code + 1, s->d_desc.max_code + 1, max_blindex + 1 );
-        compress_block( s, (ct_data*) s->dyn_ltree, (ct_data*) s->dyn_dtree );
+        send_all_trees( s, s.l_desc.max_code + 1, s.d_desc.max_code + 1, max_blindex + 1 );
+        compress_block( s, (ct_data*) s.dyn_ltree, (ct_data*) s.dyn_dtree );
     }
     
     init_block( s );

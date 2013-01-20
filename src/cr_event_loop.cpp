@@ -237,14 +237,14 @@ class cr_thread_pool
 {
 	public://////////////////////////////////////////////////////////////////////////
 	  
-								cr_thread_pool( size_t count );
-								~cr_thread_pool( void )
-								{
-									condition_.notify_all();
-
-									for( auto& it : workers_ )
-										it.join();
-								}
+							cr_thread_pool( size_t count );
+							~cr_thread_pool( void )
+							{
+								condition_.notify_all();
+									
+								for( auto& it : workers_ )
+									it.join();
+							}
 								
 	public://////////////////////////////////////////////////////////////////////////								
 						
@@ -253,24 +253,24 @@ class cr_thread_pool
 	// ---------------------
 	// Methods
 
-		void					enqueue( const cr_in_socket& skt )
-								{
-									queue_mutex_.lock();
-									tasks_.push( skt );
-									queue_mutex_.unlock();
+		void				enqueue( const cr_in_socket& skt )
+							{
+								queue_mutex_.lock();
+								tasks_.push( skt );
+								queue_mutex_.unlock();
 
-									condition_.notify_one();
-								}								
+								condition_.notify_one();
+							}								
 
 								
 	public://////////////////////////////////////////////////////////////////////////
 
 // Properties		
 		
-		condition_variable		condition_;
-		mutex					queue_mutex_;
-		queue<cr_in_socket>		tasks_;
-		vector<thread>			workers_;
+		condition_variable	condition_;
+		mutex				queue_mutex_;
+		queue<cr_in_socket>	tasks_;
+		vector<thread>		workers_;
 };
 
 /**********************************************************************************************/
@@ -878,7 +878,7 @@ bool cr_fetch(
 				char buf[ 65536 ];
 				while( ( conn.data_len = pull( conn, buf, sizeof( buf ) ) ) > 0 )
 				{
-					if( str - out + conn.data_len + 1 > (int) msize )
+					if( str - out + conn.data_len + 1 > msize )
 					{
 						msize += conn.data_len + 65536;
 
