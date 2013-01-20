@@ -2,6 +2,7 @@
 /* deflate.cpp		  		                                                   				  */
 /*                                                                       					  */
 /* (C) 1995-2012 Jean-loup Gailly and Mark Adler											  */
+/* (c) 2013      Igor Nikitin																  */
 /* ZLIB license   																		  	  */
 /**********************************************************************************************/
 
@@ -159,27 +160,28 @@ static block_state deflate_fast( z_stream& s, int flush );
 
 
 /**********************************************************************************************/
-#define CLEAR_HASH( s ) \
-    s.head[ ( 1 << 15 ) - 1 ] = 0; \
-    memset( s.head, 0, (unsigned) ( ( 1 << 15 ) - 1 ) * sizeof( *s.head ) );
-
-/**********************************************************************************************/
 #define INSERT_STRING( s, str, match_head ) \
    (UPDATE_HASH( s, s.ins_h, s.window[ (str) + 2 ] ), \
     match_head = s.head[s.ins_h ], \
-    s.head[ s.ins_h ] = (Pos)( str ))
+    s.head[ s.ins_h ] = (unsigned short)( str ))
 
 /**********************************************************************************************/
 #define UPDATE_HASH( s, h, c ) ( h = ( ((h)<<( ( 15 + 2 ) / 3 )) ^ (c) ) & ( ( 1 << 15 ) - 1 ) )
 
-
+	
 /**********************************************************************************************/
-static void deflateReset( z_stream& s )
+void deflateInit( z_stream& s )
 {
-    CLEAR_HASH( s );
+    s.d_buf = ((unsigned short*) s.pending_buf) + LTT_BUFSIZE / sizeof(unsigned short);
+    s.l_buf = s.pending_buf + ( 1 + sizeof(unsigned short) ) * LTT_BUFSIZE;
+
+    memset( s.head, 0, ( 1 << 15 ) * sizeof( *s.head ) );
 
     s.adler			= 1;
+    s.bi_buf		= 0;
+    s.bi_valid		= 0;
     s.block_start	= 0;
+    s.high_water	= 0;      
     s.ins_h			= 0;
     s.insert		= 0;
     s.lookahead		= 0;
@@ -191,20 +193,6 @@ static void deflateReset( z_stream& s )
     s.wrap			= 1;
 
     _tr_init( s );	
-}
-	
-/**********************************************************************************************/
-void deflateInit( z_stream& s )
-{
-    s.high_water = 0;      
-    s.lit_bufsize = 1 << (8 + 6); 
-
-    unsigned short* overlay = (unsigned short*) malloc( s.lit_bufsize * ( sizeof(unsigned short) + 2 ) );
-    s.pending_buf = (unsigned char*) overlay;
-    s.d_buf = overlay + s.lit_bufsize / sizeof(unsigned short);
-    s.l_buf = s.pending_buf + ( 1 + sizeof(unsigned short) ) * s.lit_bufsize;
-
-    deflateReset( s );
 }
 
 /**********************************************************************************************/
@@ -219,10 +207,9 @@ static void putShortMSB(
 /**********************************************************************************************/
 static void flush_pending( z_stream& s )
 {
-    unsigned len;
-
     _tr_flush_bits( s );
-    len = s.pending;
+	
+    unsigned len = s.pending;
     if( len > s.avail_out ) len = s.avail_out;
     if( !len )
 		return;
@@ -264,7 +251,7 @@ void deflate( z_stream& s )
 	{
         flush_pending( s );
         if( !s.avail_out )
-            goto finish;
+            return;
     }
     
     if( s.avail_in || s.lookahead || s.status != FINISH_STATE )
@@ -275,7 +262,7 @@ void deflate( z_stream& s )
             s.status = FINISH_STATE;
 
         if( bstate == need_more || bstate == finish_started )
-            goto finish;
+            return;
 
         if( bstate == block_done )
 		{
@@ -283,16 +270,13 @@ void deflate( z_stream& s )
             flush_pending( s );
 			
             if( !s.avail_out )
-				goto finish;
+				return;
         }
     }
 
 	putShortMSB( s, (unsigned int) ( s.adler >> 16 ) );
 	putShortMSB( s, (unsigned int) ( s.adler & 0xffff ) );
     flush_pending( s );
-    
-finish:
-    free( s.pending_buf );
 }
 
 /**********************************************************************************************/
@@ -317,7 +301,7 @@ static int read_buf(
 }
 
 /**********************************************************************************************/
-static unsigned int longest_match( z_stream& s, IPos cur_match )                           
+static unsigned int longest_match( z_stream& s, unsigned cur_match )                           
 {
     register byte* scan = s.window + s.strstart; 
     register byte* match;                       
@@ -352,7 +336,7 @@ static unsigned int longest_match( z_stream& s, IPos cur_match )
 static void fill_window( z_stream& s )
 {
     register unsigned n, m;
-    register Posf* p;
+    register unsigned short* p;
     unsigned more;    
     unsigned int wsize = 1 << 15;
 
@@ -373,7 +357,7 @@ static void fill_window( z_stream& s )
             do
 			{
                 m = *--p;
-                *p = (Pos) ( m >= wsize ? m-wsize : 0 );
+                *p = (unsigned short) ( m >= wsize ? m-wsize : 0 );
             }
 			while( --n );
 
@@ -396,7 +380,7 @@ static void fill_window( z_stream& s )
 			while( s.insert )
 			{
                 UPDATE_HASH( s, s.ins_h, s.window[ str + 2 ] );
-                s.head[ s.ins_h ] = (Pos) str;
+                s.head[ s.ins_h ] = (unsigned short) str;
                 str++;
                 s.insert--;
 				
@@ -458,7 +442,7 @@ static void fill_window( z_stream& s )
 /**********************************************************************************************/
 static block_state deflate_fast( z_stream& s, int flush )
 {
-    IPos hash_head;
+    unsigned hash_head;
     int bflush;       
 
     while( 1 )
@@ -484,15 +468,17 @@ static block_state deflate_fast( z_stream& s, int flush )
 		{
             _tr_tally_dist( s, s.strstart - s.match_start, s.match_length - 3, bflush );
 
-            s.lookahead -= s.match_length;
-			s.strstart += s.match_length;
-			s.match_length = 0;
-			s.ins_h = s.window[ s.strstart ];
+            s.lookahead		-= s.match_length;
+			s.strstart		+= s.match_length;
+			s.match_length	= 0;
+			s.ins_h			= s.window[ s.strstart ];
+			
 			UPDATE_HASH( s, s.ins_h, s.window[ s.strstart + 1 ] );
         }
 		else
 		{
             _tr_tally_lit( s, s.window[ s.strstart ], bflush );
+			
             s.lookahead--;
             s.strstart++;
         }

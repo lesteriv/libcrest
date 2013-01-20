@@ -2,6 +2,7 @@
 /* deflate.h		  		                                                   				  */
 /*                                                                       					  */
 /* (C) 1995-2012 Jean-loup Gailly and Mark Adler											  */
+/* (c) 2013      Igor Nikitin																  */
 /* ZLIB license   																		  	  */
 /**********************************************************************************************/
 
@@ -40,22 +41,17 @@
 
 
 /**********************************************************************************************/
-#define INIT_STATE		42
 #define BUSY_STATE		113
 #define FINISH_STATE	666
+#define INIT_STATE		42
+#define LTT_BUFSIZE		( 1 << ( 8 + 6 ) )
 
 
 /**********************************************************************************************/
-#define Freq fc.freq
 #define Code fc.code
 #define Dad  dl.dad
+#define Freq fc.freq
 #define Len  dl.len
-
-
-/**********************************************************************************************/
-typedef unsigned		IPos;
-typedef unsigned short	Pos;
-typedef Pos				Posf;
 
 
 /**********************************************************************************************/
@@ -87,7 +83,7 @@ extern const unsigned char _length_code[];
 		s.d_buf[ s.last_lit ] = 0; \
 		s.l_buf[ s.last_lit++ ] = cc; \
 		s.dyn_ltree[ cc ].Freq++; \
-		flush = ( s.last_lit == s.lit_bufsize - 1 ); \
+		flush = ( s.last_lit == LTT_BUFSIZE - 1 ); \
 	}
 
 /**********************************************************************************************/
@@ -100,5 +96,5 @@ extern const unsigned char _length_code[];
 		dist--; \
 		s.dyn_ltree[ _length_code[ len ] + LITERALS + 1 ].Freq++; \
 		s.dyn_dtree[ d_code(dist) ].Freq++; \
-		flush = ( s.last_lit == s.lit_bufsize - 1 ); \
+		flush = ( s.last_lit == LTT_BUFSIZE - 1 ); \
 	}

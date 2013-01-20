@@ -2,6 +2,7 @@
 /* zlib.h			  		                                                   				  */
 /*                                                                       					  */
 /* (C) 1995-2012 Jean-loup Gailly and Mark Adler											  */
+/* (c) 2013      Igor Nikitin																  */
 /* ZLIB license   																		  	  */
 /**********************************************************************************************/
 
@@ -107,7 +108,7 @@ struct z_stream
     unsigned int		match_length;           
     unsigned int		match_start;            
     unsigned int		pending;      
-    byte*				pending_buf;  
+    byte				pending_buf[ ( 1 << ( 8 + 6 ) ) * ( sizeof(unsigned short) + 2 ) ];
     byte*				pending_out;  
     int					status;        
     unsigned int		strstart;               
@@ -136,7 +137,6 @@ struct z_stream
 	unsigned int		insert;        
     unsigned char*		l_buf;          
     unsigned int		last_lit;      
-    unsigned int		lit_bufsize;
     unsigned long		opt_len;        
 	unsigned long		static_len; 
 };

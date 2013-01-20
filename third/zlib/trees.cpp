@@ -2,6 +2,7 @@
 /* trees.cpp		  		                                                   				  */
 /*                                                                       					  */
 /* (C) 1995-2012 Jean-loup Gailly and Mark Adler											  */
+/* (c) 2013      Igor Nikitin																  */
 /* ZLIB license   																		  	  */
 /**********************************************************************************************/
 
@@ -113,9 +114,6 @@ void _tr_init( z_stream& s )
     s.bl_desc.dyn_tree = s.bl_tree;
     s.bl_desc.stat_desc = &static_bl_desc;
 
-    s.bi_buf = 0;
-    s.bi_valid = 0;
-    
     init_block(s);
 }
 
@@ -137,9 +135,9 @@ void _tr_init( z_stream& s )
 
 /**********************************************************************************************/
 static void pqdownheap(
-    z_stream& s,
-    ct_data* tree,
-    int k )       
+    z_stream&	s,
+    ct_data*	tree,
+    int			k )       
 {
     int v = s.heap[ k ];
     int j = k << 1; 
@@ -163,9 +161,9 @@ static void pqdownheap(
 /**********************************************************************************************/
 static void gen_bitlen(
     z_stream&	s,
-    tree_desc*		desc ) 
+    tree_desc*	desc ) 
 {
-    ct_data *tree        = desc->dyn_tree;
+    ct_data* tree        = desc->dyn_tree;
     int max_code         = desc->max_code;
     const ct_data* stree = desc->stat_desc->static_tree;
     const int* extra     = desc->stat_desc->extra_bits;
@@ -276,7 +274,7 @@ static void gen_codes(
 /**********************************************************************************************/
 static void build_tree(
     z_stream&	s,
-    tree_desc*		desc )
+    tree_desc*	desc )
 {
     ct_data* tree         = desc->dyn_tree;
     const ct_data* stree  = desc->stat_desc->static_tree;
@@ -344,8 +342,8 @@ static void build_tree(
 /**********************************************************************************************/
 static void scan_tree (
     z_stream&	s,
-    ct_data*		tree,
-    int				max_code )   
+    ct_data*	tree,
+    int			max_code )   
 {
     int prevlen		= -1;
     int curlen;                
@@ -403,8 +401,8 @@ static void scan_tree (
 /**********************************************************************************************/
 static void send_tree (
     z_stream&	s,
-    ct_data*		tree,
-    int				max_code )      
+    ct_data*	tree,
+    int			max_code )      
 {
     int prevlen		= -1;          
     int curlen;                
@@ -471,9 +469,9 @@ static void send_tree (
 /**********************************************************************************************/
 static int build_bl_tree( z_stream& s )
 {
-    scan_tree( s, (ct_data*) s.dyn_ltree, s.l_desc.max_code );
-    scan_tree( s, (ct_data*) s.dyn_dtree, s.d_desc.max_code );
-    build_tree( s, (tree_desc*) &s.bl_desc );
+    scan_tree( s, s.dyn_ltree, s.l_desc.max_code );
+    scan_tree( s, s.dyn_dtree, s.d_desc.max_code );
+    build_tree( s, &s.bl_desc );
     
 	int max_blindex;
     for( max_blindex = BL_CODES - 1 ; max_blindex >= 3; max_blindex-- )
@@ -489,9 +487,9 @@ static int build_bl_tree( z_stream& s )
 /**********************************************************************************************/
 static void send_all_trees(
     z_stream&	s,
-    int				lcodes,
-	int				dcodes,
-	int				blcodes )
+    int			lcodes,
+	int			dcodes,
+	int			blcodes )
 {
     send_bits( s, lcodes - 257, 5 ); 
     send_bits( s, dcodes - 1, 5 );
@@ -538,9 +536,9 @@ static void copy_block(
 /**********************************************************************************************/
 void _tr_stored_block(
     z_stream&	s,
-    char*			buf, 
-    size_t			stored_len,
-    int				last )
+    char*		buf, 
+    size_t		stored_len,
+    int			last )
 {
     send_bits( s, ( STORED_BLOCK << 1 ) + last, 3 );    
     copy_block( s, buf, stored_len, 1 ); 
@@ -614,15 +612,15 @@ static void compress_block(
 /**********************************************************************************************/
 void _tr_flush_block(
     z_stream&	s,
-    char*			buf, 
-    size_t			stored_len,
-    int				last )
+    char*		buf, 
+    size_t		stored_len,
+    int			last )
 {
     unsigned long opt_lenb, static_lenb; 
     int max_blindex = 0;  
 
-	build_tree( s, (tree_desc*) &s.l_desc );
-	build_tree( s, (tree_desc*) &s.d_desc );
+	build_tree( s, &s.l_desc );
+	build_tree( s, &s.d_desc );
 
 	max_blindex = build_bl_tree( s );
 	opt_lenb	= ( s.opt_len + 10 ) >> 3;
