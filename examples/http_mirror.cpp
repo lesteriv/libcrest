@@ -12,7 +12,7 @@
 using namespace std;
 
 /**********************************************************************************************/
-cr_cache g_cache( 600 );
+cr_cache g_cache( 600 /*sec*/ );
 string	 g_source;
 
 
