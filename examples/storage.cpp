@@ -46,16 +46,22 @@ mutex		g_mutex_hash;
 /**********************************************************************************************/
 GET()( cr_connection& conn )
 {
-	string data;
+	static vector<cr_result_field> fields = { { "name", CR_TEXT }, { "count", CR_INTEGER } };
 	
+	cr_result r( conn );
+	r.set_record_fields( fields );
+		
 	LOCK
 	
 	for( auto& coll : g_hashes )
-		data += coll.first + '\n';
+	{
+		r.add_text( coll.first );
+		r.add_int( coll.second.size() );
+	}
 	
 	UNLOCK
 	
-	conn.respond( CR_HTTP_OK, data );
+	conn.respond( CR_HTTP_OK, r );
 }
 
 /**********************************************************************************************/
@@ -99,7 +105,7 @@ GET( {hash} )( cr_connection& conn )
 	string data;
 	for( auto& key : coll )
 		data += key.first + '\n';
-s	
+	
 	UNLOCK
 	
 	conn.respond( CR_HTTP_OK, data );	
@@ -117,7 +123,7 @@ POST( {hash} )( cr_connection& conn )
 
 	LOCK
 	g_hashes[ HASH ][ id ] = str;
-s	UNLOCK
+	UNLOCK
 	
 	conn.respond( CR_HTTP_OK, id );
 }
@@ -192,6 +198,14 @@ PUT( {hash}/{key} )( cr_connection& conn )
 int main( void )
 {
 	cr_options opts;
+	opts.ports = "8080";
+	
+	g_hashes[ "A" ][ "1" ] = make_shared<string>( "1" );
+	g_hashes[ "A" ][ "2" ] = make_shared<string>( "2" );
+	g_hashes[ "B" ][ "3" ] = make_shared<string>( "3" );
+	g_hashes[ "B" ][ "4" ] = make_shared<string>( "4" );
+	g_hashes[ "B" ][ "5" ] = make_shared<string>( "5" );
+	
 	if( !cr_start( opts ) )
 		printf( "%s\n", cr_error_string() );
 }
