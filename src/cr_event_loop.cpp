@@ -928,6 +928,7 @@ bool cr_fetch(
 /**********************************************************************************************/
 static void loop_finish( void )
 {
+	g_stop = true;
 	close_all_listening_sockets();
 
 	if( g_ssl )
@@ -1067,8 +1068,7 @@ bool cr_event_loop(
 	}
 
 	loop_finish();
-	g_stop = true;
-	
+
 	return true;
 }
 
