@@ -335,10 +335,45 @@ cr_thread_pool::cr_thread_pool( size_t count )
 }
 
 /**********************************************************************************************/
+static int set_non_blocking_mode( SOCKET sock );
+
+/**********************************************************************************************/
+static void close_socket_gracefully( int sock )
+{
+	struct linger linger;
+
+	// Set linger option to avoid socket hanging out after close. This prevent
+	// ephemeral port exhaust problem under high QPS.
+	linger.l_onoff = 1;
+	linger.l_linger = 1;
+	setsockopt( sock, SOL_SOCKET, SO_LINGER, (char*) &linger, sizeof( linger ) );
+
+	// Send FIN to the client
+	shutdown(sock, SHUT_WR);
+	set_non_blocking_mode( sock );
+
+#ifdef _WIN32
+  
+	char buf[ 4096 ];
+	int n;
+	
+	do
+	{
+		n = pull( NULL, sock, buf, sizeof( buf ) );
+	}
+	while( n > 0 );
+	
+#endif // _WIN32
+
+  // Now we know that our FIN is ACK-ed, safe to close
+  closesocket( sock );
+}
+
+/**********************************************************************************************/
 static void close_all_listening_sockets( void )
 {
 	for( auto& sp : g_listening_sockets )
-		closesocket( sp.sock );
+		close_socket_gracefully( sp.sock );
 
 	g_listening_sockets.clear();
 }
@@ -393,7 +428,7 @@ static bool set_ports(
 			setsockopt( sock, SOL_SOCKET, SO_REUSEADDR, (const char *) &on, sizeof( on ) ) != 0 ||
 			bind( sock, &so.lsa.sa, sizeof(so.lsa ) ) != 0 || listen( sock, SOMAXCONN ) != 0 )
 		{
-			closesocket( sock );
+			close_socket_gracefully( sock );
 			g_error = "Cannot bind socket, another socket is already listening on the same port or you must have more privileges";
 			res = false;
 			
@@ -709,17 +744,7 @@ static void close_connection( cr_connection_data& conn )
 		SSL_free( (SSL*) conn.ssl );
 
 	if( conn.client->sock != INVALID_SOCKET )
-	{
-		int sock = conn.client->sock;
-
-		set_non_blocking_mode( sock );
-		
-		linger lngr;
-		lngr.l_onoff = 0;
-		setsockopt( sock, SOL_SOCKET, SO_LINGER, (char*) &lngr, sizeof( lngr ) );
-
-		closesocket( sock );		
-	}
+		close_socket_gracefully( conn.client->sock );
 }
 
 /**********************************************************************************************/
@@ -791,7 +816,7 @@ static bool cr_connect(
 
 	if( connect( sock, (sockaddr*) &sin, sizeof( sin ) ) )
 	{
-		closesocket( sock );
+		close_socket_gracefully( sock );
 	}
 	else
 	{
