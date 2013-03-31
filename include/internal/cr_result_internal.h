@@ -25,6 +25,7 @@ class cr_result_internal
 	// Internal methods
 
 		void					finish( void );
+		void					init( void );
 		
 		
 	protected://////////////////////////////////////////////////////////////////////////

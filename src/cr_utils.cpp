@@ -644,6 +644,7 @@ const char* cr_get_format_name( cr_result_format format )
 	switch( format )
 	{
 		case CR_FORMAT_BINARY	: return "binary";
+		case CR_FORMAT_HTML		: return "html";
 		case CR_FORMAT_JSON		: return "json";
 		case CR_FORMAT_XML		: return "xml";
 	}
@@ -655,7 +656,9 @@ const char* cr_get_format_name( cr_result_format format )
 cr_result_format cr_get_result_format( cr_connection& conn )
 {
 	const char* accept = conn.header( "Accept" );
-	if( accept && strstr( accept, "xml" ) )
+	if( accept && strstr( accept, "html" ) )
+		return CR_FORMAT_HTML;
+	else if( accept && strstr( accept, "xml" ) )
 		return CR_FORMAT_XML;
 	else if( accept && strstr( accept, "json" ) )
 		return CR_FORMAT_JSON;

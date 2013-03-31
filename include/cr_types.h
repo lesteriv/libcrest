@@ -52,6 +52,7 @@ enum cr_http_status
 enum cr_result_format
 {
 	CR_FORMAT_BINARY,
+	CR_FORMAT_HTML,
 	CR_FORMAT_JSON,
 	CR_FORMAT_XML
 };

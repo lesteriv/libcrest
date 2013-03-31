@@ -39,6 +39,30 @@ static const string g_str_text		= "text";
 
 
 /**********************************************************************************************/
+static string escapeHTML( const string& html )
+{
+	string res;
+	
+	for( char ch : html )
+	{
+		switch( ch )
+		{
+            case '&'  : res += "&amp;"  ; break;
+            case '\'' : res += "&apos;" ; break;
+			case '"'  : res += "&quot;" ; break;
+			case '<'  : res += "&lt;"   ; break;
+			case '>'  : res += "&gt;"   ; break;
+			case '\n' : res += "<BR>"   ; break;
+
+            default:
+				res.push_back( ch );
+		}
+	}
+
+	return res;
+}
+
+/**********************************************************************************************/
 static string escapeJSON( const string& json )
 {
 	string res;
@@ -138,24 +162,17 @@ const string& typeName( cr_value_type type )
 
 
 /**********************************************************************************************/
+cr_result::cr_result( cr_result_format format )
+{
+	format_ = format;
+	init();
+}
+
+/**********************************************************************************************/
 cr_result::cr_result( cr_connection& conn )
 {
 	format_ = cr_get_result_format( conn );
-	name_	= &g_default_name;
-	
-	data_.reserve( 512 );
-	
-	// Data header
-	
-	switch( format_ )
-	{
-		case CR_FORMAT_XML:
-			data_ = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<slite>\n";
-			break;
-		
-		default:
-			break;
-	}
+	init();
 }
 
 							
@@ -170,6 +187,7 @@ void cr_result::add_double( double value )
 	switch( format_ )
 	{
 		case CR_FORMAT_BINARY	: data_.push_back( 1 ); pushInt64( data_, *(int64_t*) &value ); break;
+		case CR_FORMAT_HTML		: add_text( to_string( value ) ); break;
 		case CR_FORMAT_JSON		: add_text( to_string( value ) ); break;
 		case CR_FORMAT_XML		: add_text( to_string( value ) );break;
 		
@@ -183,6 +201,7 @@ void cr_result::add_int( int64_t value )
 	switch( format_ )
 	{
 		case CR_FORMAT_BINARY	: data_.push_back( 1 ); pushInt64( data_, value ); break;
+		case CR_FORMAT_HTML		: add_text( to_string( value ) ); break;
 		case CR_FORMAT_JSON		: add_text( to_string( value ) ); break;
 		case CR_FORMAT_XML		: add_text( to_string( value ) );break;
 		
@@ -196,6 +215,7 @@ void cr_result::add_null( void )
 	switch( format_ )
 	{
 		case CR_FORMAT_BINARY	: data_.push_back( 0 ); break; // TODO
+		case CR_FORMAT_HTML		: add_text( g_str_null ); break;
 		case CR_FORMAT_JSON		: add_text( g_str_nil ); break;
 		case CR_FORMAT_XML		: add_text( g_str_null );break;
 		
@@ -211,6 +231,12 @@ void cr_result::add_text( const string& value )
 	{
 		switch( format_ )
 		{
+			case CR_FORMAT_HTML:
+			{
+				data_ += "\t<tr>\n";
+			}
+			break;
+			
 			case CR_FORMAT_JSON:
 			{
 				if( records_ ) data_.push_back( ',' );
@@ -245,6 +271,16 @@ void cr_result::add_text( const string& value )
 		}
 		break;
 		
+		case CR_FORMAT_HTML:
+		{
+			const cr_result_field& fld = (*fields_)[ column_ ];
+			
+			( fld.type == CR_INTEGER || fld.type == CR_FLOAT ) ?
+				data_ += "\t\t<td align=right>" + escapeHTML( value ) + "</td>\n" :
+				data_ += "\t\t<td>" + escapeHTML( value ) + "</td>\n";
+		}
+		break;
+			
 		case CR_FORMAT_JSON:
 		{
 			const cr_result_field& fld = (*fields_)[ column_ ];
@@ -278,6 +314,12 @@ void cr_result::add_text( const string& value )
 	{
 		switch( format_ )
 		{
+			case CR_FORMAT_HTML:
+			{
+				data_ += "\t</tr>\n";
+			}
+			break;
+			
 			case CR_FORMAT_JSON:
 			{
 				if( has_properties_ ) data_.push_back( '\t' );
@@ -315,6 +357,12 @@ void cr_result::add_property(
 			
 			pushInt32( data_, value.length() );
 			data_ += value;
+		}
+		break;
+		
+		case CR_FORMAT_HTML:
+		{
+			data_ += escapeHTML( key ) + " - " + escapeHTML( value ) + "<br>\n";
 		}
 		break;
 		
@@ -364,15 +412,26 @@ void cr_result::set_record_fields( const vector<cr_result_field>& fields )
 	{
 		case CR_FORMAT_BINARY:
 		{
-			size_t fcount = fields_->size();
-			for( size_t i = 0 ; i < fcount ; ++i )
+			for( auto& fld : fields )
 			{
-				auto fld = (*fields_)[ i ];
-
 				data_.push_back( fld.type );			// Type
 				pushInt32( data_, fld.name.length() );	// Field name length
 				data_ += fld.name;						// Field name
 			}				
+		}
+		break;
+		
+		case CR_FORMAT_HTML:
+		{
+			if( has_properties_ )
+				data_ += "<br>\n";
+			
+			data_ += "<table>\n\t<tr>\n";
+			
+			for( auto& fld : fields )
+				data_ += "\t\t<th>" + fld.name + "</th>\n";
+					
+			data_ += "\t<tr>\n";
 		}
 		break;
 		
@@ -455,6 +514,13 @@ void cr_result_internal::finish( void )
 		}
 		break;
 		
+		case CR_FORMAT_HTML:
+		{
+			if( records_ )
+				data_ += "</table>";
+		}
+		break;		
+		
 		case CR_FORMAT_JSON:
 		{
 			if( has_properties_ )
@@ -482,5 +548,29 @@ void cr_result_internal::finish( void )
 		break;
 		
 		default: break;
+	}
+}
+
+/**********************************************************************************************/
+void cr_result_internal::init( void )
+{
+	name_ = &g_default_name;
+	
+	data_.reserve( 512 );
+	
+	// Data header
+	
+	switch( format_ )
+	{
+		case CR_FORMAT_HTML:
+			data_ = "<!doctype html><meta charset=utf-8><title></title>\n";
+			break;
+			
+		case CR_FORMAT_XML:
+			data_ = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<slite>\n";
+			break;
+		
+		default:
+			break;
 	}
 }
