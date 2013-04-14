@@ -28,7 +28,6 @@ static const string g_default_name	= "record";
 static const string g_str_blob		= "blob";
 static const string g_str_float		= "float";
 static const string g_str_integer	= "integer";
-static const string g_str_nil		= "nil";
 static const string g_str_null		= "null";
 static const string g_str_text		= "text";
 
@@ -216,7 +215,7 @@ void cr_result::add_null( void )
 	{
 		case CR_FORMAT_BINARY	: data_.push_back( 0 ); break; // TODO
 		case CR_FORMAT_HTML		: add_text( g_str_null ); break;
-		case CR_FORMAT_JSON		: add_text( g_str_nil ); break;
+		case CR_FORMAT_JSON		: add_text( g_str_null ); break;
 		case CR_FORMAT_XML		: add_text( g_str_null );break;
 		
 		default:;
